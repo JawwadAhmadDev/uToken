@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-interface IERC20 {
+interface IuToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -15,16 +15,14 @@ interface IERC20 {
     function approve(address spender, uint value) external returns (bool);
     function transfer(address to, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
-}
-interface IuTokenForEth {
-    event DepositedEth(address depositor, uint256 amount);
-    event Withdrawl(address withdrawer, uint256 amount);
 
-    function depositEth() external payable;
-    function withdrawEth(uint256 _amount) external;
+    function initialize(string memory name, string memory symbol, string memory currency) external;
+    function deposit(uint256 _amount) external returns(bool);
+    function withdraw(uint256 _amount) external returns(bool);
     function currency() external view returns (string memory);
 }
-contract ERC20 is IERC20 {
+
+contract uToken is IuToken {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -33,12 +31,44 @@ contract ERC20 is IERC20 {
 
     string private _name;
     string private _symbol;
+    string private _currency;
     
+    address public factory;
 
+    // Re-entracy attack
+    uint private unlocked = 1; 
+    modifier lock() {
+        require(unlocked == 1, 'uWTokenForEth: LOCKED');
+        unlocked = 0;
+        _;
+        unlocked = 1;
+    }
+    // modifier: will be applied on the functions which can only be called from factory.
+    // such as deposit and withdraw.
+    modifier onlyFactory() {
+        require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
+        _;
+    }
 
-    constructor(string memory name_, string memory symbol_) {
+    // called once at the time of deployment from factory
+    function initialize(string memory name_, string memory symbol_, string memory currency_) public {
         _name = name_;
         _symbol = symbol_;
+        _currency = currency_;
+        factory = msg.sender;
+    }
+
+
+    // function to take ethers and transfer uTokens
+    function deposit(uint256 _amount) external onlyFactory returns (bool){
+        _mint(tx.origin, _amount);
+        return true;
+    }
+
+    // function to take uTokens and send Ethers back
+    function withdraw(uint256 _amount) external onlyFactory lock returns (bool) {
+        _burn(tx.origin, _amount);
+        return true;
     }
 
     function name() public view virtual override returns (string memory) {
@@ -53,6 +83,10 @@ contract ERC20 is IERC20 {
         return 18;
     }
 
+    function currency() public view virtual override returns (string memory) {
+        return _currency;
+    }
+
     function totalSupply() public view virtual override returns (uint256) {
         return _totalSupply;
     }
@@ -61,8 +95,8 @@ contract ERC20 is IERC20 {
         return _balances[account];
     }
 
-    function transfer(address to, uint256 amount) public virtual override returns (bool) {
-        address owner = msg.sender;
+    function transfer(address to, uint256 amount) public onlyFactory virtual override returns (bool) {
+        address owner = tx.origin;
         _transfer(owner, to, amount);
         return true;
     }
@@ -71,27 +105,27 @@ contract ERC20 is IERC20 {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
-        address owner = msg.sender;
+    function approve(address spender, uint256 amount) public onlyFactory virtual override returns (bool) {
+        address owner = tx.origin;
         _approve(owner, spender, amount);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
-        address spender = msg.sender;
+    function transferFrom(address from, address to, uint256 amount) public onlyFactory virtual override returns (bool) {
+        address spender = tx.origin;
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
-        address owner = msg.sender;
+    function increaseAllowance(address spender, uint256 addedValue) public onlyFactory virtual returns (bool) {
+        address owner = tx.origin;
         _approve(owner, spender, allowance(owner, spender) + addedValue);
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        address owner = msg.sender;
+    function decreaseAllowance(address spender, uint256 subtractedValue) public onlyFactory virtual returns (bool) {
+        address owner = tx.origin;
         uint256 currentAllowance = allowance(owner, spender);
         require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
         unchecked {
@@ -178,67 +212,3 @@ contract ERC20 is IERC20 {
 }
 
 
-contract uTokenForEth is ERC20, IuTokenForEth {
-
-    address public factory;
-    string public currencyName = "ETH"; 
-
-    // Re-entracy attack
-    uint private unlocked = 1; 
-    modifier lock() {
-        require(unlocked == 1, 'uWTokenForEth: LOCKED');
-        unlocked = 0;
-        _;
-        unlocked = 1;
-    }
-
-    // modifier: will be applied on the functions which can only be called from factory.
-    // such as deposit and withdraw.
-    modifier onlyFactory() {
-        require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
-        _;
-    }
-
-
-
-    constructor() ERC20("uWTokenForEth", "UWTE"){
-        factory = msg.sender;
-    }
-
-    // called once at the time of deployment from factory
-    function initialize() public view{
-        require(msg.sender == factory, "Invalid initializer");
-    }
-    
-
-    // function to take ethers and transfer uTokens
-    function depositEth() external payable onlyFactory{
-        uint256 sentEth = msg.value;
-        address depositor = tx.origin;
-        require(sentEth > 0, "uWTokenForEth: INVALID ETH VALUE");
-
-        _mint(depositor, sentEth);
-
-        emit DepositedEth(depositor, sentEth);
-    }
-
-    // function to take uTokens and send Ethers back
-    function withdrawEth(uint256 _amount) external onlyFactory lock{
-        address withdrawer = tx.origin;
-        require(_amount > 0, "uWTokenForEth: INVALID WITHDRAW AMOUNT");
-        require(balanceOf(withdrawer) >= _amount, "uWTokenForEth: INVALID WITHDRAW AMOUNT");
-
-        _burn(withdrawer, _amount);
-        payable(withdrawer).transfer(_amount);
-
-        emit Withdrawl(withdrawer, _amount);
-    }
-
-    // function to show currency.
-    function currency() external view returns (string memory) {
-        return currencyName;
-    }
-
-
-    receive() external payable {}
-}
