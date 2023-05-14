@@ -33,7 +33,7 @@ contract uToken is IuToken {
     string private _symbol;
     string private _currency;
     
-    address public factory;
+    address public immutable factory = msg.sender;
 
     // Re-entracy attack
     uint private unlocked = 1; 
@@ -51,11 +51,10 @@ contract uToken is IuToken {
     }
 
     // called once at the time of deployment from factory
-    function initialize(string memory name_, string memory symbol_, string memory currency_) public {
+    function initialize(string memory name_, string memory symbol_, string memory currency_) public onlyFactory {
         _name = name_;
         _symbol = symbol_;
         _currency = currency_;
-        factory = msg.sender;
     }
 
 

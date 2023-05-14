@@ -9,14 +9,17 @@ import "IERC20.sol";
 import "uToken.sol";
 
 contract uTokenFactory is Ownable{
+    using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
     
-    mapping (address => address) private deployedAddressOfToken;
+    // uToken -> Token Address (against which contract is deployed)
+    mapping (address => address) private tokenAdressOf_uToken;
+    mapping (address => EnumerableSet.AddressSet) internal investeduTokensOf;
     address public deployedAddressOfEth;
 
-    uint256 private _salt;
     EnumerableSet.AddressSet private allowedTokens;
+    uint256 private _salt;
 
 
     event Deposit(address depositor, address token, uint256 amount);
@@ -27,7 +30,7 @@ contract uTokenFactory is Ownable{
         _addAllowedTokens(_allowedTokens);
     }
 
-    function _deployEth() public returns (address deployedEth) {
+    function _deployEth() internal returns (address deployedEth) {
         bytes memory bytecode = type(uToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
@@ -55,7 +58,9 @@ contract uTokenFactory is Ownable{
         for(uint i; i < _allowedTokens.length; i++) {
             address _token = _allowedTokens[i];
             require(_token.isContract(), "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS");
-            allowedTokens.add(_deployToken(_token));
+            address _deployedAddress = _deployToken(_token);
+            tokenAdressOf_uToken[_deployedAddress] = _token;
+            allowedTokens.add(_deployedAddress);
         }
     }
 
@@ -63,34 +68,49 @@ contract uTokenFactory is Ownable{
         _addAllowedTokens(_allowedTokens);
     }
 
-    function deposit(address _deployedAddress, uint256 _amount) external payable {
+    function deposit(address _uTokenAddress, uint256 _amount) external payable {
         require(_amount > 0, "Factory: invalid amount");
-        if(_deployedAddress == deployedAddressOfEth) {
+        
+        if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
         } else {
-            require(IERC20(_deployedAddress).transferFrom(msg.sender, address(this), _amount), "Factory: TransferFrom failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(msg.sender, address(this), _amount), "Factory: TransferFrom failed");
         }
+        require(IuToken(_uTokenAddress).deposit(_amount), "Factory: deposit failed");
+        if(!(investeduTokensOf[msg.sender].contains(_uTokenAddress))) investeduTokensOf[msg.sender].add(_uTokenAddress);
 
-        require(IuToken(_deployedAddress).deposit(_amount), "Factory: deposit failed");
-
-        emit Deposit(msg.sender, _deployedAddress, _amount);
+        emit Deposit(msg.sender, _uTokenAddress, _amount);
     }
 
-    function withdraw(address _deployedAddress, uint256 _amount) external {
+    function withdraw(address _uTokenAddress, uint256 _amount) external {
+        uint256 balance = IuToken(_uTokenAddress).balanceOf(msg.sender);
         require(_amount > 0, "Factory: invalid amount");
-        require(IuToken(_deployedAddress).balanceOf(msg.sender) >= _amount, "Factory: Not enought tokens");
+        require(balance >= _amount, "Factory: Not enought tokens");
 
-        require(IuToken(_deployedAddress).withdraw(_amount), "Factory: withdraw failed");
+        require(IuToken(_uTokenAddress).withdraw(_amount), "Factory: withdraw failed");
         
-        if(_deployedAddress == deployedAddressOfEth) {
+        if(_uTokenAddress == deployedAddressOfEth) {
             payable(msg.sender).transfer(_amount);
         } else {
-            require(IuToken(_deployedAddress).transfer(msg.sender, _amount), "Factory: transfer failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(msg.sender, _amount), "Factory: transfer failed");
         }
 
-        emit Withdraw(msg.sender, _deployedAddress, _amount);
+        if(balance.sub(_amount) == 0) investeduTokensOf[msg.sender].remove(_uTokenAddress);
+
+        emit Withdraw(msg.sender, _uTokenAddress, _amount);
     }
 
+
+    function transfer(address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+        require(_amount > 0, "Factory: Invalid amount");
+        require(allowedTokens.contains(_uTokenAddress) || _uTokenAddress == deployedAddressOfEth, "Factory: Invalid uToken Address");
+
+        require(IuToken(_uTokenAddress).transfer(_to, _amount), "Factory, transfer failed");
+        investeduTokensOf[_to].add(_uTokenAddress);
+        return true;
+    }
+
+    
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
     function getAllowedTokens() external view returns (address[] memory){
@@ -100,4 +120,14 @@ contract uTokenFactory is Ownable{
     function getAllowedTokensCount() external view returns (uint256) {
         return allowedTokens.length();
     }
+
+    function getTokenAddressOfuToken(address _uToken) external view returns (address) {
+        return tokenAdressOf_uToken[_uToken];
+    }
+
+
+    function getInvested_uTokensOf(address _investor) external view returns (address[] memory investeduTokens) {
+        investeduTokens = investeduTokensOf[_investor].values();
+    }
+
 }
