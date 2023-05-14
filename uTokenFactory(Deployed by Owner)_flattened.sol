@@ -1171,11 +1171,15 @@ contract uTokenFactory is Ownable{
     
     // uToken -> Token Address (against which contract is deployed)
     mapping (address => address) private tokenAdressOf_uToken;
-    mapping (address => EnumerableSet.AddressSet) internal investeduTokensOf;
+    // token -> uToken
+    mapping (address => address) private uTokenAddressOf_token;
+    mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
     address public deployedAddressOfEth;
 
     EnumerableSet.AddressSet private allowedTokens;
+    EnumerableSet.AddressSet private uTokensOfAllowedTokens;
     uint256 private _salt;
+
 
 
     event Deposit(address depositor, address token, uint256 amount);
@@ -1214,9 +1218,12 @@ contract uTokenFactory is Ownable{
         for(uint i; i < _allowedTokens.length; i++) {
             address _token = _allowedTokens[i];
             require(_token.isContract(), "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS");
+            require(!(allowedTokens.contains(_token)), "Factory: Already added");
             address _deployedAddress = _deployToken(_token);
             tokenAdressOf_uToken[_deployedAddress] = _token;
-            allowedTokens.add(_deployedAddress);
+            uTokenAddressOf_token[_token] = _deployedAddress;
+            allowedTokens.add(_token);
+            uTokensOfAllowedTokens.add(_deployedAddress);
         }
     }
 
@@ -1226,6 +1233,7 @@ contract uTokenFactory is Ownable{
 
     function deposit(address _uTokenAddress, uint256 _amount) external payable {
         require(_amount > 0, "Factory: invalid amount");
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         
         if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
@@ -1239,6 +1247,7 @@ contract uTokenFactory is Ownable{
     }
 
     function withdraw(address _uTokenAddress, uint256 _amount) external {
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         uint256 balance = IuToken(_uTokenAddress).balanceOf(msg.sender);
         require(_amount > 0, "Factory: invalid amount");
         require(balance >= _amount, "Factory: Not enought tokens");
@@ -1259,7 +1268,7 @@ contract uTokenFactory is Ownable{
 
     function transfer(address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
         require(_amount > 0, "Factory: Invalid amount");
-        require(allowedTokens.contains(_uTokenAddress) || _uTokenAddress == deployedAddressOfEth, "Factory: Invalid uToken Address");
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
 
         require(IuToken(_uTokenAddress).transfer(_to, _amount), "Factory, transfer failed");
         investeduTokensOf[_to].add(_uTokenAddress);
@@ -1269,20 +1278,31 @@ contract uTokenFactory is Ownable{
     
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
-    function getAllowedTokens() external view returns (address[] memory){
+    function all_AllowedTokens() external view returns (address[] memory){
         return allowedTokens.values();
     }
 
-    function getAllowedTokensCount() external view returns (uint256) {
+    function all_AllowedTokensCount() external view returns (uint256) {
         return allowedTokens.length();
     }
 
-    function getTokenAddressOfuToken(address _uToken) external view returns (address) {
+    function all_uTokensOfAllowedTokens() external view returns (address[] memory){
+        return uTokensOfAllowedTokens.values();
+    }
+
+    function all_uTokensOfAllowedTokensCount() external view returns (uint256) {
+        return uTokensOfAllowedTokens.length();
+    }
+
+    function get_TokenAddressOfuToken(address _uToken) external view returns (address) {
         return tokenAdressOf_uToken[_uToken];
     }
 
+    function get_uTokenAddressOfToken(address _token) external view returns (address) {
+        return uTokenAddressOf_token[_token];
+    }
 
-    function getInvested_uTokensOf(address _investor) external view returns (address[] memory investeduTokens) {
+    function getInvested_uTokensOfUser(address _investor) external view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
