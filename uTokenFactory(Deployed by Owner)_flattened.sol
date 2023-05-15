@@ -1171,21 +1171,26 @@ contract uTokenFactory is Ownable{
     
     // uToken -> Token Address (against which contract is deployed)
     mapping (address => address) private tokenAdressOf_uToken;
+    mapping (address => string) private currencyOf_uToken;
     // token -> uToken
     mapping (address => address) private uTokenAddressOf_token;
+    // investorAddress -> All uTokens addresses invested in
     mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
     address public deployedAddressOfEth;
 
-    EnumerableSet.AddressSet private allowedTokens;
-    EnumerableSet.AddressSet private uTokensOfAllowedTokens;
-    uint256 private _salt;
-
-
+    EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
+    EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+    uint256 private _salt; // to handle create2 opcode.
+    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 269
+    
+    uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
+    address public fundAddress; // address which will receive all fees
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
 
-    constructor (address[] memory _allowedTokens) {
+    constructor (address _fundAddress, address[] memory _allowedTokens) {
+        fundAddress = _fundAddress;
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
     }
@@ -1222,6 +1227,7 @@ contract uTokenFactory is Ownable{
             address _deployedAddress = _deployToken(_token);
             tokenAdressOf_uToken[_deployedAddress] = _token;
             uTokenAddressOf_token[_token] = _deployedAddress;
+            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress).currency();
             allowedTokens.add(_token);
             uTokensOfAllowedTokens.add(_deployedAddress);
         }
@@ -1234,16 +1240,21 @@ contract uTokenFactory is Ownable{
     function deposit(address _uTokenAddress, uint256 _amount) external payable {
         require(_amount > 0, "Factory: invalid amount");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
-        
+        uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
+        uint256 _remaining = _amount.sub(_depositFee);
+
         if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
+            payable(fundAddress).transfer(_depositFee);
         } else {
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(msg.sender, address(this), _amount), "Factory: TransferFrom failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
         }
-        require(IuToken(_uTokenAddress).deposit(_amount), "Factory: deposit failed");
+        
+        require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
         if(!(investeduTokensOf[msg.sender].contains(_uTokenAddress))) investeduTokensOf[msg.sender].add(_uTokenAddress);
 
-        emit Deposit(msg.sender, _uTokenAddress, _amount);
+        emit Deposit(msg.sender, _uTokenAddress, _remaining);
     }
 
     function withdraw(address _uTokenAddress, uint256 _amount) external {
@@ -1304,6 +1315,10 @@ contract uTokenFactory is Ownable{
 
     function getInvested_uTokensOfUser(address _investor) external view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
+    }
+
+    function get_CurrencyOfuToken(address _uToken) external view returns (string memory currency) {
+        return currencyOf_uToken[_uToken];
     }
 
 }
