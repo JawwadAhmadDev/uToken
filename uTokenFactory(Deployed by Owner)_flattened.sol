@@ -1176,6 +1176,14 @@ contract uTokenFactory is Ownable{
     mapping (address => address) private uTokenAddressOf_token;
     // investorAddress -> All uTokens addresses invested in
     mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
+
+    // mappings to store password and randomly generated phrase against user.
+    mapping (address => bytes32) private _passwordOf;
+    mapping (address => bool) private _isPasswordSet;
+    mapping (address => bytes32) private _recoveryNumberOf;
+    mapping (address => bool) private _isRecoveryNumberSet;
+
+
     address public deployedAddressOfEth;
 
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
@@ -1237,7 +1245,9 @@ contract uTokenFactory is Ownable{
         _addAllowedTokens(_allowedTokens);
     }
 
-    function deposit(address _uTokenAddress, uint256 _amount) external payable {
+    function deposit(string memory _password, address _uTokenAddress, uint256 _amount) external payable {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: invalid amount");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
@@ -1257,7 +1267,10 @@ contract uTokenFactory is Ownable{
         emit Deposit(msg.sender, _uTokenAddress, _remaining);
     }
 
-    function withdraw(address _uTokenAddress, uint256 _amount) external {
+
+    function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         uint256 balance = IuToken(_uTokenAddress).balanceOf(msg.sender);
         require(_amount > 0, "Factory: invalid amount");
@@ -1277,7 +1290,9 @@ contract uTokenFactory is Ownable{
     }
 
 
-    function transfer(address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+    function transfer(string memory _password, address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: Invalid amount");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
 
@@ -1286,6 +1301,23 @@ contract uTokenFactory is Ownable{
         return true;
     }
 
+
+    function setPassword(string memory _password) external {
+        require(!(_isPasswordSet[msg.sender]), "Factory: Password already set");
+        _passwordOf[msg.sender] = keccak256(bytes(_password));
+        _isPasswordSet[msg.sender] = true;
+    }
+
+    function setRecoveryNumber(string memory _recoveryNumber) external {
+        require(!(_isRecoveryNumberSet[msg.sender]), "Factory: Recovery Number already set");
+        _recoveryNumberOf[msg.sender] = keccak256(bytes(_recoveryNumber));
+        _isRecoveryNumberSet[msg.sender] = true;
+    }
+
+    function changePassword(string memory _recoveryNumber, string memory _password) external {
+        require(_recoveryNumberOf[msg.sender] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
+        _passwordOf[msg.sender] = keccak256(bytes(_password));
+    }
     
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
@@ -1321,4 +1353,19 @@ contract uTokenFactory is Ownable{
         return currencyOf_uToken[_uToken];
     }
 
+    function isPasswordCorrect(address _user, string memory _password) external view returns (bool) {
+        return (_passwordOf[_user] == keccak256(bytes(_password)));
+    }
+
+    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) external view returns (bool) {
+        return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
+    }
+
+    function isPasswordSet(address _user) external view returns (bool) {
+        return _isPasswordSet[_user];
+    }
+
+    function isRecoveryNumberSet(address _user) external view returns (bool) {
+        return _isRecoveryNumberSet[_user];
+    }
 }
