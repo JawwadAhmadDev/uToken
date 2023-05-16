@@ -15,17 +15,34 @@ contract uTokenFactory is Ownable{
     
     // uToken -> Token Address (against which contract is deployed)
     mapping (address => address) private tokenAdressOf_uToken;
-    mapping (address => EnumerableSet.AddressSet) internal investeduTokensOf;
+    mapping (address => string) private currencyOf_uToken;
+    // token -> uToken
+    mapping (address => address) private uTokenAddressOf_token;
+    // investorAddress -> All uTokens addresses invested in
+    mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
+
+    // mappings to store password and randomly generated phrase against user.
+    mapping (address => bytes32) private _passwordOf;
+    mapping (address => bool) private _isPasswordSet;
+    mapping (address => bytes32) private _recoveryNumberOf;
+    mapping (address => bool) private _isRecoveryNumberSet;
+
+
     address public deployedAddressOfEth;
 
-    EnumerableSet.AddressSet private allowedTokens;
-    uint256 private _salt;
-
+    EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
+    EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+    uint256 private _salt; // to handle create2 opcode.
+    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 269
+    
+    uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
+    address public fundAddress; // address which will receive all fees
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
 
-    constructor (address[] memory _allowedTokens) {
+    constructor (address _fundAddress, address[] memory _allowedTokens) {
+        fundAddress = _fundAddress;
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
     }
@@ -58,9 +75,13 @@ contract uTokenFactory is Ownable{
         for(uint i; i < _allowedTokens.length; i++) {
             address _token = _allowedTokens[i];
             require(_token.isContract(), "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS");
+            require(!(allowedTokens.contains(_token)), "Factory: Already added");
             address _deployedAddress = _deployToken(_token);
             tokenAdressOf_uToken[_deployedAddress] = _token;
-            allowedTokens.add(_deployedAddress);
+            uTokenAddressOf_token[_token] = _deployedAddress;
+            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress).currency();
+            allowedTokens.add(_token);
+            uTokensOfAllowedTokens.add(_deployedAddress);
         }
     }
 
@@ -68,21 +89,33 @@ contract uTokenFactory is Ownable{
         _addAllowedTokens(_allowedTokens);
     }
 
-    function deposit(address _uTokenAddress, uint256 _amount) external payable {
+    function deposit(string memory _password, address _uTokenAddress, uint256 _amount) external payable {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: invalid amount");
-        
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
+        uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
+        uint256 _remaining = _amount.sub(_depositFee);
+
         if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
+            payable(fundAddress).transfer(_depositFee);
         } else {
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(msg.sender, address(this), _amount), "Factory: TransferFrom failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
         }
-        require(IuToken(_uTokenAddress).deposit(_amount), "Factory: deposit failed");
+        
+        require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
         if(!(investeduTokensOf[msg.sender].contains(_uTokenAddress))) investeduTokensOf[msg.sender].add(_uTokenAddress);
 
-        emit Deposit(msg.sender, _uTokenAddress, _amount);
+        emit Deposit(msg.sender, _uTokenAddress, _remaining);
     }
 
-    function withdraw(address _uTokenAddress, uint256 _amount) external {
+
+    function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         uint256 balance = IuToken(_uTokenAddress).balanceOf(msg.sender);
         require(_amount > 0, "Factory: invalid amount");
         require(balance >= _amount, "Factory: Not enought tokens");
@@ -101,33 +134,82 @@ contract uTokenFactory is Ownable{
     }
 
 
-    function transfer(address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+    function transfer(string memory _password, address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
+        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: Invalid amount");
-        require(allowedTokens.contains(_uTokenAddress) || _uTokenAddress == deployedAddressOfEth, "Factory: Invalid uToken Address");
+        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
 
         require(IuToken(_uTokenAddress).transfer(_to, _amount), "Factory, transfer failed");
         investeduTokensOf[_to].add(_uTokenAddress);
         return true;
     }
 
+
+    function setPassword(string memory _password) external {
+        require(!(_isPasswordSet[msg.sender]), "Factory: Password already set");
+        _passwordOf[msg.sender] = keccak256(bytes(_password));
+        _isPasswordSet[msg.sender] = true;
+    }
+
+    function setRecoveryNumber(string memory _recoveryNumber) external {
+        require(!(_isRecoveryNumberSet[msg.sender]), "Factory: Recovery Number already set");
+        _recoveryNumberOf[msg.sender] = keccak256(bytes(_recoveryNumber));
+        _isRecoveryNumberSet[msg.sender] = true;
+    }
+
+    function changePassword(string memory _recoveryNumber, string memory _password) external {
+        require(_recoveryNumberOf[msg.sender] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
+        _passwordOf[msg.sender] = keccak256(bytes(_password));
+    }
     
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
-    function getAllowedTokens() external view returns (address[] memory){
+    function all_AllowedTokens() external view returns (address[] memory){
         return allowedTokens.values();
     }
 
-    function getAllowedTokensCount() external view returns (uint256) {
+    function all_AllowedTokensCount() external view returns (uint256) {
         return allowedTokens.length();
     }
 
-    function getTokenAddressOfuToken(address _uToken) external view returns (address) {
+    function all_uTokensOfAllowedTokens() external view returns (address[] memory){
+        return uTokensOfAllowedTokens.values();
+    }
+
+    function all_uTokensOfAllowedTokensCount() external view returns (uint256) {
+        return uTokensOfAllowedTokens.length();
+    }
+
+    function get_TokenAddressOfuToken(address _uToken) external view returns (address) {
         return tokenAdressOf_uToken[_uToken];
     }
 
+    function get_uTokenAddressOfToken(address _token) external view returns (address) {
+        return uTokenAddressOf_token[_token];
+    }
 
-    function getInvested_uTokensOf(address _investor) external view returns (address[] memory investeduTokens) {
+    function getInvested_uTokensOfUser(address _investor) external view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
+    function get_CurrencyOfuToken(address _uToken) external view returns (string memory currency) {
+        return currencyOf_uToken[_uToken];
+    }
+
+    function isPasswordCorrect(address _user, string memory _password) external view returns (bool) {
+        return (_passwordOf[_user] == keccak256(bytes(_password)));
+    }
+
+    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) external view returns (bool) {
+        return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
+    }
+
+    function isPasswordSet(address _user) external view returns (bool) {
+        return _isPasswordSet[_user];
+    }
+
+    function isRecoveryNumberSet(address _user) external view returns (bool) {
+        return _isRecoveryNumberSet[_user];
+    }
 }
