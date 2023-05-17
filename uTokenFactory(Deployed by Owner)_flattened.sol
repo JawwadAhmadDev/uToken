@@ -1302,17 +1302,14 @@ contract uTokenFactory is Ownable{
     }
 
 
-    function setPassword(string memory _password) external {
-        require(!(_isPasswordSet[msg.sender]), "Factory: Password already set");
+    function setPasswordAndRecoveryNumber(string memory _password, string memory _recoveryNumber) external {
+        require((!(_isPasswordSet[msg.sender]) && !(_isRecoveryNumberSet[msg.sender])), "Factory: Already set");
         _passwordOf[msg.sender] = keccak256(bytes(_password));
-        _isPasswordSet[msg.sender] = true;
-    }
-
-    function setRecoveryNumber(string memory _recoveryNumber) external {
-        require(!(_isRecoveryNumberSet[msg.sender]), "Factory: Recovery Number already set");
         _recoveryNumberOf[msg.sender] = keccak256(bytes(_recoveryNumber));
+        _isPasswordSet[msg.sender] = true;
         _isRecoveryNumberSet[msg.sender] = true;
     }
+
 
     function changePassword(string memory _recoveryNumber, string memory _password) external {
         require(_recoveryNumberOf[msg.sender] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
