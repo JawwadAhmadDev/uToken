@@ -1246,8 +1246,9 @@ contract uTokenFactory is Ownable{
     }
 
     function deposit(string memory _password, address _uTokenAddress, uint256 _amount) external payable {
-        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
-        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        address depositor = msg.sender;
+        require(_isPasswordSet[depositor], "Factory: Password not set yet.");
+        require(_passwordOf[depositor] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: invalid amount");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
         uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
@@ -1257,42 +1258,44 @@ contract uTokenFactory is Ownable{
             require(msg.value > 0, "Factory: invalid Ether");
             payable(fundAddress).transfer(_depositFee);
         } else {
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(msg.sender, address(this), _amount), "Factory: TransferFrom failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(depositor, address(this), _amount), "Factory: TransferFrom failed");
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
         }
         
         require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
-        if(!(investeduTokensOf[msg.sender].contains(_uTokenAddress))) investeduTokensOf[msg.sender].add(_uTokenAddress);
+        if(!(investeduTokensOf[depositor].contains(_uTokenAddress))) investeduTokensOf[depositor].add(_uTokenAddress);
 
-        emit Deposit(msg.sender, _uTokenAddress, _remaining);
+        emit Deposit(depositor, _uTokenAddress, _remaining);
     }
 
 
     function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
-        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
-        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        address withdrawer = msg.sender;
+        require(_isPasswordSet[withdrawer], "Factory: Password not set yet.");
+        require(_passwordOf[withdrawer] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
-        uint256 balance = IuToken(_uTokenAddress).balanceOf(msg.sender);
+        uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "Factory: invalid amount");
         require(balance >= _amount, "Factory: Not enought tokens");
 
         require(IuToken(_uTokenAddress).withdraw(_amount), "Factory: withdraw failed");
         
         if(_uTokenAddress == deployedAddressOfEth) {
-            payable(msg.sender).transfer(_amount);
+            payable(withdrawer).transfer(_amount);
         } else {
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(msg.sender, _amount), "Factory: transfer failed");
+            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(withdrawer, _amount), "Factory: transfer failed");
         }
 
-        if(balance.sub(_amount) == 0) investeduTokensOf[msg.sender].remove(_uTokenAddress);
+        if(balance.sub(_amount) == 0) investeduTokensOf[withdrawer].remove(_uTokenAddress);
 
-        emit Withdraw(msg.sender, _uTokenAddress, _amount);
+        emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
 
 
     function transfer(string memory _password, address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
-        require(_isPasswordSet[msg.sender], "Factory: Password not set yet.");
-        require(_passwordOf[msg.sender] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        address caller = msg.sender;
+        require(_isPasswordSet[caller], "Factory: Password not set yet.");
+        require(_passwordOf[caller] == keccak256(bytes(_password)), "Factory: Password incorrect");
         require(_amount > 0, "Factory: Invalid amount");
         require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
 
@@ -1303,18 +1306,21 @@ contract uTokenFactory is Ownable{
 
 
     function setPasswordAndRecoveryNumber(string memory _password, string memory _recoveryNumber) external {
-        require((!(_isPasswordSet[msg.sender]) && !(_isRecoveryNumberSet[msg.sender])), "Factory: Already set");
-        _passwordOf[msg.sender] = keccak256(bytes(_password));
-        _recoveryNumberOf[msg.sender] = keccak256(bytes(_recoveryNumber));
-        _isPasswordSet[msg.sender] = true;
-        _isRecoveryNumberSet[msg.sender] = true;
+        address caller = msg.sender;
+        require((!(_isPasswordSet[caller]) && !(_isRecoveryNumberSet[caller])), "Factory: Already set");
+        _passwordOf[caller] = keccak256(bytes(_password));
+        _recoveryNumberOf[caller] = keccak256(bytes(_recoveryNumber));
+        _isPasswordSet[caller] = true;
+        _isRecoveryNumberSet[caller] = true;
     }
 
 
     function changePassword(string memory _recoveryNumber, string memory _password) external {
-        require(_recoveryNumberOf[msg.sender] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
-        _passwordOf[msg.sender] = keccak256(bytes(_password));
+        address caller = msg.sender;
+        require(_recoveryNumberOf[caller] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
+        _passwordOf[caller] = keccak256(bytes(_password));
     }
+    
     
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
