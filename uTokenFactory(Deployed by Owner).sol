@@ -28,21 +28,36 @@ contract uTokenFactory is Ownable{
     mapping (address => bool) private _isRecoveryNumberSet;
 
 
+    // tokens addresses.
     address public deployedAddressOfEth;
-
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
     EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+
+    // salt for create2 opcode.
     uint256 private _salt; // to handle create2 opcode.
-    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 269
+
+    // fee detial
+    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    uint256 public percentOfFundAddresses = 32_000; // 32 * 1000 = 32000% of 0.369% of the deposited amount. This will be used for both (fund and charity addresses)
+    uint256 public percentOfCharityAddress = 36_000; // 36 * 1000 = 36000% of 0.369% of the deposited amount.
     
+    // time periods for reward
+    uint256 public timeLimitForReward = 15 days;
+    uint256 public timeLimitForRewardCollection = 3 days;
+
+    
+    // zoom to handle percentage in the decimals
     uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
-    address public fundAddress; // address which will receive all fees
+
+    // fee receiver addresses.
+    address public fundAddress = 0x30bE52275C572188903C45ecDD3Ed68784aDe067; // address which will receive all fees
+    address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
+
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
 
-    constructor (address _fundAddress, address[] memory _allowedTokens) {
-        fundAddress = _fundAddress;
+    constructor (address[] memory _allowedTokens) {
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
     }
@@ -100,16 +115,35 @@ contract uTokenFactory is Ownable{
 
         if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
-            payable(fundAddress).transfer(_depositFee);
+            // payable(fundAddress).transfer(_depositFee);
+            _handleFeeEth(_depositFee);
         } else {
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(depositor, address(this), _amount), "Factory: TransferFrom failed");
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            _handleFeeTokens(IERC20(tokenAdressOf_uToken[_uTokenAddress]), _depositFee);
         }
         
         require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
         if(!(investeduTokensOf[depositor].contains(_uTokenAddress))) investeduTokensOf[depositor].add(_uTokenAddress);
 
         emit Deposit(depositor, _uTokenAddress, _remaining);
+    }
+
+    function _handleFeeEth(uint256 _depositFee) internal {
+        uint256 _feeOfFundAddresses = _depositFee.mul(percentOfFundAddresses).div(ZOOM);
+        uint256 _feeOfCharityAddress = _depositFee.mul(percentOfCharityAddress).div(ZOOM);
+
+        payable(fundAddress).transfer(_feeOfFundAddresses);
+        payable(charityAddress).transfer(_feeOfCharityAddress);
+        // remaining 32% of deposited fee will be in the contract address for reward.
+    }
+    function _handleFeeTokens(IERC20 _tokenAddress, uint256 _depositFee) internal {
+        uint256 _feeOfFundAddresses = _depositFee.mul(percentOfFundAddresses).div(ZOOM);
+        uint256 _feeOfCharityAddress = _depositFee.mul(percentOfCharityAddress).div(ZOOM);
+
+        _tokenAddress.transfer(fundAddress, _feeOfFundAddresses);
+        _tokenAddress.transfer(charityAddress, _feeOfCharityAddress);
+        // remaining 32% of deposited fee will be in the contract address reward.
     }
 
 
