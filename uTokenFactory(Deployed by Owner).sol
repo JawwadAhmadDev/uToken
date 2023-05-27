@@ -21,11 +21,21 @@ contract uTokenFactory is Ownable{
     // investorAddress -> All uTokens addresses invested in
     mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
 
+    // (period count i.e. how much 15 days passed) => depositors addresses.
+    mapping (uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
+    // (period count i.e. how much 15 days passed) => depositedTokens address
+    mapping (uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
+    // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
+    mapping (uint256 => uint256) private ethInPeriod;
+    // (period count) => tokenAddress => totalInvestedAmount
+    mapping (uint256 => mapping (address => uint)) private rewardAmountOfTokenForPeriod;
+
     // mappings to store password and randomly generated phrase against user.
     mapping (address => bytes32) private _passwordOf;
     mapping (address => bool) private _isPasswordSet;
     mapping (address => bytes32) private _recoveryNumberOf;
     mapping (address => bool) private _isRecoveryNumberSet;
+
 
 
     // tokens addresses.
@@ -36,16 +46,21 @@ contract uTokenFactory is Ownable{
     // salt for create2 opcode.
     uint256 private _salt; // to handle create2 opcode.
 
+    // previous fee
+    uint256 public pendingFee;
+
     // fee detial
     uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public percentOfFundAddresses = 32_000; // 32 * 1000 = 32000% of 0.369% of the deposited amount. This will be used for both (fund and charity addresses)
-    uint256 public percentOfCharityAddress = 36_000; // 36 * 1000 = 36000% of 0.369% of the deposited amount.
-    
-    // time periods for reward
-    uint256 public timeLimitForReward = 15 days;
-    uint256 public timeLimitForRewardCollection = 3 days;
+    uint256 public percentOfCharityAndWinner = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
+    uint256 public percentOfFundAddress = 40_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
-    
+
+    // time periods for reward
+    uint256 public timeLimitForReward = 30;
+    uint256 public timeLimitForRewardCollection = 3 days;
+    uint256 public deployTime;
+
+
     // zoom to handle percentage in the decimals
     uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
 
@@ -53,11 +68,11 @@ contract uTokenFactory is Ownable{
     address public fundAddress = 0x30bE52275C572188903C45ecDD3Ed68784aDe067; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
 
-
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
 
     constructor (address[] memory _allowedTokens) {
+        deployTime = block.timestamp;
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
     }
@@ -120,7 +135,7 @@ contract uTokenFactory is Ownable{
         } else {
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(depositor, address(this), _amount), "Factory: TransferFrom failed");
             // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
-            _handleFeeTokens(IERC20(tokenAdressOf_uToken[_uTokenAddress]), _depositFee);
+            _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         }
         
         require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
@@ -130,19 +145,41 @@ contract uTokenFactory is Ownable{
     }
 
     function _handleFeeEth(uint256 _depositFee) internal {
-        uint256 _feeOfFundAddresses = _depositFee.mul(percentOfFundAddresses).div(ZOOM);
-        uint256 _feeOfCharityAddress = _depositFee.mul(percentOfCharityAddress).div(ZOOM);
+        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
+        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = _depositFee - (shareOfWinnerAddress + shareOfCharityAddress); // it will receive remaining 40% percent
 
-        payable(fundAddress).transfer(_feeOfFundAddresses);
-        payable(charityAddress).transfer(_feeOfCharityAddress);
+        payable(charityAddress).transfer(shareOfCharityAddress);
+        payable(fundAddress).transfer(shareOfFundAddress);
+
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+
+        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+        }
+
+        ethInPeriod[currentTimePeriodCount] = ethInPeriod[currentTimePeriodCount].add(shareOfWinnerAddress); 
+
         // remaining 32% of deposited fee will be in the contract address for reward.
     }
-    function _handleFeeTokens(IERC20 _tokenAddress, uint256 _depositFee) internal {
-        uint256 _feeOfFundAddresses = _depositFee.mul(percentOfFundAddresses).div(ZOOM);
-        uint256 _feeOfCharityAddress = _depositFee.mul(percentOfCharityAddress).div(ZOOM);
+    function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
+        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
+        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = _depositFee.sub(shareOfWinnerAddress.add(shareOfCharityAddress)); // it will receive remaining 40% percent
 
-        _tokenAddress.transfer(fundAddress, _feeOfFundAddresses);
-        _tokenAddress.transfer(charityAddress, _feeOfCharityAddress);
+        IERC20(_tokenAddress).transfer(charityAddress, shareOfCharityAddress);
+        IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
+
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+
+        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+        }
+        if(!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))){
+
+            tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
+        }
+        rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress].add(shareOfWinnerAddress);
         // remaining 32% of deposited fee will be in the contract address reward.
     }
 
@@ -200,6 +237,25 @@ contract uTokenFactory is Ownable{
     }
     
     
+    // function to change fund address. Only owner is authroized
+    function changeFundAddress(address _fundAddress) external onlyOwner {
+        fundAddress = _fundAddress;
+    }
+    // function to change charity address. only owner is authroized.
+    function changeCharityAddress(address _charityAddress) external onlyOwner {
+        charityAddress = _charityAddress;
+    }
+
+
+    // function to change time limit for reward. only onwer is authorized.
+    function changeTimeLimitForReward(uint256 _time) external onlyOwner {
+        timeLimitForReward = _time;
+    }
+    // function to change time limit for reward collection. only owner is authorized.
+    function changeTimeLimitForRewardCollection(uint256 _time) external onlyOwner {
+        timeLimitForRewardCollection = _time;
+    }
+
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
     function all_AllowedTokens() external view returns (address[] memory){
@@ -248,5 +304,29 @@ contract uTokenFactory is Ownable{
 
     function isRecoveryNumberSet(address _user) external view returns (bool) {
         return _isRecoveryNumberSet[_user];
+    }
+
+    function get_TokensDepositedInPeriod(uint256 _period) external view returns (address[] memory tokens){
+        return tokensInPeriod[_period].values();
+    }
+
+    function get_TokensDepositedInPeriodCount(uint256 _period) external view returns (uint256){
+        return tokensInPeriod[_period].length();
+    }
+
+    function get_DepositorsInPeriod(uint256 _period) external view returns (address[] memory depositors) {
+        return depositorsInPeriod[_period].values();
+    }
+
+    function get_DepositorsInPeriodCount(uint256 _period) external view returns (uint) {
+        return depositorsInPeriod[_period].length();
+    }
+
+    function get_ETHInPeriod(uint256 _period) external view returns (uint256) {
+        return ethInPeriod[_period];
+    }
+
+    function get_rewardAmountOfTokenInPeriod(uint256 _period, address _token) external view returns (uint256) {
+        return rewardAmountOfTokenForPeriod[_period][_token];
     }
 }
