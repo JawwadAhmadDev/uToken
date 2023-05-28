@@ -29,13 +29,14 @@ contract uTokenFactory is Ownable{
     mapping (uint256 => uint256) private ethInPeriod;
     // (period count) => tokenAddress => totalInvestedAmount
     mapping (uint256 => mapping (address => uint)) private rewardAmountOfTokenForPeriod;
+    // (period count) => boolean
+    mapping (uint256 => bool) private isRewardCollectedOfPeriod;
 
     // mappings to store password and randomly generated phrase against user.
     mapping (address => bytes32) private _passwordOf;
     mapping (address => bool) private _isPasswordSet;
     mapping (address => bytes32) private _recoveryNumberOf;
     mapping (address => bool) private _isRecoveryNumberSet;
-
 
 
     // tokens addresses.
@@ -70,6 +71,7 @@ contract uTokenFactory is Ownable{
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
+    event Reward(address rewardCollector, uint256 period);
 
     constructor (address[] memory _allowedTokens) {
         deployTime = block.timestamp;
@@ -256,77 +258,126 @@ contract uTokenFactory is Ownable{
         timeLimitForRewardCollection = _time;
     }
 
+    // function to withdrawReward for winner
+    function withdrawReward() external {
+        require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
+
+        // check whether user is coming within time limit
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
+        require(previousTimePeriod > 0, "Can't collect reward yet");
+        uint256 startPointOfLimit = previousTimePeriod.mul(timeLimitForReward);
+        uint256 endPointOfLimit = startPointOfLimit.add(timeLimitForRewardCollection);
+        require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded0");
+
+        uint256 period = previousTimePeriod;
+        while(!(isRewardCollectedOfPeriod[period])){
+            uint256 _ethInPeriod = get_ETHInPeriod(period);
+            // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
+            if(_ethInPeriod > 0){
+                payable(msg.sender).transfer(_ethInPeriod);
+            }
+
+            address[] memory _tokens = get_TokensDepositedInPeriod(period);
+            uint256 _tokensCount = _tokens.length;
+            if(_tokensCount > 0){
+                for(uint i; i < _tokensCount; i++){
+                    address _token = _tokens[i];
+                    IERC20(_token).transfer(msg.sender, get_rewardAmountOfTokenInPeriod(period, _token));
+                }
+            }
+
+            isRewardCollectedOfPeriod[period] = true;
+            emit Reward(msg.sender, period);
+
+            if(period != 1) break;
+            period--;
+        }
+    }
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
-    function all_AllowedTokens() external view returns (address[] memory){
+    function all_AllowedTokens() public view returns (address[] memory){
         return allowedTokens.values();
     }
 
-    function all_AllowedTokensCount() external view returns (uint256) {
+    function all_AllowedTokensCount() public view returns (uint256) {
         return allowedTokens.length();
     }
 
-    function all_uTokensOfAllowedTokens() external view returns (address[] memory){
+    function all_uTokensOfAllowedTokens() public view returns (address[] memory){
         return uTokensOfAllowedTokens.values();
     }
 
-    function all_uTokensOfAllowedTokensCount() external view returns (uint256) {
+    function all_uTokensOfAllowedTokensCount() public view returns (uint256) {
         return uTokensOfAllowedTokens.length();
     }
 
-    function get_TokenAddressOfuToken(address _uToken) external view returns (address) {
+    function get_TokenAddressOfuToken(address _uToken) public view returns (address) {
         return tokenAdressOf_uToken[_uToken];
     }
 
-    function get_uTokenAddressOfToken(address _token) external view returns (address) {
+    function get_uTokenAddressOfToken(address _token) public view returns (address) {
         return uTokenAddressOf_token[_token];
     }
 
-    function getInvested_uTokensOfUser(address _investor) external view returns (address[] memory investeduTokens) {
+    function getInvested_uTokensOfUser(address _investor) public view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
-    function get_CurrencyOfuToken(address _uToken) external view returns (string memory currency) {
+    function get_CurrencyOfuToken(address _uToken) public view returns (string memory currency) {
         return currencyOf_uToken[_uToken];
     }
 
-    function isPasswordCorrect(address _user, string memory _password) external view returns (bool) {
+    function isPasswordCorrect(address _user, string memory _password) public view returns (bool) {
         return (_passwordOf[_user] == keccak256(bytes(_password)));
     }
 
-    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) external view returns (bool) {
+    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) public view returns (bool) {
         return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
     }
 
-    function isPasswordSet(address _user) external view returns (bool) {
+    function isPasswordSet(address _user) public view returns (bool) {
         return _isPasswordSet[_user];
     }
 
-    function isRecoveryNumberSet(address _user) external view returns (bool) {
+    function isRecoveryNumberSet(address _user) public view returns (bool) {
         return _isRecoveryNumberSet[_user];
     }
 
-    function get_TokensDepositedInPeriod(uint256 _period) external view returns (address[] memory tokens){
+    function get_TokensDepositedInPeriod(uint256 _period) public view returns (address[] memory tokens){
         return tokensInPeriod[_period].values();
     }
 
-    function get_TokensDepositedInPeriodCount(uint256 _period) external view returns (uint256){
+    function get_TokensDepositedInPeriodCount(uint256 _period) public view returns (uint256){
         return tokensInPeriod[_period].length();
     }
 
-    function get_DepositorsInPeriod(uint256 _period) external view returns (address[] memory depositors) {
+    function get_DepositorsInPeriod(uint256 _period) public view returns (address[] memory depositors) {
         return depositorsInPeriod[_period].values();
     }
 
-    function get_DepositorsInPeriodCount(uint256 _period) external view returns (uint) {
+    function get_DepositorsInPeriodCount(uint256 _period) public view returns (uint) {
         return depositorsInPeriod[_period].length();
     }
 
-    function get_ETHInPeriod(uint256 _period) external view returns (uint256) {
+    function get_ETHInPeriod(uint256 _period) public view returns (uint256) {
         return ethInPeriod[_period];
     }
 
-    function get_rewardAmountOfTokenInPeriod(uint256 _period, address _token) external view returns (uint256) {
+    function get_rewardAmountOfTokenInPeriod(uint256 _period, address _token) public view returns (uint256) {
         return rewardAmountOfTokenForPeriod[_period][_token];
+    }
+
+
+    function get_currentWinner() public view returns (address) {
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
+
+        address[] memory depositors = get_DepositorsInPeriod(previousTimePeriod);
+        uint256 depositorsLength = get_DepositorsInPeriodCount(previousTimePeriod);
+
+        if(depositorsLength == 0) return address(0);
+
+        uint randomNumber = uint(keccak256(abi.encodePacked(previousTimePeriod, deployTime))) % depositorsLength;
+
+        return depositors[randomNumber];
     }
 }
