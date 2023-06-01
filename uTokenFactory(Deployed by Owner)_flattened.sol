@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: MIT
+
+// File: uToken.sol
+
+
 pragma solidity ^0.8.18;
+
 interface IuToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -20,6 +24,7 @@ interface IuToken {
     function withdraw(uint256 _amount) external returns(bool);
     function currency() external view returns (string memory);
 }
+
 
 contract uToken is IuToken {
     mapping(address => uint256) private _balances;
@@ -210,6 +215,12 @@ contract uToken is IuToken {
 }
 
 
+
+// File: IERC20.sol
+
+
+pragma solidity ^0.8.18;
+
 interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -225,6 +236,12 @@ interface IERC20 {
     function transfer(address to, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
+// File: @openzeppelin/contracts/utils/Address.sol
+
+
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/Address.sol)
+
+pragma solidity ^0.8.1;
 
 /**
  * @dev Collection of functions related to the address type
@@ -245,6 +262,10 @@ library Address {
      *  - a contract in construction
      *  - an address where a contract will be created
      *  - an address where a contract lived, but was destroyed
+     *
+     * Furthermore, `isContract` will also return true if the target contract within
+     * the same transaction is already scheduled for destruction by `SELFDESTRUCT`,
+     * which only has an effect at the end of a transaction.
      * ====
      *
      * [IMPORTANT]
@@ -273,12 +294,12 @@ library Address {
      * imposed by `transfer`, making them unable to receive funds via
      * `transfer`. {sendValue} removes this limitation.
      *
-     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     * https://consensys.net/diligence/blog/2019/09/stop-using-soliditys-transfer-now/[Learn more].
      *
      * IMPORTANT: because control is transferred to `recipient`, care must be
      * taken to not create reentrancy vulnerabilities. Consider using
      * {ReentrancyGuard} or the
-     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     * https://solidity.readthedocs.io/en/v0.8.0/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
@@ -334,11 +355,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(
-        address target,
-        bytes memory data,
-        uint256 value
-    ) internal returns (bytes memory) {
+    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
         return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
@@ -466,6 +483,12 @@ library Address {
     }
 }
 
+// File: @openzeppelin/contracts/utils/Context.sol
+
+
+// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Provides information about the current execution context, including the
@@ -487,6 +510,12 @@ abstract contract Context {
     }
 }
 
+// File: @openzeppelin/contracts/access/Ownable.sol
+
+
+// OpenZeppelin Contracts (last updated v4.9.0) (access/Ownable.sol)
+
+pragma solidity ^0.8.0;
 
 
 /**
@@ -537,10 +566,10 @@ abstract contract Ownable is Context {
 
     /**
      * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     * `onlyOwner` functions. Can only be called by the current owner.
      *
      * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
+     * thereby disabling any functionality that is only available to the owner.
      */
     function renounceOwnership() public virtual onlyOwner {
         _transferOwnership(address(0));
@@ -566,6 +595,12 @@ abstract contract Ownable is Context {
     }
 }
 
+// File: @openzeppelin/contracts/utils/math/SafeMath.sol
+
+
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/math/SafeMath.sol)
+
+pragma solidity ^0.8.0;
 
 // CAUTION
 // This version of SafeMath should only be used with Solidity 0.8 or later,
@@ -729,11 +764,7 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         unchecked {
             require(b <= a, errorMessage);
             return a - b;
@@ -752,11 +783,7 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         unchecked {
             require(b > 0, errorMessage);
             return a / b;
@@ -778,11 +805,7 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         unchecked {
             require(b > 0, errorMessage);
             return a % b;
@@ -790,6 +813,13 @@ library SafeMath {
     }
 }
 
+// File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
+
+
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/structs/EnumerableSet.sol)
+// This file was procedurally generated from scripts/generate/templates/EnumerableSet.js.
+
+pragma solidity ^0.8.0;
 
 /**
  * @dev Library for managing
@@ -802,7 +832,7 @@ library SafeMath {
  * (O(1)).
  * - Elements are enumerated in O(n). No guarantees are made on the ordering.
  *
- * ```
+ * ```solidity
  * contract Example {
  *     // Add the library methods
  *     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1164,6 +1194,17 @@ library EnumerableSet {
     }
 }
 
+// File: uTokenFactory(Deployed by Owner).sol
+
+
+pragma solidity ^0.8.18;
+
+
+
+
+
+
+
 contract uTokenFactory is Ownable{
     using SafeMath for uint256;
     using Address for address;
@@ -1177,6 +1218,17 @@ contract uTokenFactory is Ownable{
     // investorAddress -> All uTokens addresses invested in
     mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
 
+    // (period count i.e. how much 15 days passed) => depositors addresses.
+    mapping (uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
+    // (period count i.e. how much 15 days passed) => depositedTokens address
+    mapping (uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
+    // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
+    mapping (uint256 => uint256) private ethInPeriod;
+    // (period count) => tokenAddress => totalInvestedAmount
+    mapping (uint256 => mapping (address => uint)) private rewardAmountOfTokenForPeriod;
+    // (period count) => boolean
+    mapping (uint256 => bool) private isRewardCollectedOfPeriod;
+
     // mappings to store password and randomly generated phrase against user.
     mapping (address => bytes32) private _passwordOf;
     mapping (address => bool) private _isPasswordSet;
@@ -1184,21 +1236,42 @@ contract uTokenFactory is Ownable{
     mapping (address => bool) private _isRecoveryNumberSet;
 
 
+    // tokens addresses.
     address public deployedAddressOfEth;
-
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
     EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+
+    // salt for create2 opcode.
     uint256 private _salt; // to handle create2 opcode.
-    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 269
-    
+
+    // previous fee
+    uint256 public pendingFee;
+
+    // fee detial
+    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    uint256 public percentOfCharityAndWinner = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
+    uint256 public percentOfFundAddress = 40_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
+
+
+    // time periods for reward
+    uint256 public timeLimitForReward = 10 minutes;
+    uint256 public timeLimitForRewardCollection = 2 minutes;
+    uint256 public deployTime;
+
+
+    // zoom to handle percentage in the decimals
     uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
-    address public fundAddress; // address which will receive all fees
+
+    // fee receiver addresses.
+    address public fundAddress = 0x30bE52275C572188903C45ecDD3Ed68784aDe067; // address which will receive all fees
+    address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
+    event Reward(address rewardCollector, uint256 period);
 
-    constructor (address _fundAddress, address[] memory _allowedTokens) {
-        fundAddress = _fundAddress;
+    constructor (address[] memory _allowedTokens) {
+        deployTime = block.timestamp;
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
     }
@@ -1256,16 +1329,57 @@ contract uTokenFactory is Ownable{
 
         if(_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
-            payable(fundAddress).transfer(_depositFee);
+            // payable(fundAddress).transfer(_depositFee);
+            _handleFeeEth(_depositFee);
         } else {
             require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(depositor, address(this), _amount), "Factory: TransferFrom failed");
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         }
         
         require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
         if(!(investeduTokensOf[depositor].contains(_uTokenAddress))) investeduTokensOf[depositor].add(_uTokenAddress);
 
         emit Deposit(depositor, _uTokenAddress, _remaining);
+    }
+
+    function _handleFeeEth(uint256 _depositFee) internal {
+        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
+        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = _depositFee - (shareOfWinnerAddress + shareOfCharityAddress); // it will receive remaining 40% percent
+
+        payable(charityAddress).transfer(shareOfCharityAddress);
+        payable(fundAddress).transfer(shareOfFundAddress);
+
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+
+        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+        }
+
+        ethInPeriod[currentTimePeriodCount] = ethInPeriod[currentTimePeriodCount].add(shareOfWinnerAddress); 
+
+        // remaining 32% of deposited fee will be in the contract address for reward.
+    }
+    function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
+        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
+        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = _depositFee.sub(shareOfWinnerAddress.add(shareOfCharityAddress)); // it will receive remaining 40% percent
+
+        IERC20(_tokenAddress).transfer(charityAddress, shareOfCharityAddress);
+        IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
+
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+
+        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+        }
+        if(!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))){
+
+            tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
+        }
+        rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress].add(shareOfWinnerAddress);
+        // remaining 32% of deposited fee will be in the contract address reward.
     }
 
 
@@ -1322,53 +1436,145 @@ contract uTokenFactory is Ownable{
     }
     
     
+    // function to change fund address. Only owner is authroized
+    function changeFundAddress(address _fundAddress) external onlyOwner {
+        fundAddress = _fundAddress;
+    }
+    // function to change charity address. only owner is authroized.
+    function changeCharityAddress(address _charityAddress) external onlyOwner {
+        charityAddress = _charityAddress;
+    }
+
+
+    // function to change time limit for reward. only onwer is authorized.
+    function changeTimeLimitForReward(uint256 _time) external onlyOwner {
+        timeLimitForReward = _time;
+    }
+    // function to change time limit for reward collection. only owner is authorized.
+    function changeTimeLimitForRewardCollection(uint256 _time) external onlyOwner {
+        timeLimitForRewardCollection = _time;
+    }
+
+    // function to withdrawReward for winner
+    function withdrawReward() external {
+        require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
+
+        // check whether user is coming within time limit
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
+        require(previousTimePeriod > 0, "Can't collect reward yet");
+        uint256 startPointOfLimit = previousTimePeriod.mul(timeLimitForReward);
+        uint256 endPointOfLimit = startPointOfLimit.add(timeLimitForRewardCollection);
+        require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded0");
+
+        uint256 period = previousTimePeriod;
+        while(!(isRewardCollectedOfPeriod[period])){
+            uint256 _ethInPeriod = get_ETHInPeriod(period);
+            // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
+            if(_ethInPeriod > 0){
+                payable(msg.sender).transfer(_ethInPeriod);
+            }
+
+            address[] memory _tokens = get_TokensDepositedInPeriod(period);
+            uint256 _tokensCount = _tokens.length;
+            if(_tokensCount > 0){
+                for(uint i; i < _tokensCount; i++){
+                    address _token = _tokens[i];
+                    IERC20(_token).transfer(msg.sender, get_rewardAmountOfTokenInPeriod(period, _token));
+                }
+            }
+
+            isRewardCollectedOfPeriod[period] = true;
+            emit Reward(msg.sender, period);
+
+            if(period != 1) break;
+            period--;
+        }
+    }
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
-    function all_AllowedTokens() external view returns (address[] memory){
+    function all_AllowedTokens() public view returns (address[] memory){
         return allowedTokens.values();
     }
 
-    function all_AllowedTokensCount() external view returns (uint256) {
+    function all_AllowedTokensCount() public view returns (uint256) {
         return allowedTokens.length();
     }
 
-    function all_uTokensOfAllowedTokens() external view returns (address[] memory){
+    function all_uTokensOfAllowedTokens() public view returns (address[] memory){
         return uTokensOfAllowedTokens.values();
     }
 
-    function all_uTokensOfAllowedTokensCount() external view returns (uint256) {
+    function all_uTokensOfAllowedTokensCount() public view returns (uint256) {
         return uTokensOfAllowedTokens.length();
     }
 
-    function get_TokenAddressOfuToken(address _uToken) external view returns (address) {
+    function get_TokenAddressOfuToken(address _uToken) public view returns (address) {
         return tokenAdressOf_uToken[_uToken];
     }
 
-    function get_uTokenAddressOfToken(address _token) external view returns (address) {
+    function get_uTokenAddressOfToken(address _token) public view returns (address) {
         return uTokenAddressOf_token[_token];
     }
 
-    function getInvested_uTokensOfUser(address _investor) external view returns (address[] memory investeduTokens) {
+    function getInvested_uTokensOfUser(address _investor) public view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
-    function get_CurrencyOfuToken(address _uToken) external view returns (string memory currency) {
+    function get_CurrencyOfuToken(address _uToken) public view returns (string memory currency) {
         return currencyOf_uToken[_uToken];
     }
 
-    function isPasswordCorrect(address _user, string memory _password) external view returns (bool) {
+    function isPasswordCorrect(address _user, string memory _password) public view returns (bool) {
         return (_passwordOf[_user] == keccak256(bytes(_password)));
     }
 
-    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) external view returns (bool) {
+    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) public view returns (bool) {
         return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
     }
 
-    function isPasswordSet(address _user) external view returns (bool) {
+    function isPasswordSet(address _user) public view returns (bool) {
         return _isPasswordSet[_user];
     }
 
-    function isRecoveryNumberSet(address _user) external view returns (bool) {
+    function isRecoveryNumberSet(address _user) public view returns (bool) {
         return _isRecoveryNumberSet[_user];
+    }
+
+    function get_TokensDepositedInPeriod(uint256 _period) public view returns (address[] memory tokens){
+        return tokensInPeriod[_period].values();
+    }
+
+    function get_TokensDepositedInPeriodCount(uint256 _period) public view returns (uint256){
+        return tokensInPeriod[_period].length();
+    }
+
+    function get_DepositorsInPeriod(uint256 _period) public view returns (address[] memory depositors) {
+        return depositorsInPeriod[_period].values();
+    }
+
+    function get_DepositorsInPeriodCount(uint256 _period) public view returns (uint) {
+        return depositorsInPeriod[_period].length();
+    }
+
+    function get_ETHInPeriod(uint256 _period) public view returns (uint256) {
+        return ethInPeriod[_period];
+    }
+
+    function get_rewardAmountOfTokenInPeriod(uint256 _period, address _token) public view returns (uint256) {
+        return rewardAmountOfTokenForPeriod[_period][_token];
+    }
+
+
+    function get_currentWinner() public view returns (address) {
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
+
+        address[] memory depositors = get_DepositorsInPeriod(previousTimePeriod);
+        uint256 depositorsLength = get_DepositorsInPeriodCount(previousTimePeriod);
+
+        if(depositorsLength == 0) return address(0);
+
+        uint randomNumber = uint(keccak256(abi.encodePacked(previousTimePeriod, deployTime))) % depositorsLength;
+
+        return depositors[randomNumber];
     }
 }
