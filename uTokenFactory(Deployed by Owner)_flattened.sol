@@ -1,3 +1,10 @@
+/**
+ *Submitted for verification at polygonscan.com on 2023-06-04
+*/
+
+/**
+ *Submitted for verification at polygonscan.com on 2023-06-02
+*/
 
 // File: uToken.sol
 
@@ -1254,7 +1261,7 @@ contract uTokenFactory is Ownable{
 
 
     // time periods for reward
-    uint256 public timeLimitForReward = 10 minutes;
+    uint256 public timeLimitForReward = 5 minutes;
     uint256 public timeLimitForRewardCollection = 2 minutes;
     uint256 public deployTime;
 
@@ -1460,13 +1467,11 @@ contract uTokenFactory is Ownable{
         require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
 
         // check whether user is coming within time limit
-        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
-        require(previousTimePeriod > 0, "Can't collect reward yet");
-        uint256 startPointOfLimit = previousTimePeriod.mul(timeLimitForReward);
-        uint256 endPointOfLimit = startPointOfLimit.add(timeLimitForRewardCollection);
+        uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
+        uint256 startPointOfLimit = endPointOfLimit.sub(timeLimitForRewardCollection);
         require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded0");
 
-        uint256 period = previousTimePeriod;
+        uint256 period = get_PreviousPeriod();
         while(!(isRewardCollectedOfPeriod[period])){
             uint256 _ethInPeriod = get_ETHInPeriod(period);
             // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
@@ -1564,6 +1569,31 @@ contract uTokenFactory is Ownable{
         return rewardAmountOfTokenForPeriod[_period][_token];
     }
 
+    function get_CurrentPeriod() public view returns (uint) {
+        return ((block.timestamp - deployTime) / timeLimitForReward) + 1; 
+    }
+
+    function get_PreviousPeriod() public view returns (uint) {
+        return ((block.timestamp - deployTime) / timeLimitForReward);
+    }
+
+    function get_CurrentPeriod_StartAndEndTime() public view returns (uint startTime, uint endTime) {
+        uint currentTimePeriod = get_CurrentPeriod();
+
+        if(currentTimePeriod == 1){
+            startTime = deployTime;
+            endTime = deployTime + timeLimitForReward;
+        }
+        else {
+            startTime = deployTime + (timeLimitForReward * (currentTimePeriod - 1)); 
+            endTime = timeLimitForReward + startTime;
+        }
+    }
+
+    function get_TimeLimitForWinnerForCurrentPeriod() public view returns (uint256 rewardTimeLimit){
+        (uint startTime,) = get_CurrentPeriod_StartAndEndTime();
+        rewardTimeLimit = startTime + timeLimitForRewardCollection;
+    }
 
     function get_currentWinner() public view returns (address) {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
