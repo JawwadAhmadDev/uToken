@@ -52,8 +52,8 @@ contract uTokenFactory is Ownable{
 
     // fee detial
     uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public percentOfCharityAndWinner = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
-    uint256 public percentOfFundAddress = 40_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
+    uint256 public percentOfCharityWinnerAndFundAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
+    uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
 
     // time periods for reward
@@ -66,8 +66,9 @@ contract uTokenFactory is Ownable{
     uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x30bE52275C572188903C45ecDD3Ed68784aDe067; // address which will receive all fees
+    address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7 ; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
+    address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d;
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
@@ -147,12 +148,15 @@ contract uTokenFactory is Ownable{
     }
 
     function _handleFeeEth(uint256 _depositFee) internal {
-        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
-        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
-        uint256 shareOfFundAddress = _depositFee - (shareOfWinnerAddress + shareOfCharityAddress); // it will receive remaining 40% percent
+        uint256 thirtyPercentShare = _depositFee.mul(percentOfCharityWinnerAndFundAddress).div(ZOOM);
+        uint256 shareOfWinnerAddress = thirtyPercentShare;
+        uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
         payable(charityAddress).transfer(shareOfCharityAddress);
         payable(fundAddress).transfer(shareOfFundAddress);
+        payable(forthAddress).transfer(shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
 
@@ -165,12 +169,15 @@ contract uTokenFactory is Ownable{
         // remaining 32% of deposited fee will be in the contract address for reward.
     }
     function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
-        uint256 shareOfWinnerAddress = _depositFee.mul(percentOfCharityAndWinner).div(ZOOM);
-        uint256 shareOfCharityAddress = shareOfWinnerAddress; // because winner and charity will receive same percentage.
-        uint256 shareOfFundAddress = _depositFee.sub(shareOfWinnerAddress.add(shareOfCharityAddress)); // it will receive remaining 40% percent
+        uint256 thirtyPercentShare = _depositFee.mul(percentOfCharityWinnerAndFundAddress).div(ZOOM);
+        uint256 shareOfWinnerAddress = thirtyPercentShare;
+        uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
         IERC20(_tokenAddress).transfer(charityAddress, shareOfCharityAddress);
         IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
+        IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
 

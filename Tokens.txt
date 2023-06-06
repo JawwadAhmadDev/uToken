@@ -7,11 +7,11 @@ Georli Testnet
 BUSD: 0x46bDfA43A94ea0B2c542Da00D5c26905FC302DA8
 USDT: 0xf4586d37576b44bFdee9a300A9a2648C3D25eE6B
 Parameters: ["0x46bDfA43A94ea0B2c542Da00D5c26905FC302DA8", "0xf4586d37576b44bFdee9a300A9a2648C3D25eE6B"]
-uTokenFactory: https://goerli.etherscan.io/address/0x4ba57b63d79884a8f2ba71a70064dc33d17d5829#code
-
+uTokenFactory: https://goerli.etherscan.io/address/0x5438b3a0a399ee1cdb0c3ddb85aa99f1fe0cb825#code
 
 Polygon Testnet (mumbai)
 BUSD: 0x60d875BB5061fB1cC068C588E78ddb86959b0840
 USDT: 0x34830a94FBF97c76A4867e8E867B867CC6462200
 Parameters: ["0x60d875BB5061fB1cC068C588E78ddb86959b0840", "0x34830a94FBF97c76A4867e8E867B867CC6462200"]
-uTokenFactory: https://mumbai.polygonscan.com/address/0x1d09ba751f0fc642370941503393348c02072192#code
+
+uTokenFactory: https://mumbai.polygonscan.com/address/0xfd722efc1f042ab234dcaa56501193c97df7b1d1#code
