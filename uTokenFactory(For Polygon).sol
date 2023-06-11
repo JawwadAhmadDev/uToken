@@ -31,6 +31,8 @@ contract uTokenFactory is Ownable{
     mapping (uint256 => mapping (address => uint)) private rewardAmountOfTokenForPeriod;
     // (period count) => boolean
     mapping (uint256 => bool) private isRewardCollectedOfPeriod;
+    // period count => boolean (to check that in which period some investment is made.
+    mapping (uint256 => bool) private isDepositedInPeriod;
 
     // mappings to store password and randomly generated phrase against user.
     mapping (address => bytes32) private _passwordOf;
@@ -57,8 +59,8 @@ contract uTokenFactory is Ownable{
 
 
     // time periods for reward
-    uint256 public timeLimitForReward = 5 minutes;
-    uint256 public timeLimitForRewardCollection = 2 minutes;
+    uint256 public timeLimitForReward = 20;
+    uint256 public timeLimitForRewardCollection = 10;
     uint256 public deployTime;
 
 
@@ -72,7 +74,7 @@ contract uTokenFactory is Ownable{
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
-    event Reward(address rewardCollector, uint256 period);
+    event Reward(address rewardCollector, uint256 period, uint256 ethAmount);
 
     constructor (address[] memory _allowedTokens) {
         deployTime = block.timestamp;
@@ -102,7 +104,6 @@ contract uTokenFactory is Ownable{
         }
         IuToken(deployedToken).initialize(name, symbol, currency);
     }
-
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
         for(uint i; i < _allowedTokens.length; i++) {
@@ -159,7 +160,9 @@ contract uTokenFactory is Ownable{
         payable(forthAddress).transfer(shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
-
+        if(!isDepositedInPeriod[currentTimePeriodCount])
+            isDepositedInPeriod[currentTimePeriodCount] = true;
+        
         if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
@@ -168,6 +171,7 @@ contract uTokenFactory is Ownable{
 
         // remaining 32% of deposited fee will be in the contract address for reward.
     }
+
     function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
         uint256 thirtyPercentShare = _depositFee.mul(percentOfCharityWinnerAndFundAddress).div(ZOOM);
         uint256 shareOfWinnerAddress = thirtyPercentShare;
@@ -180,6 +184,8 @@ contract uTokenFactory is Ownable{
         IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+        if(!isDepositedInPeriod[currentTimePeriodCount])
+            isDepositedInPeriod[currentTimePeriodCount] = true;
 
         if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
@@ -191,7 +197,6 @@ contract uTokenFactory is Ownable{
         rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress].add(shareOfWinnerAddress);
         // remaining 32% of deposited fee will be in the contract address reward.
     }
-
 
     function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
         address withdrawer = msg.sender;
@@ -215,7 +220,6 @@ contract uTokenFactory is Ownable{
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
 
-
     function transfer(string memory _password, address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
         address caller = msg.sender;
         require(_isPasswordSet[caller], "Factory: Password not set yet.");
@@ -228,7 +232,6 @@ contract uTokenFactory is Ownable{
         return true;
     }
 
-
     function setPasswordAndRecoveryNumber(string memory _password, string memory _recoveryNumber) external {
         address caller = msg.sender;
         require((!(_isPasswordSet[caller]) && !(_isRecoveryNumberSet[caller])), "Factory: Already set");
@@ -238,28 +241,27 @@ contract uTokenFactory is Ownable{
         _isRecoveryNumberSet[caller] = true;
     }
 
-
     function changePassword(string memory _recoveryNumber, string memory _password) external {
         address caller = msg.sender;
         require(_recoveryNumberOf[caller] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
         _passwordOf[caller] = keccak256(bytes(_password));
     }
     
-    
     // function to change fund address. Only owner is authroized
     function changeFundAddress(address _fundAddress) external onlyOwner {
         fundAddress = _fundAddress;
     }
+
     // function to change charity address. only owner is authroized.
     function changeCharityAddress(address _charityAddress) external onlyOwner {
         charityAddress = _charityAddress;
     }
 
-
     // function to change time limit for reward. only onwer is authorized.
     function changeTimeLimitForReward(uint256 _time) external onlyOwner {
         timeLimitForReward = _time;
     }
+
     // function to change time limit for reward collection. only owner is authorized.
     function changeTimeLimitForRewardCollection(uint256 _time) external onlyOwner {
         timeLimitForRewardCollection = _time;
@@ -272,10 +274,16 @@ contract uTokenFactory is Ownable{
         // check whether user is coming within time limit
         uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
         uint256 startPointOfLimit = endPointOfLimit.sub(timeLimitForRewardCollection);
-        require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded0");
+        require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded");
 
         uint256 period = get_PreviousPeriod();
         while(!(isRewardCollectedOfPeriod[period])){
+            if(!isDepositedInPeriod[period]) {
+                if(period == 1) break;
+                period--;
+                continue;
+            }
+
             uint256 _ethInPeriod = get_ETHInPeriod(period);
             // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
             if(_ethInPeriod > 0){
@@ -292,9 +300,9 @@ contract uTokenFactory is Ownable{
             }
 
             isRewardCollectedOfPeriod[period] = true;
-            emit Reward(msg.sender, period);
+            emit Reward(msg.sender, period, _ethInPeriod);
 
-            if(period != 1) break;
+            if(period == 1) break;
             period--;
         }
     }
@@ -346,6 +354,10 @@ contract uTokenFactory is Ownable{
 
     function isRecoveryNumberSet(address _user) public view returns (bool) {
         return _isRecoveryNumberSet[_user];
+    }
+
+    function IsDepositedInPeriod(uint256 _period) public view returns (bool) {
+        return isDepositedInPeriod[_period];
     }
 
     function get_TokensDepositedInPeriod(uint256 _period) public view returns (address[] memory tokens){
@@ -409,5 +421,58 @@ contract uTokenFactory is Ownable{
         uint randomNumber = uint(keccak256(abi.encodePacked(previousTimePeriod, deployTime))) % depositorsLength;
 
         return depositors[randomNumber];
+    }
+
+    function rewardHistoryForEth() public view returns (uint256 ethHistory) {
+        uint256 period = get_PreviousPeriod();
+        while(!isRewardCollectedOfPeriod[period]){
+            ethHistory += get_ETHInPeriod(period);
+            if(period == 0) break;
+            period--;
+        }
+    }
+
+    function IsRewardCollectedOfPeriod(uint256 _period) public view returns (bool) {
+        return isRewardCollectedOfPeriod[_period];
+    }
+
+    struct RewardAgainstToken {
+        address token;
+        uint amount;
+    }
+    
+    function rewardHistoryForTokensForPeriod(uint256 _period) public view returns (RewardAgainstToken[] memory record){
+        address[] memory _tokens = get_TokensDepositedInPeriod(_period);
+        uint256 _tokensCount = _tokens.length;
+        record = new RewardAgainstToken[](_tokensCount);
+        if(_tokensCount > 0){
+            for(uint i; i < _tokensCount; i++){
+                record[i] = RewardAgainstToken({token: _tokens[i], amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])});
+            }
+        }
+    }
+
+    function pendingPeriodsForReward() public view returns (uint[] memory pendingPeriods) {
+        uint256 period = get_PreviousPeriod();
+        uint[] memory _pendingPeriods = new uint[](period);
+        uint256 count;
+        while(!isRewardCollectedOfPeriod[period]){
+            if(!isDepositedInPeriod[period]) {
+                if(period == 0) break;
+                period--;
+                continue;
+            }
+            _pendingPeriods[count++] = period;
+            if(period == 0) break;
+            period--;
+        }
+
+        pendingPeriods = new uint[](count);
+        uint _count;
+        for(uint i; i < _pendingPeriods.length; i++){
+            if(_pendingPeriods[i] > 0) {
+                pendingPeriods[_count++] = _pendingPeriods[i];
+            }
+        }
     }
 }
