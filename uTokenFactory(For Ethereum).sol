@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+// import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "IERC20.sol";
 import "uToken.sol";
 
+pragma solidity ^0.8.18;
 contract uTokenFactory is Ownable{
     using SafeMath for uint256;
     using Address for address;
@@ -45,6 +46,7 @@ contract uTokenFactory is Ownable{
     address public deployedAddressOfEth;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
     EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+    address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
 
     // salt for create2 opcode.
     uint256 private _salt; // to handle create2 opcode.
@@ -76,10 +78,14 @@ contract uTokenFactory is Ownable{
     event Withdraw(address withdrawer, address token, uint256 amount);
     event Reward(address rewardCollector, uint256 period, uint256 ethAmount);
 
-    constructor (address[] memory _allowedTokens) {
+    constructor (address[] memory _allowedTokens, address[] memory _whiteListAddressess) {
         deployTime = block.timestamp;
+        whiteListAddresses = _whiteListAddressess;
+
         deployedAddressOfEth = _deployEth();
         _addAllowedTokens(_allowedTokens);
+
+        // setting whitelist addresses.
     }
 
     function _deployEth() internal returns (address deployedEth) {
@@ -88,7 +94,7 @@ contract uTokenFactory is Ownable{
         assembly {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuToken(deployedEth).initialize("uEth", "uETH", "ETH");
+        IuToken(deployedEth).initialize("uEth", "uEth", "ETH", whiteListAddresses);
     }
 
     function _deployToken(address _token) internal returns (address deployedToken) {
@@ -102,7 +108,7 @@ contract uTokenFactory is Ownable{
         assembly {
             deployedToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuToken(deployedToken).initialize(name, symbol, currency);
+        IuToken(deployedToken).initialize(name, symbol, currency, whiteListAddresses);
     }
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
@@ -168,8 +174,6 @@ contract uTokenFactory is Ownable{
         }
 
         ethInPeriod[currentTimePeriodCount] = ethInPeriod[currentTimePeriodCount].add(shareOfWinnerAddress); 
-
-        // remaining 32% of deposited fee will be in the contract address for reward.
     }
 
     function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
@@ -195,7 +199,6 @@ contract uTokenFactory is Ownable{
             tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
         rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress].add(shareOfWinnerAddress);
-        // remaining 32% of deposited fee will be in the contract address reward.
     }
 
     function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
@@ -473,6 +476,16 @@ contract uTokenFactory is Ownable{
             if(_pendingPeriods[i] > 0) {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
+        }       
+    }
+
+
+    function get_allWhiteListAddresses() public view returns (address[] memory _whiteListAddresses) {
+        uint _length = whiteListAddresses.length;
+        _whiteListAddresses = new address[](_length);
+
+        for(uint i; i < _length; i++){
+            _whiteListAddresses[i] = whiteListAddresses[i];
         }
     }
 }
