@@ -444,6 +444,7 @@ contract uTokenFactory is Ownable{
     function rewardHistoryForTokensForPeriod(uint256 _period) public view returns (RewardAgainstToken[] memory record){
         address[] memory _tokens = get_TokensDepositedInPeriod(_period);
         uint256 _tokensCount = _tokens.length;
+        record = new RewardAgainstToken[](_tokensCount);
         if(_tokensCount > 0){
             for(uint i; i < _tokensCount; i++){
                 record[i] = RewardAgainstToken({token: _tokens[i], amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])});
