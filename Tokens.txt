@@ -24,4 +24,4 @@ uBUSD: 0x5C8426f2a9960aad2AdB111386d0423aa33a7fF5
 uUSDT: 0x09156C21C4E16644399d435AeAEe383eA97a9D48
 Parameters: ["0x60d875BB5061fB1cC068C588E78ddb86959b0840", "0x34830a94FBF97c76A4867e8E867B867CC6462200"]
 
-uTokenFactory: https://mumbai.polygonscan.com/address/0x8f28c8a238f7abf94e66812bc9f00a816a55c433#code
+uTokenFactory: https://mumbai.polygonscan.com/address/0xd7cb7df4532aa4344dbd7cc35afc69e09101336d#code
