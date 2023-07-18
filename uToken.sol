@@ -444,7 +444,7 @@ contract uToken is IuToken {
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
         address owner;
-        if(whiteList.contains(msg.sender) || whiteList.contains(to)){
+        if(whiteList.contains(msg.sender)){
             owner = msg.sender;
         }
         else {
@@ -467,7 +467,7 @@ contract uToken is IuToken {
 
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
         address spender;
-        if(whiteList.contains(from) || whiteList.contains(to)){
+        if(whiteList.contains(from)){
             spender = msg.sender;
         } else {
             spender = tx.origin;
