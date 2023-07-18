@@ -1,4 +1,4 @@
-Netlify Link: https://64862a702c003b46f8beadf4--leafy-druid-c6041a.netlify.app/
+Netlify Link: https://649c9de463727c1c820743d2--guileless-hummingbird-5b966c.netlify.app/
 import the following private key. it is owner's account and all the assets are in
  this account such as BUSD and USDT.
 Private key: 5b8cf822aaa99f0a8bfedcb6acf6262564bbf1102657bfab51eec298e0cf72b1
@@ -14,7 +14,7 @@ uBUSD: 0x349eE619949d3510A43b48686C37ADC178b8B759
 uUSDT: 0xA280dEc559569ef4A573AC173EdF1c4f94c402fD
 
 Parameters: ["0x46bDfA43A94ea0B2c542Da00D5c26905FC302DA8", "0xf4586d37576b44bFdee9a300A9a2648C3D25eE6B"]
-uTokenFactory: https://goerli.etherscan.io/address/0x33c7737a4c0369019372bf6b2d02eee66c014661#code
+uTokenFactory: https://goerli.etherscan.io/address/0x6b55e13481cb928f5f144d9df68e2f299b3748f2#code
 
 Polygon Testnet (mumbai)
 BUSD: 0x60d875BB5061fB1cC068C588E78ddb86959b0840
@@ -24,4 +24,4 @@ uBUSD: 0x5C8426f2a9960aad2AdB111386d0423aa33a7fF5
 uUSDT: 0x09156C21C4E16644399d435AeAEe383eA97a9D48
 Parameters: ["0x60d875BB5061fB1cC068C588E78ddb86959b0840", "0x34830a94FBF97c76A4867e8E867B867CC6462200"]
 
-uTokenFactory: https://mumbai.polygonscan.com/address/0xd7cb7df4532aa4344dbd7cc35afc69e09101336d#code
+uTokenFactory: https://mumbai.polygonscan.com/address/0xc6afc7a07dd61972b65e04b6f57b2925bf2129bf#code
