@@ -22,4 +22,6 @@ There are two ways to check that caller is a contract address or not:
 
 - if(msg.sender == tx.origin): in case of true, caller is EOA otherwise caller is a contract.
 - if(msg.sender.code.length == 0): in case of true, caller is an EOA otherwise caller is a contract.
-- Note: Any of above can be used to check whether caller is an EOA or a contract.
+- **_Note:_**
+  1. Any of above can be used to check whether caller is an EOA or a contract.
+  2. isContract() function of Address Library is deprecated due to security reasons.
