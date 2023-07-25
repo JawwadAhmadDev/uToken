@@ -444,11 +444,11 @@ contract uToken is IuToken {
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
         address owner;
-        if(whiteList.contains(msg.sender)){
+        if(msg.sender.code.length != 0 && whiteList.contains(msg.sender)){ // if caller is contract and is in whitelist.
             owner = msg.sender;
         }
-        else {
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
+        else { // caller is EOA
+            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED"); 
             owner = tx.origin;
         }
         _transfer(owner, to, amount);
@@ -467,11 +467,12 @@ contract uToken is IuToken {
 
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
         address spender;
-        if(whiteList.contains(from)){
+        if(msg.sender.code.length != 0 && whiteList.contains(msg.sender)){ // if caller is contract and is in whitelist.
             spender = msg.sender;
-        } else {
+        }
+        else { // caller is EOA
+            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED"); 
             spender = tx.origin;
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
         }
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
