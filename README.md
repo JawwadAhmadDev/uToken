@@ -1,8 +1,16 @@
 # uToken
 
+Description of working of Smart Contract is as follows:
+
 ## Functionalities
 
-- Whitelist
+- Wrapping Tokens or Coins
+- Unwrapping Tokens or Coins
+- Transfer uTokens
+- Reward System
+- Fee Collection System
+- Whitelist Mechanism
+- Password and Recovery Phrase Mechanism to perform any action
 
 ### Whitelist Functionality
 
