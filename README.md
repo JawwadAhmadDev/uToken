@@ -61,6 +61,17 @@ Description of working of Smart Contract is as follows:
 
 - Fee will be deducted at time time of wrapping.
 
+### Reward System
+
+**_Description:_** Upon start of each time period, a winner will be selected which will receive all the reward collected in previous non-collected time periods.
+
+**_Procedure_**
+
+- There will be specific time period to collect reward for each time period.
+- Each detail will be shown on the UI regarding collectable assets.
+- User have to click within reward time limit on the button.
+- Smart contract will transfer all the reward collected within previous un-collected time periods.
+
 ### Whitelist Mechanism
 
 **Definition:** Whitelist users dosn't need to enter password or to perform a transaction from UI for transferring funds.
