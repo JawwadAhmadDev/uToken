@@ -34,7 +34,7 @@ Description of working of Smart Contract is as follows:
 - Smart contract will burn amount of respective uTokens from account of user.
 - Respective tokens or coins will be transferred back to the user.
 
-### - Transferring uTokens
+### Transferring uTokens
 
 **_Description:_** Any time user can transfer uTokens to anyone with some restrictions explained in the procedure section.
 
