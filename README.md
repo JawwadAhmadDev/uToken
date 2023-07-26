@@ -93,3 +93,8 @@ There are two ways to check that caller is a contract address or not:
 - **_Note:_**
   1. Any of above can be used to check whether caller is an EOA or a contract.
   2. isContract() function of Address Library is deprecated due to security reasons.
+
+### Password and Recovery Phrase Mechanism to perform any action
+
+**_Description:_** To prevent users from transferring funds directly from metamask, we have implemented this feature. On each unwrap or transfer user must have to enter password and must have to come our UI otherwise transaction will be failed.
+In case of forgot password, we have implemented a mechanism which will implement recovery phrase functionality. If user want to change his password or forgot his password, then recovery phrase will be used
