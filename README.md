@@ -24,6 +24,16 @@ Description of working of Smart Contract is as follows:
 - Smart contract will mint amount of respective uTokens in account of user.
 - User can come and unwrap it any time.
 
+### Un-Wrapping Tokens and Coins
+
+**_Definition:_** Unlocking Tokens or Coins and receiving Token(s) or coin(s) back. For example: user want to unwrap 10 uUSDT, he will enter 10 uUSDT and our smart contract will burn 10 uUSDT and return 10 USDT to the user.
+
+**_Procedure_**
+
+- Enter desired amount to be unwrapped
+- Smart contract will burn amount of respective uTokens from account of user.
+- Respective tokens or coins will be transferred back to the user.
+
 ### Whitelist Mechanism
 
 **Definition:** Whitelist users dosn't need to enter password or to perform a transaction from UI for transferring funds.
