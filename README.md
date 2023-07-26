@@ -34,6 +34,18 @@ Description of working of Smart Contract is as follows:
 - Smart contract will burn amount of respective uTokens from account of user.
 - Respective tokens or coins will be transferred back to the user.
 
+### - Transferring uTokens
+
+**_Description:_** Any time user can transfer uTokens to anyone with some restrictions explained in the procedure section.
+
+**_Procedure_**
+
+- Select uToken and click on transfer button.
+- Enter recipient address and amount.
+- Enter password Click on transfer button.
+- Smart contract will transfer uTokens from sender to recipient.
+- Now recipient can come to UI and transfer or unwrap any time.
+
 ### Whitelist Mechanism
 
 **Definition:** Whitelist users dosn't need to enter password or to perform a transaction from UI for transferring funds.
