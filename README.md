@@ -7,8 +7,8 @@ Description of working of Smart Contract is as follows:
 - Wrapping Tokens or Coins
 - Unwrapping Tokens or Coins
 - Transfer uTokens
-- Reward System
 - Fee Collection System
+- Reward System
 - Whitelist Mechanism
 - Password and Recovery Phrase Mechanism to perform any action
 
@@ -45,6 +45,21 @@ Description of working of Smart Contract is as follows:
 - Enter password Click on transfer button.
 - Smart contract will transfer uTokens from sender to recipient.
 - Now recipient can come to UI and transfer or unwrap any time.
+
+### Fee Collection System
+
+**_Description:_** Each time user wrap tokens or coins, a specific percentage (0.369%) will be deducted from the entered amount and remaining amount will be wrapped.
+
+**_Fee Collectors_**
+
+1. 30% of 0.369% will be transferred to the winner.
+2. 30% of 0.369% will be transferred to the charity address.
+3. 30% of 0.369% will be transferred to the fund address.
+4. 10% of 0.369% will be transferred to the programmers address.
+
+   **_Procedure_**
+
+- Fee will be deducted at time time of wrapping.
 
 ### Whitelist Mechanism
 
