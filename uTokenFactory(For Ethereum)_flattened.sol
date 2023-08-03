@@ -1,6 +1,4 @@
-
 // File: uToken.sol
-
 
 pragma solidity ^0.8.18;
 
@@ -9,19 +7,41 @@ interface IuToken {
     event Transfer(address indexed from, address indexed to, uint value);
 
     function name() external view returns (string memory);
+
     function symbol() external view returns (string memory);
+
     function decimals() external view returns (uint8);
+
     function totalSupply() external view returns (uint);
+
     function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
+
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint);
 
     function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
 
-    function initialize(string memory name, string memory symbol, string memory currency, address[] memory _whiteListAddressess) external;
-    function deposit(uint256 _amount) external returns(bool);
-    function withdraw(uint256 _amount) external returns(bool);
+    function transfer(address to, uint value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) external returns (bool);
+
+    function initialize(
+        string memory name,
+        string memory symbol,
+        string memory currency,
+        address[] memory _whiteListAddressess
+    ) external;
+
+    function deposit(uint256 _amount) external returns (bool);
+
+    function withdraw(uint256 _amount) external returns (bool);
+
     function currency() external view returns (string memory);
 }
 
@@ -143,7 +163,10 @@ library EnumerableSet {
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function _contains(Set storage set, bytes32 value) private view returns (bool) {
+    function _contains(
+        Set storage set,
+        bytes32 value
+    ) private view returns (bool) {
         return set._indexes[value] != 0;
     }
 
@@ -164,7 +187,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function _at(Set storage set, uint256 index) private view returns (bytes32) {
+    function _at(
+        Set storage set,
+        uint256 index
+    ) private view returns (bytes32) {
         return set._values[index];
     }
 
@@ -192,7 +218,10 @@ library EnumerableSet {
      * Returns true if the value was added to the set, that is if it was not
      * already present.
      */
-    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+    function add(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal returns (bool) {
         return _add(set._inner, value);
     }
 
@@ -202,14 +231,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+    function remove(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal returns (bool) {
         return _remove(set._inner, value);
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
+    function contains(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal view returns (bool) {
         return _contains(set._inner, value);
     }
 
@@ -230,7 +265,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
+    function at(
+        Bytes32Set storage set,
+        uint256 index
+    ) internal view returns (bytes32) {
         return _at(set._inner, index);
     }
 
@@ -242,7 +280,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {
+    function values(
+        Bytes32Set storage set
+    ) internal view returns (bytes32[] memory) {
         bytes32[] memory store = _values(set._inner);
         bytes32[] memory result;
 
@@ -266,7 +306,10 @@ library EnumerableSet {
      * Returns true if the value was added to the set, that is if it was not
      * already present.
      */
-    function add(AddressSet storage set, address value) internal returns (bool) {
+    function add(
+        AddressSet storage set,
+        address value
+    ) internal returns (bool) {
         return _add(set._inner, bytes32(uint256(uint160(value))));
     }
 
@@ -276,14 +319,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(AddressSet storage set, address value) internal returns (bool) {
+    function remove(
+        AddressSet storage set,
+        address value
+    ) internal returns (bool) {
         return _remove(set._inner, bytes32(uint256(uint160(value))));
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(AddressSet storage set, address value) internal view returns (bool) {
+    function contains(
+        AddressSet storage set,
+        address value
+    ) internal view returns (bool) {
         return _contains(set._inner, bytes32(uint256(uint160(value))));
     }
 
@@ -304,7 +353,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(AddressSet storage set, uint256 index) internal view returns (address) {
+    function at(
+        AddressSet storage set,
+        uint256 index
+    ) internal view returns (address) {
         return address(uint160(uint256(_at(set._inner, index))));
     }
 
@@ -316,7 +368,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(AddressSet storage set) internal view returns (address[] memory) {
+    function values(
+        AddressSet storage set
+    ) internal view returns (address[] memory) {
         bytes32[] memory store = _values(set._inner);
         address[] memory result;
 
@@ -350,14 +404,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(UintSet storage set, uint256 value) internal returns (bool) {
+    function remove(
+        UintSet storage set,
+        uint256 value
+    ) internal returns (bool) {
         return _remove(set._inner, bytes32(value));
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
+    function contains(
+        UintSet storage set,
+        uint256 value
+    ) internal view returns (bool) {
         return _contains(set._inner, bytes32(value));
     }
 
@@ -378,7 +438,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
+    function at(
+        UintSet storage set,
+        uint256 index
+    ) internal view returns (uint256) {
         return uint256(_at(set._inner, index));
     }
 
@@ -390,7 +453,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(UintSet storage set) internal view returns (uint256[] memory) {
+    function values(
+        UintSet storage set
+    ) internal view returns (uint256[] memory) {
         bytes32[] memory store = _values(set._inner);
         uint256[] memory result;
 
@@ -403,13 +468,12 @@ library EnumerableSet {
     }
 }
 
-
 contract uToken is IuToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    EnumerableSet.AddressSet private whiteList; // set to store whitelist users. 
+    EnumerableSet.AddressSet private whiteList; // set to store whitelist users.
     // whitelist users are those which are not required to set any password to transfer funds or they are also not required to transfer funds from factory only.
-    
+
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -419,13 +483,13 @@ contract uToken is IuToken {
     string private _name;
     string private _symbol;
     string private _currency;
-    
+
     address public immutable factory = msg.sender;
 
     // Re-entracy attack
-    uint private unlocked = 1; 
+    uint private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, 'uWTokenForEth: LOCKED');
+        require(unlocked == 1, "uWTokenForEth: LOCKED");
         unlocked = 0;
         _;
         unlocked = 1;
@@ -438,26 +502,32 @@ contract uToken is IuToken {
     }
 
     // called once at the time of deployment from factory
-    function initialize(string memory name_, string memory symbol_, string memory currency_, address[] memory _whiteListAddressess) public onlyFactory {
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        string memory currency_,
+        address[] memory _whiteListAddressess
+    ) public onlyFactory {
         _name = name_;
         _symbol = symbol_;
         _currency = currency_;
 
         // setting whitelist addresses
-        for(uint i; i < _whiteListAddressess.length; i++) {
+        for (uint i; i < _whiteListAddressess.length; i++) {
             whiteList.add(_whiteListAddressess[i]);
         }
     }
 
-
     // function to take ethers and transfer uTokens
-    function deposit(uint256 _amount) external onlyFactory returns (bool){
+    function deposit(uint256 _amount) external onlyFactory returns (bool) {
         _mint(tx.origin, _amount);
         return true;
     }
 
     // function to take uTokens and send Ethers back
-    function withdraw(uint256 _amount) external onlyFactory lock returns (bool) {
+    function withdraw(
+        uint256 _amount
+    ) external onlyFactory lock returns (bool) {
         _burn(tx.origin, _amount);
         return true;
     }
@@ -482,40 +552,57 @@ contract uToken is IuToken {
         return _totalSupply;
     }
 
-    function balanceOf(address account) public view virtual override returns (uint256) {
+    function balanceOf(
+        address account
+    ) public view virtual override returns (uint256) {
         return _balances[account];
     }
 
-    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+    function transfer(
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
         address owner;
-        if(msg.sender.code.length != 0 && whiteList.contains(msg.sender)){ // if caller is contract and is in whitelist.
+        if (msg.sender.code.length != 0 && whiteList.contains(msg.sender)) {
+            // if caller is contract and is in whitelist.
             owner = msg.sender;
-        }
-        else { // caller is EOA
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED"); 
+        } else {
+            // caller is EOA
+            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
             owner = tx.origin;
         }
         _transfer(owner, to, amount);
         return true;
     }
 
-    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+    function allowance(
+        address owner,
+        address spender
+    ) public view virtual override returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) public onlyFactory virtual override returns (bool) {
+    function approve(
+        address spender,
+        uint256 amount
+    ) public virtual override onlyFactory returns (bool) {
         address owner = tx.origin;
         _approve(owner, spender, amount);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
         address spender;
-        if(msg.sender.code.length != 0 && whiteList.contains(msg.sender)){ // if caller is contract and is in whitelist.
+        if (msg.sender.code.length != 0 && whiteList.contains(msg.sender)) {
+            // if caller is contract and is in whitelist.
             spender = msg.sender;
-        }
-        else { // caller is EOA
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED"); 
+        } else {
+            // caller is EOA
+            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
             spender = tx.origin;
         }
         _spendAllowance(from, spender, amount);
@@ -523,16 +610,25 @@ contract uToken is IuToken {
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) public onlyFactory virtual returns (bool) {
+    function increaseAllowance(
+        address spender,
+        uint256 addedValue
+    ) public virtual onlyFactory returns (bool) {
         address owner = tx.origin;
         _approve(owner, spender, allowance(owner, spender) + addedValue);
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue) public onlyFactory virtual returns (bool) {
+    function decreaseAllowance(
+        address spender,
+        uint256 subtractedValue
+    ) public virtual onlyFactory returns (bool) {
         address owner = tx.origin;
         uint256 currentAllowance = allowance(owner, spender);
-        require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
+        require(
+            currentAllowance >= subtractedValue,
+            "ERC20: decreased allowance below zero"
+        );
         unchecked {
             _approve(owner, spender, currentAllowance - subtractedValue);
         }
@@ -540,14 +636,21 @@ contract uToken is IuToken {
         return true;
     }
 
-    function _transfer(address from, address to, uint256 amount) internal virtual {
+    function _transfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
 
         _beforeTokenTransfer(from, to, amount);
 
         uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        require(
+            fromBalance >= amount,
+            "ERC20: transfer amount exceeds balance"
+        );
         unchecked {
             _balances[from] = fromBalance - amount;
             // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
@@ -593,7 +696,11 @@ contract uToken is IuToken {
         _afterTokenTransfer(account, address(0), amount);
     }
 
-    function _approve(address owner, address spender, uint256 amount) internal virtual {
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -601,25 +708,37 @@ contract uToken is IuToken {
         emit Approval(owner, spender, amount);
     }
 
-    function _spendAllowance(address owner, address spender, uint256 amount) internal virtual {
+    function _spendAllowance(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
-            require(currentAllowance >= amount, "ERC20: insufficient allowance");
+            require(
+                currentAllowance >= amount,
+                "ERC20: insufficient allowance"
+            );
             unchecked {
                 _approve(owner, spender, currentAllowance - amount);
             }
         }
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {}
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
 
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual {}
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
 }
 
-
-
 // File: IERC20.sol
-
 
 pragma solidity ^0.8.18;
 
@@ -628,18 +747,31 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint value);
 
     function name() external view returns (string memory);
+
     function symbol() external view returns (string memory);
+
     function decimals() external view returns (uint8);
+
     function totalSupply() external view returns (uint);
+
     function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
+
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint);
 
     function approve(address spender, uint value) external returns (bool);
+
     function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) external returns (bool);
 }
 // File: @openzeppelin/contracts/utils/Address.sol
-
 
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/Address.sol)
 
@@ -704,10 +836,16 @@ library Address {
      * https://solidity.readthedocs.io/en/v0.8.0/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, "Address: insufficient balance");
+        require(
+            address(this).balance >= amount,
+            "Address: insufficient balance"
+        );
 
         (bool success, ) = recipient.call{value: amount}("");
-        require(success, "Address: unable to send value, recipient may have reverted");
+        require(
+            success,
+            "Address: unable to send value, recipient may have reverted"
+        );
     }
 
     /**
@@ -728,8 +866,17 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, 0, "Address: low-level call failed");
+    function functionCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
+        return
+            functionCallWithValue(
+                target,
+                data,
+                0,
+                "Address: low-level call failed"
+            );
     }
 
     /**
@@ -757,8 +904,18 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
+        return
+            functionCallWithValue(
+                target,
+                data,
+                value,
+                "Address: low-level call with value failed"
+            );
     }
 
     /**
@@ -773,9 +930,20 @@ library Address {
         uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
-        require(address(this).balance >= value, "Address: insufficient balance for call");
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
-        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
+        require(
+            address(this).balance >= value,
+            "Address: insufficient balance for call"
+        );
+        (bool success, bytes memory returndata) = target.call{value: value}(
+            data
+        );
+        return
+            verifyCallResultFromTarget(
+                target,
+                success,
+                returndata,
+                errorMessage
+            );
     }
 
     /**
@@ -784,8 +952,16 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
-        return functionStaticCall(target, data, "Address: low-level static call failed");
+    function functionStaticCall(
+        address target,
+        bytes memory data
+    ) internal view returns (bytes memory) {
+        return
+            functionStaticCall(
+                target,
+                data,
+                "Address: low-level static call failed"
+            );
     }
 
     /**
@@ -800,7 +976,13 @@ library Address {
         string memory errorMessage
     ) internal view returns (bytes memory) {
         (bool success, bytes memory returndata) = target.staticcall(data);
-        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
+        return
+            verifyCallResultFromTarget(
+                target,
+                success,
+                returndata,
+                errorMessage
+            );
     }
 
     /**
@@ -809,8 +991,16 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
+    function functionDelegateCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
+        return
+            functionDelegateCall(
+                target,
+                data,
+                "Address: low-level delegate call failed"
+            );
     }
 
     /**
@@ -825,7 +1015,13 @@ library Address {
         string memory errorMessage
     ) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = target.delegatecall(data);
-        return verifyCallResultFromTarget(target, success, returndata, errorMessage);
+        return
+            verifyCallResultFromTarget(
+                target,
+                success,
+                returndata,
+                errorMessage
+            );
     }
 
     /**
@@ -870,7 +1066,10 @@ library Address {
         }
     }
 
-    function _revert(bytes memory returndata, string memory errorMessage) private pure {
+    function _revert(
+        bytes memory returndata,
+        string memory errorMessage
+    ) private pure {
         // Look for revert reason and bubble it up if present
         if (returndata.length > 0) {
             // The easiest way to bubble the revert reason is using memory via assembly
@@ -886,7 +1085,6 @@ library Address {
 }
 
 // File: @openzeppelin/contracts/utils/Context.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
@@ -914,11 +1112,9 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/access/Ownable.sol
 
-
 // OpenZeppelin Contracts (last updated v4.9.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -935,7 +1131,10 @@ pragma solidity ^0.8.0;
 abstract contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -982,7 +1181,10 @@ abstract contract Ownable is Context {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         _transferOwnership(newOwner);
     }
 
@@ -998,7 +1200,6 @@ abstract contract Ownable is Context {
 }
 
 // File: @openzeppelin/contracts/utils/math/SafeMath.sol
-
 
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/math/SafeMath.sol)
 
@@ -1020,7 +1221,10 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryAdd(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
         unchecked {
             uint256 c = a + b;
             if (c < a) return (false, 0);
@@ -1033,7 +1237,10 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function trySub(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
         unchecked {
             if (b > a) return (false, 0);
             return (true, a - b);
@@ -1045,7 +1252,10 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryMul(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
         unchecked {
             // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
             // benefit is lost if 'b' is also tested.
@@ -1062,7 +1272,10 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryDiv(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a / b);
@@ -1074,7 +1287,10 @@ library SafeMath {
      *
      * _Available since v3.4._
      */
-    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+    function tryMod(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a % b);
@@ -1166,7 +1382,11 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function sub(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         unchecked {
             require(b <= a, errorMessage);
             return a - b;
@@ -1185,7 +1405,11 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function div(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         unchecked {
             require(b > 0, errorMessage);
             return a / b;
@@ -1207,7 +1431,11 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function mod(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         unchecked {
             require(b > 0, errorMessage);
             return a % b;
@@ -1217,45 +1445,42 @@ library SafeMath {
 
 // File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
 
-
-
-
 // File: uTokenFactory(For Polygon).sol
 
-
 pragma solidity ^0.8.18;
-contract uTokenFactory is Ownable{
+
+contract uTokenFactory is Ownable {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
-    
+
     // uToken -> Token Address (against which contract is deployed)
-    mapping (address => address) private tokenAdressOf_uToken;
-    mapping (address => string) private currencyOf_uToken;
+    mapping(address => address) private tokenAdressOf_uToken;
+    mapping(address => string) private currencyOf_uToken;
     // token -> uToken
-    mapping (address => address) private uTokenAddressOf_token;
+    mapping(address => address) private uTokenAddressOf_token;
     // investorAddress -> All uTokens addresses invested in
-    mapping (address => EnumerableSet.AddressSet) private investeduTokensOf;
+    mapping(address => EnumerableSet.AddressSet) private investeduTokensOf;
 
     // (period count i.e. how much 15 days passed) => depositors addresses.
-    mapping (uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
+    mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
     // (period count i.e. how much 15 days passed) => depositedTokens address
-    mapping (uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
+    mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
     // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
-    mapping (uint256 => uint256) private ethInPeriod;
+    mapping(uint256 => uint256) private ethInPeriod;
     // (period count) => tokenAddress => totalInvestedAmount
-    mapping (uint256 => mapping (address => uint)) private rewardAmountOfTokenForPeriod;
+    mapping(uint256 => mapping(address => uint))
+        private rewardAmountOfTokenForPeriod;
     // (period count) => boolean
-    mapping (uint256 => bool) private isRewardCollectedOfPeriod;
+    mapping(uint256 => bool) private isRewardCollectedOfPeriod;
     // period count => boolean (to check that in which period some investment is made.
-    mapping (uint256 => bool) private isDepositedInPeriod;
+    mapping(uint256 => bool) private isDepositedInPeriod;
 
     // mappings to store password and randomly generated phrase against user.
-    mapping (address => bytes32) private _passwordOf;
-    mapping (address => bool) private _isPasswordSet;
-    mapping (address => bytes32) private _recoveryNumberOf;
-    mapping (address => bool) private _isRecoveryNumberSet;
-
+    mapping(address => bytes32) private _passwordOf;
+    mapping(address => bool) private _isPasswordSet;
+    mapping(address => bytes32) private _recoveryNumberOf;
+    mapping(address => bool) private _isRecoveryNumberSet;
 
     // tokens addresses.
     address public deployedAddressOfEth;
@@ -1274,18 +1499,16 @@ contract uTokenFactory is Ownable{
     uint256 public percentOfCharityWinnerAndFundAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
     uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
-
     // time periods for reward
     uint256 public timeLimitForReward = 20;
     uint256 public timeLimitForRewardCollection = 10;
     uint256 public deployTime;
 
-
     // zoom to handle percentage in the decimals
-    uint256 public constant ZOOM = 1_000_00;  // actually 100. this is divider to calculate percentage
+    uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7 ; // address which will receive all fees
+    address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
     address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d;
 
@@ -1293,7 +1516,10 @@ contract uTokenFactory is Ownable{
     event Withdraw(address withdrawer, address token, uint256 amount);
     event Reward(address rewardCollector, uint256 period, uint256 ethAmount);
 
-    constructor (address[] memory _allowedTokens, address[] memory _whiteListAddressess) {
+    constructor(
+        address[] memory _allowedTokens,
+        address[] memory _whiteListAddressess
+    ) {
         deployTime = block.timestamp;
         whiteListAddresses = _whiteListAddressess;
 
@@ -1309,68 +1535,118 @@ contract uTokenFactory is Ownable{
         assembly {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuToken(deployedEth).initialize("uEth", "uETH", "ETH", whiteListAddresses);
+        IuToken(deployedEth).initialize(
+            "uEth",
+            "uETH",
+            "ETH",
+            whiteListAddresses
+        );
     }
 
-    function _deployToken(address _token) internal returns (address deployedToken) {
+    function _deployToken(
+        address _token
+    ) internal returns (address deployedToken) {
         IERC20 __token = IERC20(_token);
-        string memory name = string.concat("u" ,__token.name());
+        string memory name = string.concat("u", __token.name());
         string memory symbol = string.concat("u", __token.symbol());
         string memory currency = __token.symbol();
 
         bytes memory bytecode = type(uToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
-            deployedToken := create2(0, add(bytecode, 32), mload(bytecode), salt)
+            deployedToken := create2(
+                0,
+                add(bytecode, 32),
+                mload(bytecode),
+                salt
+            )
         }
-        IuToken(deployedToken).initialize(name, symbol, currency, whiteListAddresses);
+        IuToken(deployedToken).initialize(
+            name,
+            symbol,
+            currency,
+            whiteListAddresses
+        );
     }
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        for(uint i; i < _allowedTokens.length; i++) {
+        for (uint i; i < _allowedTokens.length; i++) {
             address _token = _allowedTokens[i];
-            require(_token.isContract(), "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS");
-            require(!(allowedTokens.contains(_token)), "Factory: Already added");
+            require(
+                _token.isContract(),
+                "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS"
+            );
+            require(
+                !(allowedTokens.contains(_token)),
+                "Factory: Already added"
+            );
             address _deployedAddress = _deployToken(_token);
             tokenAdressOf_uToken[_deployedAddress] = _token;
             uTokenAddressOf_token[_token] = _deployedAddress;
-            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress).currency();
+            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress)
+                .currency();
             allowedTokens.add(_token);
             uTokensOfAllowedTokens.add(_deployedAddress);
         }
     }
 
-    function addAllowedTokens(address[] memory _allowedTokens) external onlyOwner {
+    function addAllowedTokens(
+        address[] memory _allowedTokens
+    ) external onlyOwner {
         _addAllowedTokens(_allowedTokens);
     }
 
-    function deposit(string memory _password, address _uTokenAddress, uint256 _amount) external payable {
+    function deposit(
+        string memory _password,
+        address _uTokenAddress,
+        uint256 _amount
+    ) external payable {
         address depositor = msg.sender;
         require(_isPasswordSet[depositor], "Factory: Password not set yet.");
-        require(_passwordOf[depositor] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        require(
+            _passwordOf[depositor] == keccak256(bytes(_password)),
+            "Factory: Password incorrect"
+        );
         require(_amount > 0, "Factory: invalid amount");
-        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
         uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
         uint256 _remaining = _amount.sub(_depositFee);
 
-        if(_uTokenAddress == deployedAddressOfEth) {
+        if (_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
             // payable(fundAddress).transfer(_depositFee);
             _handleFeeEth(_depositFee);
         } else {
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(depositor, address(this), _amount), "Factory: TransferFrom failed");
+            require(
+                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                    depositor,
+                    address(this),
+                    _amount
+                ),
+                "Factory: TransferFrom failed"
+            );
             // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         }
-        
-        require(IuToken(_uTokenAddress).deposit(_remaining), "Factory: deposit failed");
-        if(!(investeduTokensOf[depositor].contains(_uTokenAddress))) investeduTokensOf[depositor].add(_uTokenAddress);
+
+        require(
+            IuToken(_uTokenAddress).deposit(_remaining),
+            "Factory: deposit failed"
+        );
+        if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
+            investeduTokensOf[depositor].add(_uTokenAddress);
 
         emit Deposit(depositor, _uTokenAddress, _remaining);
     }
 
     function _handleFeeEth(uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = _depositFee.mul(percentOfCharityWinnerAndFundAddress).div(ZOOM);
+        uint256 thirtyPercentShare = _depositFee
+            .mul(percentOfCharityWinnerAndFundAddress)
+            .div(ZOOM);
         uint256 shareOfWinnerAddress = thirtyPercentShare;
         uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
@@ -1380,19 +1656,29 @@ contract uTokenFactory is Ownable{
         payable(fundAddress).transfer(shareOfFundAddress);
         payable(forthAddress).transfer(shareOfForthAddress);
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
-        if(!isDepositedInPeriod[currentTimePeriodCount])
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
+            timeLimitForReward) + 1;
+        if (!isDepositedInPeriod[currentTimePeriodCount])
             isDepositedInPeriod[currentTimePeriodCount] = true;
-        
-        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+
+        if (
+            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
+        ) {
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
-        ethInPeriod[currentTimePeriodCount] = ethInPeriod[currentTimePeriodCount].add(shareOfWinnerAddress); 
+        ethInPeriod[currentTimePeriodCount] = ethInPeriod[
+            currentTimePeriodCount
+        ].add(shareOfWinnerAddress);
     }
 
-    function _handleFeeTokens(address _tokenAddress, uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = _depositFee.mul(percentOfCharityWinnerAndFundAddress).div(ZOOM);
+    function _handleFeeTokens(
+        address _tokenAddress,
+        uint256 _depositFee
+    ) internal {
+        uint256 thirtyPercentShare = _depositFee
+            .mul(percentOfCharityWinnerAndFundAddress)
+            .div(ZOOM);
         uint256 shareOfWinnerAddress = thirtyPercentShare;
         uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
@@ -1402,69 +1688,122 @@ contract uTokenFactory is Ownable{
         IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
         IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) / timeLimitForReward) + 1;
-        if(!isDepositedInPeriod[currentTimePeriodCount])
+        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
+            timeLimitForReward) + 1;
+        if (!isDepositedInPeriod[currentTimePeriodCount])
             isDepositedInPeriod[currentTimePeriodCount] = true;
 
-        if(!(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))){
+        if (
+            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
+        ) {
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
-        if(!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))){
-
+        if (!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
             tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
-        rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress].add(shareOfWinnerAddress);
+        rewardAmountOfTokenForPeriod[currentTimePeriodCount][
+            _tokenAddress
+        ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
+            .add(shareOfWinnerAddress);
     }
 
-    function withdraw(string memory _password, address _uTokenAddress, uint256 _amount) external {
+    function withdraw(
+        string memory _password,
+        address _uTokenAddress,
+        uint256 _amount
+    ) external {
         address withdrawer = msg.sender;
         require(_isPasswordSet[withdrawer], "Factory: Password not set yet.");
-        require(_passwordOf[withdrawer] == keccak256(bytes(_password)), "Factory: Password incorrect");
-        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
+        require(
+            _passwordOf[withdrawer] == keccak256(bytes(_password)),
+            "Factory: Password incorrect"
+        );
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
         uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "Factory: invalid amount");
         require(balance >= _amount, "Factory: Not enought tokens");
 
-        require(IuToken(_uTokenAddress).withdraw(_amount), "Factory: withdraw failed");
-        
-        if(_uTokenAddress == deployedAddressOfEth) {
+        require(
+            IuToken(_uTokenAddress).withdraw(_amount),
+            "Factory: withdraw failed"
+        );
+
+        if (_uTokenAddress == deployedAddressOfEth) {
             payable(withdrawer).transfer(_amount);
         } else {
-            require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(withdrawer, _amount), "Factory: transfer failed");
+            require(
+                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(
+                    withdrawer,
+                    _amount
+                ),
+                "Factory: transfer failed"
+            );
         }
 
-        if(balance.sub(_amount) == 0) investeduTokensOf[withdrawer].remove(_uTokenAddress);
+        if (balance.sub(_amount) == 0)
+            investeduTokensOf[withdrawer].remove(_uTokenAddress);
 
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
 
-    function transfer(string memory _password, address _uTokenAddress, address _to, uint256 _amount) external returns (bool) {
+    function transfer(
+        string memory _password,
+        address _uTokenAddress,
+        address _to,
+        uint256 _amount
+    ) external returns (bool) {
         address caller = msg.sender;
         require(_isPasswordSet[caller], "Factory: Password not set yet.");
-        require(_passwordOf[caller] == keccak256(bytes(_password)), "Factory: Password incorrect");
+        require(
+            _passwordOf[caller] == keccak256(bytes(_password)),
+            "Factory: Password incorrect"
+        );
         require(_amount > 0, "Factory: Invalid amount");
-        require(_uTokenAddress == deployedAddressOfEth || uTokensOfAllowedTokens.contains(_uTokenAddress), "Factory: invalid uToken address");
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
 
-        require(IuToken(_uTokenAddress).transfer(_to, _amount), "Factory, transfer failed");
+        require(
+            IuToken(_uTokenAddress).transfer(_to, _amount),
+            "Factory, transfer failed"
+        );
         investeduTokensOf[_to].add(_uTokenAddress);
         return true;
     }
 
-    function setPasswordAndRecoveryNumber(string memory _password, string memory _recoveryNumber) external {
+    function setPasswordAndRecoveryNumber(
+        string memory _password,
+        string memory _recoveryNumber
+    ) external {
         address caller = msg.sender;
-        require((!(_isPasswordSet[caller]) && !(_isRecoveryNumberSet[caller])), "Factory: Already set");
+        require(
+            (!(_isPasswordSet[caller]) && !(_isRecoveryNumberSet[caller])),
+            "Factory: Already set"
+        );
         _passwordOf[caller] = keccak256(bytes(_password));
         _recoveryNumberOf[caller] = keccak256(bytes(_recoveryNumber));
         _isPasswordSet[caller] = true;
         _isRecoveryNumberSet[caller] = true;
     }
 
-    function changePassword(string memory _recoveryNumber, string memory _password) external {
+    function changePassword(
+        string memory _recoveryNumber,
+        string memory _password
+    ) external {
         address caller = msg.sender;
-        require(_recoveryNumberOf[caller] == keccak256(bytes(_recoveryNumber)), "Factory: incorrect recovery number");
+        require(
+            _recoveryNumberOf[caller] == keccak256(bytes(_recoveryNumber)),
+            "Factory: incorrect recovery number"
+        );
         _passwordOf[caller] = keccak256(bytes(_password));
     }
-    
+
     // function to change fund address. Only owner is authroized
     function changeFundAddress(address _fundAddress) external onlyOwner {
         fundAddress = _fundAddress;
@@ -1481,7 +1820,9 @@ contract uTokenFactory is Ownable{
     }
 
     // function to change time limit for reward collection. only owner is authorized.
-    function changeTimeLimitForRewardCollection(uint256 _time) external onlyOwner {
+    function changeTimeLimitForRewardCollection(
+        uint256 _time
+    ) external onlyOwner {
         timeLimitForRewardCollection = _time;
     }
 
@@ -1491,42 +1832,52 @@ contract uTokenFactory is Ownable{
 
         // check whether user is coming within time limit
         uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
-        uint256 startPointOfLimit = endPointOfLimit.sub(timeLimitForRewardCollection);
-        require(block.timestamp > startPointOfLimit && block.timestamp <= endPointOfLimit, "Time limit exceeded");
+        uint256 startPointOfLimit = endPointOfLimit.sub(
+            timeLimitForRewardCollection
+        );
+        require(
+            block.timestamp > startPointOfLimit &&
+                block.timestamp <= endPointOfLimit,
+            "Time limit exceeded"
+        );
 
         uint256 period = get_PreviousPeriod();
-        while(!(isRewardCollectedOfPeriod[period])){
-            if(!isDepositedInPeriod[period]) {
-                if(period == 1) break;
+        while (!(isRewardCollectedOfPeriod[period])) {
+            if (!isDepositedInPeriod[period]) {
+                if (period == 1) break;
                 period--;
                 continue;
             }
 
             uint256 _ethInPeriod = get_ETHInPeriod(period);
             // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
-            if(_ethInPeriod > 0){
+            if (_ethInPeriod > 0) {
                 payable(msg.sender).transfer(_ethInPeriod);
             }
 
             address[] memory _tokens = get_TokensDepositedInPeriod(period);
             uint256 _tokensCount = _tokens.length;
-            if(_tokensCount > 0){
-                for(uint i; i < _tokensCount; i++){
+            if (_tokensCount > 0) {
+                for (uint i; i < _tokensCount; i++) {
                     address _token = _tokens[i];
-                    IERC20(_token).transfer(msg.sender, get_rewardAmountOfTokenInPeriod(period, _token));
+                    IERC20(_token).transfer(
+                        msg.sender,
+                        get_rewardAmountOfTokenInPeriod(period, _token)
+                    );
                 }
             }
 
             isRewardCollectedOfPeriod[period] = true;
             emit Reward(msg.sender, period, _ethInPeriod);
 
-            if(period == 1) break;
+            if (period == 1) break;
             period--;
         }
     }
+
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
-    function all_AllowedTokens() public view returns (address[] memory){
+    function all_AllowedTokens() public view returns (address[] memory) {
         return allowedTokens.values();
     }
 
@@ -1534,7 +1885,11 @@ contract uTokenFactory is Ownable{
         return allowedTokens.length();
     }
 
-    function all_uTokensOfAllowedTokens() public view returns (address[] memory){
+    function all_uTokensOfAllowedTokens()
+        public
+        view
+        returns (address[] memory)
+    {
         return uTokensOfAllowedTokens.values();
     }
 
@@ -1542,27 +1897,41 @@ contract uTokenFactory is Ownable{
         return uTokensOfAllowedTokens.length();
     }
 
-    function get_TokenAddressOfuToken(address _uToken) public view returns (address) {
+    function get_TokenAddressOfuToken(
+        address _uToken
+    ) public view returns (address) {
         return tokenAdressOf_uToken[_uToken];
     }
 
-    function get_uTokenAddressOfToken(address _token) public view returns (address) {
+    function get_uTokenAddressOfToken(
+        address _token
+    ) public view returns (address) {
         return uTokenAddressOf_token[_token];
     }
 
-    function getInvested_uTokensOfUser(address _investor) public view returns (address[] memory investeduTokens) {
+    function getInvested_uTokensOfUser(
+        address _investor
+    ) public view returns (address[] memory investeduTokens) {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
-    function get_CurrencyOfuToken(address _uToken) public view returns (string memory currency) {
+    function get_CurrencyOfuToken(
+        address _uToken
+    ) public view returns (string memory currency) {
         return currencyOf_uToken[_uToken];
     }
 
-    function isPasswordCorrect(address _user, string memory _password) public view returns (bool) {
+    function isPasswordCorrect(
+        address _user,
+        string memory _password
+    ) public view returns (bool) {
         return (_passwordOf[_user] == keccak256(bytes(_password)));
     }
 
-    function isRecoveryNumberCorrect(address _user, string memory _recoveryNumber) public view returns (bool) {
+    function isRecoveryNumberCorrect(
+        address _user,
+        string memory _recoveryNumber
+    ) public view returns (bool) {
         return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
     }
 
@@ -1578,19 +1947,27 @@ contract uTokenFactory is Ownable{
         return isDepositedInPeriod[_period];
     }
 
-    function get_TokensDepositedInPeriod(uint256 _period) public view returns (address[] memory tokens){
+    function get_TokensDepositedInPeriod(
+        uint256 _period
+    ) public view returns (address[] memory tokens) {
         return tokensInPeriod[_period].values();
     }
 
-    function get_TokensDepositedInPeriodCount(uint256 _period) public view returns (uint256){
+    function get_TokensDepositedInPeriodCount(
+        uint256 _period
+    ) public view returns (uint256) {
         return tokensInPeriod[_period].length();
     }
 
-    function get_DepositorsInPeriod(uint256 _period) public view returns (address[] memory depositors) {
+    function get_DepositorsInPeriod(
+        uint256 _period
+    ) public view returns (address[] memory depositors) {
         return depositorsInPeriod[_period].values();
     }
 
-    function get_DepositorsInPeriodCount(uint256 _period) public view returns (uint) {
+    function get_DepositorsInPeriodCount(
+        uint256 _period
+    ) public view returns (uint) {
         return depositorsInPeriod[_period].length();
     }
 
@@ -1598,59 +1975,80 @@ contract uTokenFactory is Ownable{
         return ethInPeriod[_period];
     }
 
-    function get_rewardAmountOfTokenInPeriod(uint256 _period, address _token) public view returns (uint256) {
+    function get_rewardAmountOfTokenInPeriod(
+        uint256 _period,
+        address _token
+    ) public view returns (uint256) {
         return rewardAmountOfTokenForPeriod[_period][_token];
     }
 
     function get_CurrentPeriod() public view returns (uint) {
-        return ((block.timestamp - deployTime) / timeLimitForReward) + 1; 
+        return ((block.timestamp - deployTime) / timeLimitForReward) + 1;
     }
 
     function get_PreviousPeriod() public view returns (uint) {
         return ((block.timestamp - deployTime) / timeLimitForReward);
     }
 
-    function get_CurrentPeriod_StartAndEndTime() public view returns (uint startTime, uint endTime) {
+    function get_CurrentPeriod_StartAndEndTime()
+        public
+        view
+        returns (uint startTime, uint endTime)
+    {
         uint currentTimePeriod = get_CurrentPeriod();
 
-        if(currentTimePeriod == 1){
+        if (currentTimePeriod == 1) {
             startTime = deployTime;
             endTime = deployTime + timeLimitForReward;
-        }
-        else {
-            startTime = deployTime + (timeLimitForReward * (currentTimePeriod - 1)); 
+        } else {
+            startTime =
+                deployTime +
+                (timeLimitForReward * (currentTimePeriod - 1));
             endTime = timeLimitForReward + startTime;
         }
     }
 
-    function get_TimeLimitForWinnerForCurrentPeriod() public view returns (uint256 rewardTimeLimit){
-        (uint startTime,) = get_CurrentPeriod_StartAndEndTime();
+    function get_TimeLimitForWinnerForCurrentPeriod()
+        public
+        view
+        returns (uint256 rewardTimeLimit)
+    {
+        (uint startTime, ) = get_CurrentPeriod_StartAndEndTime();
         rewardTimeLimit = startTime + timeLimitForRewardCollection;
     }
 
     function get_currentWinner() public view returns (address) {
-        uint256 previousTimePeriod = ((block.timestamp - deployTime) / timeLimitForReward);
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) /
+            timeLimitForReward);
 
-        address[] memory depositors = get_DepositorsInPeriod(previousTimePeriod);
-        uint256 depositorsLength = get_DepositorsInPeriodCount(previousTimePeriod);
+        address[] memory depositors = get_DepositorsInPeriod(
+            previousTimePeriod
+        );
+        uint256 depositorsLength = get_DepositorsInPeriodCount(
+            previousTimePeriod
+        );
 
-        if(depositorsLength == 0) return address(0);
+        if (depositorsLength == 0) return address(0);
 
-        uint randomNumber = uint(keccak256(abi.encodePacked(previousTimePeriod, deployTime))) % depositorsLength;
+        uint randomNumber = uint(
+            keccak256(abi.encodePacked(previousTimePeriod, deployTime))
+        ) % depositorsLength;
 
         return depositors[randomNumber];
     }
 
     function rewardHistoryForEth() public view returns (uint256 ethHistory) {
         uint256 period = get_PreviousPeriod();
-        while(!isRewardCollectedOfPeriod[period]){
+        while (!isRewardCollectedOfPeriod[period]) {
             ethHistory += get_ETHInPeriod(period);
-            if(period == 0) break;
+            if (period == 0) break;
             period--;
         }
     }
 
-    function IsRewardCollectedOfPeriod(uint256 _period) public view returns (bool) {
+    function IsRewardCollectedOfPeriod(
+        uint256 _period
+    ) public view returns (bool) {
         return isRewardCollectedOfPeriod[_period];
     }
 
@@ -1658,48 +2056,60 @@ contract uTokenFactory is Ownable{
         address token;
         uint amount;
     }
-    
-    function rewardHistoryForTokensForPeriod(uint256 _period) public view returns (RewardAgainstToken[] memory record){
+
+    function rewardHistoryForTokensForPeriod(
+        uint256 _period
+    ) public view returns (RewardAgainstToken[] memory record) {
         address[] memory _tokens = get_TokensDepositedInPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
-        if(_tokensCount > 0){
-            for(uint i; i < _tokensCount; i++){
-                record[i] = RewardAgainstToken({token: _tokens[i], amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])});
+        if (_tokensCount > 0) {
+            for (uint i; i < _tokensCount; i++) {
+                record[i] = RewardAgainstToken({
+                    token: _tokens[i],
+                    amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])
+                });
             }
         }
     }
 
-    function pendingPeriodsForReward() public view returns (uint[] memory pendingPeriods) {
+    function pendingPeriodsForReward()
+        public
+        view
+        returns (uint[] memory pendingPeriods)
+    {
         uint256 period = get_PreviousPeriod();
         uint[] memory _pendingPeriods = new uint[](period);
         uint256 count;
-        while(!isRewardCollectedOfPeriod[period]){
-            if(!isDepositedInPeriod[period]) {
-                if(period == 0) break;
+        while (!isRewardCollectedOfPeriod[period]) {
+            if (!isDepositedInPeriod[period]) {
+                if (period == 0) break;
                 period--;
                 continue;
             }
             _pendingPeriods[count++] = period;
-            if(period == 0) break;
+            if (period == 0) break;
             period--;
         }
 
         pendingPeriods = new uint[](count);
         uint _count;
-        for(uint i; i < _pendingPeriods.length; i++){
-            if(_pendingPeriods[i] > 0) {
+        for (uint i; i < _pendingPeriods.length; i++) {
+            if (_pendingPeriods[i] > 0) {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
-        }       
+        }
     }
 
-
-    function get_allWhiteListAddresses() public view returns (address[] memory _whiteListAddresses) {
+    function get_allWhiteListAddresses()
+        public
+        view
+        returns (address[] memory _whiteListAddresses)
+    {
         uint _length = whiteListAddresses.length;
         _whiteListAddresses = new address[](_length);
 
-        for(uint i; i < _length; i++){
+        for (uint i; i < _length; i++) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
     }
