@@ -1459,8 +1459,16 @@ contract uTokenFactory is Ownable {
     mapping(address => string) private currencyOf_uToken;
     // token -> uToken
     mapping(address => address) private uTokenAddressOf_token;
+
+    // Investment details of specific user.
     // investorAddress -> All uTokens addresses invested in
     mapping(address => EnumerableSet.AddressSet) private investeduTokensOf;
+    // period -> investorAddress -> All uTokens addresses
+    mapping(uint256 => mapping(address => EnumerableSet.AddressSet))
+        private investeduTokensForPeriodOfUser;
+    // investor -> address -> period -> totalInvestment
+    mapping(address => mapping(address => mapping(uint256 => uint256)))
+        private investedAmountOfUserAgainstuTokenForPeriod;
 
     // (period count i.e. how much 15 days passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
