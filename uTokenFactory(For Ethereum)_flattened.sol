@@ -1510,7 +1510,8 @@ contract uTokenFactory is Ownable {
     // fee receiver addresses.
     address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
-    address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d;
+    address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600;
+    address public rewardDistributer = 0x9317Dc1623d472a588DE7d1f471a79720600;
 
     event Deposit(address depositor, address token, uint256 amount);
     event Withdraw(address withdrawer, address token, uint256 amount);
