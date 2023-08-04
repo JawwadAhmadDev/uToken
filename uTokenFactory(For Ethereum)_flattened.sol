@@ -1964,7 +1964,7 @@ contract uTokenFactory is Ownable {
         ][_uToken][_period];
     }
 
-    struct ReturnData {
+    struct InvestmentForPeriodOfUser {
         address uTokenAddress;
         uint256 amount;
     }
@@ -1972,16 +1972,20 @@ contract uTokenFactory is Ownable {
     function getInvestmentDetails_OfUser_ForPeriod(
         address _investor,
         uint256 _period
-    ) public view returns (ReturnData[] memory investmentDetails) {
+    )
+        public
+        view
+        returns (InvestmentForPeriodOfUser[] memory investmentDetails)
+    {
         address[] memory totalTokens = investeduTokens_OfUser_ForPeriod[
             _investor
         ][_period].values();
         uint256 tokensCount = totalTokens.length;
 
+        investmentDetails = new InvestmentForPeriodOfUser[](tokensCount);
         if (tokensCount > 0) {
-            investmentDetails = new ReturnData[](tokensCount);
             for (uint i; i < tokensCount; i++) {
-                investmentDetails[i] = ReturnData({
+                investmentDetails[i] = InvestmentForPeriodOfUser({
                     uTokenAddress: totalTokens[i],
                     amount: investedAmount_OfUser_AgainstuTokens_ForPeriod[
                         _investor
