@@ -1945,6 +1945,52 @@ contract uTokenFactory is Ownable {
         investeduTokens = investeduTokensOf[_investor].values();
     }
 
+    function getInvesteduTokens_OfUser_ForPeriod(
+        address _investor,
+        uint256 _period
+    ) public view returns (address[] memory investeduTokensForPeriod) {
+        investeduTokensForPeriod = investeduTokens_OfUser_ForPeriod[_investor][
+            _period
+        ].values();
+    }
+
+    function getInvestedAmount_OfUser_AgainstuToken_ForPeriod(
+        address _investor,
+        address _uToken,
+        uint256 _period
+    ) public view returns (uint256 investedAmount) {
+        investedAmount = investedAmount_OfUser_AgainstuTokens_ForPeriod[
+            _investor
+        ][_uToken][_period];
+    }
+
+    struct ReturnData {
+        address uTokenAddress;
+        uint256 amount;
+    }
+
+    function getInvestmentDetails_OfUser_ForPeriod(
+        address _investor,
+        uint256 _period
+    ) public view returns (ReturnData[] memory investmentDetails) {
+        address[] memory totalTokens = investeduTokens_OfUser_ForPeriod[
+            _investor
+        ][_period].values();
+        uint256 tokensCount = totalTokens.length;
+
+        if (tokensCount > 0) {
+            investmentDetails = new ReturnData[](tokensCount);
+            for (uint i; i < tokensCount; i++) {
+                investmentDetails[i] = ReturnData({
+                    uTokenAddress: totalTokens[i],
+                    amount: investedAmount_OfUser_AgainstuTokens_ForPeriod[
+                        _investor
+                    ][totalTokens[i]][_period]
+                });
+            }
+        }
+    }
+
     function get_CurrencyOfuToken(
         address _uToken
     ) public view returns (string memory currency) {
