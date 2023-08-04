@@ -1468,7 +1468,7 @@ contract uTokenFactory is Ownable {
         private investeduTokens_ForPeriod_OfUser;
     // investor -> address -> period -> totalInvestment
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private investedAmount_OfUser_AgainstuToken_sForPeriod;
+        private investedAmount_OfUser_AgainstuTokens_ForPeriod;
 
     // (period count i.e. how much 15 days passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
