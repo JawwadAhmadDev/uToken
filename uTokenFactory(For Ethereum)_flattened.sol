@@ -1771,8 +1771,11 @@ contract uTokenFactory is Ownable {
             );
         }
 
-        if (balance.sub(_amount) == 0)
+        if (balance.sub(_amount) == 0) {
             investeduTokensOf[withdrawer].remove(_uTokenAddress);
+            investeduTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
+                .remove(_uTokenAddress);
+        }
 
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
