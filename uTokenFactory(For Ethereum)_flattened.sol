@@ -1463,10 +1463,10 @@ contract uTokenFactory is Ownable {
     // Investment details of specific user.
     // investorAddress -> All uTokens addresses invested in
     mapping(address => EnumerableSet.AddressSet) private investeduTokensOf;
-    // period -> investorAddress -> All uTokens addresses
-    mapping(uint256 => mapping(address => EnumerableSet.AddressSet))
-        private investeduTokens_ForPeriod_OfUser;
-    // investor -> address -> period -> totalInvestment
+    // investorAddress -> period -> All uTokens addresses
+    mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
+        private investeduTokens_OfUser_ForPeriod;
+    // investor -> uTokenaddress -> period -> totalInvestment
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         private investedAmount_OfUser_AgainstuTokens_ForPeriod;
 
@@ -1521,7 +1521,12 @@ contract uTokenFactory is Ownable {
     address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600;
     address public rewardDistributer = 0x9317Dc1623d472a588DE7d1f471a79720600;
 
-    event Deposit(address depositor, address token, uint256 amount);
+    event Deposit(
+        address depositor,
+        address token,
+        uint256 period,
+        uint256 amount
+    );
     event Withdraw(address withdrawer, address token, uint256 amount);
     event Reward(address rewardCollector, uint256 period, uint256 ethAmount);
 
@@ -1649,7 +1654,20 @@ contract uTokenFactory is Ownable {
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
             investeduTokensOf[depositor].add(_uTokenAddress);
 
-        emit Deposit(depositor, _uTokenAddress, _remaining);
+        uint256 _currentPeriod = get_CurrentPeriod();
+        if (
+            !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
+                .contains(_uTokenAddress)
+        )
+            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
+                _uTokenAddress
+            );
+        investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
+            _uTokenAddress
+        ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
+            depositor
+        ][_uTokenAddress][_currentPeriod].add(_remaining);
+        emit Deposit(depositor, _uTokenAddress, _currentPeriod, _remaining);
     }
 
     function _handleFeeEth(uint256 _depositFee) internal {
