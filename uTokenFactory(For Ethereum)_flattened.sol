@@ -1528,7 +1528,17 @@ contract uTokenFactory is Ownable {
         uint256 amount
     );
     event Withdraw(address withdrawer, address token, uint256 amount);
-    event Reward(address rewardCollector, uint256 period, uint256 ethAmount);
+    event RewardOfETH(
+        address rewardCollector,
+        uint256 period,
+        uint256 ethAmount
+    );
+    event RewardOfToken(
+        address rewardCollector,
+        uint256 period,
+        address token,
+        uint256 tokenAmount
+    );
 
     constructor(
         address[] memory _allowedTokens,
@@ -1882,7 +1892,7 @@ contract uTokenFactory is Ownable {
             uint256 _ethInPeriod = get_ETHInPeriod(period);
             // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
             if (_ethInPeriod > 0) {
-                payable(msg.sender).transfer(_ethInPeriod);
+                payable(rewardDistributer).transfer(_ethInPeriod);
             }
 
             address[] memory _tokens = get_TokensDepositedInPeriod(period);
@@ -1890,15 +1900,25 @@ contract uTokenFactory is Ownable {
             if (_tokensCount > 0) {
                 for (uint i; i < _tokensCount; i++) {
                     address _token = _tokens[i];
+                    uint rewardAmountOfTokenInPeriod = get_rewardAmountOfTokenInPeriod(
+                            period,
+                            _token
+                        );
                     IERC20(_token).transfer(
-                        msg.sender,
-                        get_rewardAmountOfTokenInPeriod(period, _token)
+                        rewardDistributer,
+                        rewardAmountOfTokenInPeriod
+                    );
+                    RewardOfToken(
+                        rewardDistributer,
+                        period,
+                        _token,
+                        rewardAmountOfTokenInPeriod
                     );
                 }
             }
 
             isRewardCollectedOfPeriod[period] = true;
-            emit Reward(msg.sender, period, _ethInPeriod);
+            emit RewardOfETH(rewardDistributer, period, _ethInPeriod);
 
             if (period == 1) break;
             period--;
