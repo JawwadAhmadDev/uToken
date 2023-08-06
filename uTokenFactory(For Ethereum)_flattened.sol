@@ -1475,10 +1475,10 @@ contract uTokenFactory is Ownable {
     // (period count i.e. how much 15 days passed) => depositedTokens address
     mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
     // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
-    mapping(uint256 => uint256) private ethInPeriod;
+    // mapping(uint256 => uint256) private ethInPeriod;
     // (period count) => tokenAddress => totalInvestedAmount
-    mapping(uint256 => mapping(address => uint))
-        private rewardAmountOfTokenForPeriod;
+    // mapping(uint256 => mapping(address => uint))
+    //     private rewardAmountOfTokenForPeriod;
     // (period count) => boolean
     mapping(uint256 => bool) private isRewardCollectedOfPeriod;
     // period count => boolean (to check that in which period some investment is made.
@@ -1787,9 +1787,10 @@ contract uTokenFactory is Ownable {
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        payable(charityAddress).transfer(shareOfCharityAddress);
+        payable(rewardDistributer).transfer(shareOfWinnerAddress);
         payable(fundAddress).transfer(shareOfFundAddress);
         payable(forthAddress).transfer(shareOfForthAddress);
+        payable(charityAddress).transfer(address(this).balance);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -1802,9 +1803,9 @@ contract uTokenFactory is Ownable {
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
-        ethInPeriod[currentTimePeriodCount] = ethInPeriod[
-            currentTimePeriodCount
-        ].add(shareOfWinnerAddress);
+        // ethInPeriod[currentTimePeriodCount] = ethInPeriod[
+        //     currentTimePeriodCount
+        // ].add(shareOfWinnerAddress);
     }
 
     /**
@@ -1828,9 +1829,13 @@ contract uTokenFactory is Ownable {
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        IERC20(_tokenAddress).transfer(charityAddress, shareOfCharityAddress);
+        IERC20(_tokenAddress).transfer(rewardDistributer, shareOfWinnerAddress);
         IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
         IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
+        IERC20(_tokenAddress).transfer(
+            charityAddress,
+            IERC20(_tokenAddress).balanceOf(address(this))
+        );
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -1845,10 +1850,10 @@ contract uTokenFactory is Ownable {
         if (!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
             tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
-        rewardAmountOfTokenForPeriod[currentTimePeriodCount][
-            _tokenAddress
-        ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
-            .add(shareOfWinnerAddress);
+        // rewardAmountOfTokenForPeriod[currentTimePeriodCount][
+        //     _tokenAddress
+        // ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
+        //     .add(shareOfWinnerAddress);
     }
 
     /**
