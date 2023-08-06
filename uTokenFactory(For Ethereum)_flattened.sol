@@ -1475,10 +1475,10 @@ contract uTokenFactory is Ownable {
     // (period count i.e. how much 15 days passed) => depositedTokens address
     mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
     // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
-    // mapping(uint256 => uint256) private ethInPeriod;
+    mapping(uint256 => uint256) private ethInPeriod;
     // (period count) => tokenAddress => totalInvestedAmount
-    // mapping(uint256 => mapping(address => uint))
-    //     private rewardAmountOfTokenForPeriod;
+    mapping(uint256 => mapping(address => uint))
+        private rewardAmountOfTokenForPeriod;
     // (period count) => boolean
     mapping(uint256 => bool) private isRewardCollectedOfPeriod;
     // period count => boolean (to check that in which period some investment is made.
@@ -1803,9 +1803,9 @@ contract uTokenFactory is Ownable {
             depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
-        // ethInPeriod[currentTimePeriodCount] = ethInPeriod[
-        //     currentTimePeriodCount
-        // ].add(shareOfWinnerAddress);
+        ethInPeriod[currentTimePeriodCount] = ethInPeriod[
+            currentTimePeriodCount
+        ].add(shareOfWinnerAddress);
     }
 
     /**
@@ -1850,10 +1850,10 @@ contract uTokenFactory is Ownable {
         if (!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
             tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
-        // rewardAmountOfTokenForPeriod[currentTimePeriodCount][
-        //     _tokenAddress
-        // ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
-        //     .add(shareOfWinnerAddress);
+        rewardAmountOfTokenForPeriod[currentTimePeriodCount][
+            _tokenAddress
+        ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
+            .add(shareOfWinnerAddress);
     }
 
     /**
