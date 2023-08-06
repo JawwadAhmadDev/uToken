@@ -2049,63 +2049,67 @@ contract uTokenFactory is Ownable {
      * emit: RewardOfETH An event emitted when Ether reward is collected for a specific period.
      * emit: RewardOfToken An event emitted when Token reward is collected for a specific period.
      */
-    function withdrawReward() external {
-        require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
+    ////////////////////////////////////////////////////////////////
+    // Commented out for now because reward is transferred to the
+    // Fund Distributor account at the time of wrapping the tokens.
+    ////////////////////////////////////////////////////////////////
+    // function withdrawReward() external {
+    //     require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
 
-        // check whether user is coming within time limit
-        uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
-        uint256 startPointOfLimit = endPointOfLimit.sub(
-            timeLimitForRewardCollection
-        );
-        require(
-            block.timestamp > startPointOfLimit &&
-                block.timestamp <= endPointOfLimit,
-            "Time limit exceeded"
-        );
+    //     // check whether user is coming within time limit
+    //     uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
+    //     uint256 startPointOfLimit = endPointOfLimit.sub(
+    //         timeLimitForRewardCollection
+    //     );
+    //     require(
+    //         block.timestamp > startPointOfLimit &&
+    //             block.timestamp <= endPointOfLimit,
+    //         "Time limit exceeded"
+    //     );
 
-        uint256 period = get_PreviousPeriod();
-        while (!(isRewardCollectedOfPeriod[period])) {
-            if (!isDepositedInPeriod[period]) {
-                if (period == 1) break;
-                period--;
-                continue;
-            }
+    //     uint256 period = get_PreviousPeriod();
+    //     while (!(isRewardCollectedOfPeriod[period])) {
+    //         if (!isDepositedInPeriod[period]) {
+    //             if (period == 1) break;
+    //             period--;
+    //             continue;
+    //         }
 
-            uint256 _ethInPeriod = get_ETHInPeriod(period);
-            // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
-            if (_ethInPeriod > 0) {
-                payable(rewardDistributer).transfer(_ethInPeriod);
-            }
+    //         uint256 _ethInPeriod = get_ETHInPeriod(period);
+    //         // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
+    //         if (_ethInPeriod > 0) {
+    //             payable(rewardDistributer).transfer(_ethInPeriod);
+    //         }
 
-            address[] memory _tokens = get_TokensDepositedInPeriod(period);
-            uint256 _tokensCount = _tokens.length;
-            if (_tokensCount > 0) {
-                for (uint i; i < _tokensCount; i++) {
-                    address _token = _tokens[i];
-                    uint rewardAmountOfTokenInPeriod = get_rewardAmountOfTokenInPeriod(
-                            period,
-                            _token
-                        );
-                    IERC20(_token).transfer(
-                        rewardDistributer,
-                        rewardAmountOfTokenInPeriod
-                    );
-                    RewardOfToken(
-                        rewardDistributer,
-                        period,
-                        _token,
-                        rewardAmountOfTokenInPeriod
-                    );
-                }
-            }
+    //         address[] memory _tokens = get_TokensDepositedInPeriod(period);
+    //         uint256 _tokensCount = _tokens.length;
+    //         if (_tokensCount > 0) {
+    //             for (uint i; i < _tokensCount; i++) {
+    //                 address _token = _tokens[i];
+    //                 uint rewardAmountOfTokenInPeriod = get_rewardAmountOfTokenInPeriod(
+    //                         period,
+    //                         _token
+    //                     );
+    //                 IERC20(_token).transfer(
+    //                     rewardDistributer,
+    //                     rewardAmountOfTokenInPeriod
+    //                 );
+    //                 RewardOfToken(
+    //                     rewardDistributer,
+    //                     period,
+    //                     _token,
+    //                     rewardAmountOfTokenInPeriod
+    //                 );
+    //             }
+    //         }
 
-            isRewardCollectedOfPeriod[period] = true;
-            emit RewardOfETH(rewardDistributer, period, _ethInPeriod);
+    //         isRewardCollectedOfPeriod[period] = true;
+    //         emit RewardOfETH(rewardDistributer, period, _ethInPeriod);
 
-            if (period == 1) break;
-            period--;
-        }
-    }
+    //         if (period == 1) break;
+    //         period--;
+    //     }
+    // }
 
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
