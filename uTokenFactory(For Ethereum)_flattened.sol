@@ -1,5 +1,8 @@
-// File: uToken.sol
+/**
+ *Submitted for verification at Etherscan.io on 2023-08-14
+*/
 
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
 interface IuToken {
@@ -1518,8 +1521,8 @@ contract uTokenFactory is Ownable {
     // fee receiver addresses.
     address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
-    address public forthAddress = 0x9317Dc1623d472a588DE7d1f471a79720600;
-    address public rewardDistributer = 0x9317Dc1623d472a588DE7d1f471a79720600;
+    address public forthAddress = 0x7f450426ac73B2978393d31959Fe2f4d093DC646;
+    address public rewardDistributer = 0x7f450426ac73B2978393d31959Fe2f4d093DC646;
 
     event Deposit(
         address depositor,
@@ -1783,7 +1786,7 @@ contract uTokenFactory is Ownable {
             .mul(percentOfCharityWinnerAndFundAddress)
             .div(ZOOM);
         uint256 shareOfWinnerAddress = thirtyPercentShare;
-        uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
@@ -1825,7 +1828,7 @@ contract uTokenFactory is Ownable {
             .mul(percentOfCharityWinnerAndFundAddress)
             .div(ZOOM);
         uint256 shareOfWinnerAddress = thirtyPercentShare;
-        uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
