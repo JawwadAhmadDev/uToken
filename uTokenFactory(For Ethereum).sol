@@ -9,6 +9,7 @@ import "IERC20.sol";
 import "uToken.sol";
 
 pragma solidity ^0.8.18;
+
 contract uTokenFactory is Ownable {
     using SafeMath for uint256;
     using Address for address;
@@ -79,7 +80,8 @@ contract uTokenFactory is Ownable {
     address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // address which will receive all fees
     address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
     address public forthAddress = 0x7f450426ac73B2978393d31959Fe2f4d093DC646;
-    address public rewardDistributer = 0x7f450426ac73B2978393d31959Fe2f4d093DC646;
+    address public rewardDistributer =
+        0x7f450426ac73B2978393d31959Fe2f4d093DC646;
 
     event Deposit(
         address depositor,
@@ -342,15 +344,18 @@ contract uTokenFactory is Ownable {
         uint256 thirtyPercentShare = _depositFee
             .mul(percentOfCharityWinnerAndFundAddress)
             .div(ZOOM);
-        uint256 shareOfWinnerAddress = thirtyPercentShare;
+        uint256 shareOfForthAddress = _depositFee
+            .mul(percentOfForthAddress)
+            .div(ZOOM);
+        // uint256 shareOfWinnerAddress = thirtyPercentShare;
         // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
+        // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        payable(rewardDistributer).transfer(shareOfWinnerAddress);
-        payable(fundAddress).transfer(shareOfFundAddress);
+        payable(rewardDistributer).transfer(thirtyPercentShare);
+        payable(fundAddress).transfer(thirtyPercentShare);
+        payable(charityAddress).transfer(thirtyPercentShare);
         payable(forthAddress).transfer(shareOfForthAddress);
-        payable(charityAddress).transfer(address(this).balance);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -365,7 +370,7 @@ contract uTokenFactory is Ownable {
 
         ethInPeriod[currentTimePeriodCount] = ethInPeriod[
             currentTimePeriodCount
-        ].add(shareOfWinnerAddress);
+        ].add(thirtyPercentShare);
     }
 
     /**
@@ -384,18 +389,18 @@ contract uTokenFactory is Ownable {
         uint256 thirtyPercentShare = _depositFee
             .mul(percentOfCharityWinnerAndFundAddress)
             .div(ZOOM);
-        uint256 shareOfWinnerAddress = thirtyPercentShare;
+        uint256 shareOfForthAddress = _depositFee
+            .mul(percentOfForthAddress)
+            .div(ZOOM);
+        // uint256 shareOfWinnerAddress = thirtyPercentShare;
         // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
+        // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        IERC20(_tokenAddress).transfer(rewardDistributer, shareOfWinnerAddress);
-        IERC20(_tokenAddress).transfer(fundAddress, shareOfFundAddress);
+        IERC20(_tokenAddress).transfer(rewardDistributer, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(fundAddress, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(charityAddress, thirtyPercentShare);
         IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
-        IERC20(_tokenAddress).transfer(
-            charityAddress,
-            IERC20(_tokenAddress).balanceOf(address(this))
-        );
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -413,7 +418,7 @@ contract uTokenFactory is Ownable {
         rewardAmountOfTokenForPeriod[currentTimePeriodCount][
             _tokenAddress
         ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
-            .add(shareOfWinnerAddress);
+            .add(thirtyPercentShare);
     }
 
     /**
