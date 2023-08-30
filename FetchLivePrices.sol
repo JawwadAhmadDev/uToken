@@ -205,14 +205,12 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 
 contract FetchLivePrices {
 
-    IUniswapV2Factory public factory;
-    address public secondPairToken;
+    IUniswapV2Factory immutable public factory;
 
-    error PairNotExist(address firstToken, address secondToken);
+    constructor(address _factory) {
+        // factory = IUniswapV2Factory(_factory);
+        factory = IUniswapV2Factory(0xFa06EAe0ea3540F6Ce2DfFfa15cB95E48E4f6470);
 
-    constructor(address _factory, address _secondPairToken) {
-        factory = IUniswapV2Factory(_factory);
-        secondPairToken = _secondPairToken;
     }
 
 
@@ -221,25 +219,39 @@ contract FetchLivePrices {
     }
 
     function getPair(address _firstToken, address _secondToken) public view returns (address pair) {
-        address pairAddress = factory.getPair(_firstToken, _secondToken);
-        if(pairAddress == address(0)){
-            revert PairNotExist({firstToken: _firstToken, secondToken: _secondToken});
-        }
-        return pairAddress;
+        pair = factory.getPair(_firstToken, _secondToken);
     }
 
     function getSortedTokensFromPair(address _firstToken, address _secondToken) public view returns (address tokenA, address tokenB) {
-        IUniswapV2Pair pair = IUniswapV2Pair(getPair(_firstToken, _secondToken));
-        tokenA = pair.token0();
-        tokenB = pair.token1();
+        address pair = getPair(_firstToken, _secondToken);
+        tokenA = IUniswapV2Pair(pair).token0();
+        tokenB = IUniswapV2Pair(pair).token1();
     }
     
-    function getPrice(address token) public view returns (uint256 livePrice) {
-        IUniswapV2Pair pair = IUniswapV2Pair(getPair(token, secondPairToken));
+    function getPrice(address _tokenA, address _tokenB) public view returns (uint256 livePrice) {
+        address pair = getPair(_tokenA, _tokenB);
 
-        (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
-        (address tokenA,) = getSortedTokensFromPair(token, secondPairToken);
+         require(pair == address(0), "Pair not exist");
 
-        livePrice = tokenA == token ? (reserve0 * 10**18) / reserve1 : (reserve1 * 10**18) / reserve0;
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair).getReserves();
+
+        require(reserve0 == 0 || reserve1 == 0, "Divided by zero");
+        
+        (address tokenA,) = getSortedTokensFromPair(_tokenA, _tokenB);
+        livePrice = tokenA == _tokenA ? (reserve1 * 10**18) / reserve0 : (reserve0 * 10**18) / reserve1;
+
+    }
+
+    function getReserve(address _tokenA, address _tokenB) public view returns (uint256 _reserve1, uint256 _reserve2){
+         address pair = getPair(_tokenA, _tokenB);
+
+         require(pair == address(0), "Pair not exist");
+         
+
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair).getReserves();
+        require(reserve0 == 0 || reserve1 == 0, "divided by zero");
+        
+        _reserve1 = reserve0;
+        _reserve2 = reserve1;
     }
 }
