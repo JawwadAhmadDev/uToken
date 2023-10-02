@@ -69,19 +69,19 @@ contract uTokenFactory is Ownable {
     uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
     // time periods for reward
-    uint256 public timeLimitForReward = 20;
-    uint256 public timeLimitForRewardCollection = 10;
+    uint256 public timeLimitForReward = 129600;
+    // uint256 public timeLimitForRewardCollection = 10;
     uint256 public deployTime;
 
     // zoom to handle percentage in the decimals
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // address which will receive all fees
-    address public charityAddress = 0x9317Dc1623d472a588DE7d1f471a79720600019d; // address which will receive share of charity.
-    address public forthAddress = 0x7f450426ac73B2978393d31959Fe2f4d093DC646;
+    address public fundAddress = 0x8c70B2AAd00298f118Dc23872C49798d911bB787; // address which will receive all fees
+    address public charityAddress = 0xbEd67EB35F81a37a71B0Af5B7c3886C186d5666b; // address which will receive share of charity.
+    address public forthAddress = 0xD35842D260dB8381B77014Eab8CC9c0F1572Fe29;
     address public rewardDistributer =
-        0x7f450426ac73B2978393d31959Fe2f4d093DC646;
+        0x735D4524f47B5191A4C82501f4Ca40AD4F637437;
 
     event Deposit(
         address depositor,
@@ -596,11 +596,11 @@ contract uTokenFactory is Ownable {
     }
 
     // function to change time limit for reward collection. only owner is authorized.
-    function changeTimeLimitForRewardCollection(
-        uint256 _time
-    ) external onlyOwner {
-        timeLimitForRewardCollection = _time;
-    }
+    // function changeTimeLimitForRewardCollection(
+    //     uint256 _time
+    // ) external onlyOwner {
+    //     timeLimitForRewardCollection = _time;
+    // }
 
     // function to withdrawReward for winner
     /**
@@ -997,14 +997,14 @@ contract uTokenFactory is Ownable {
     // Retrieves the time limit for the winner to collect their reward for the current period.
     // The function returns a timestamp that represents the deadline for collecting the reward.
     // It is calculated by adding the time limit for reward collection to the start time of the current period.
-    function get_TimeLimitForWinnerForCurrentPeriod()
-        public
-        view
-        returns (uint256 rewardTimeLimit)
-    {
-        (uint startTime, ) = get_CurrentPeriod_StartAndEndTime();
-        rewardTimeLimit = startTime + timeLimitForRewardCollection;
-    }
+    // function get_TimeLimitForWinnerForCurrentPeriod()
+    //     public
+    //     view
+    //     returns (uint256 rewardTimeLimit)
+    // {
+    //     (uint startTime, ) = get_CurrentPeriod_StartAndEndTime();
+    //     rewardTimeLimit = startTime + timeLimitForRewardCollection;
+    // }
 
     // Determines and returns the current winner.
     // The function calculates the previous time period based on the block timestamp, contract deployment time, and the reward time limit.
