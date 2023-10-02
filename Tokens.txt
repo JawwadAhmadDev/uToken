@@ -14,7 +14,7 @@ uBUSD: 0x349eE619949d3510A43b48686C37ADC178b8B759
 uUSDT: 0xA280dEc559569ef4A573AC173EdF1c4f94c402fD
 
 Parameters: ["0x46bDfA43A94ea0B2c542Da00D5c26905FC302DA8", "0xf4586d37576b44bFdee9a300A9a2648C3D25eE6B"]
-uTokenFactory: https://goerli.etherscan.io/address/0x141f1986cf226ec06b512b0ee9c7d1068691c4c0#code
+uTokenFactory: https://goerli.etherscan.io/address/0xda071279d98cd69e4e715121dc0a5491bf5cdff1#code
 
 Polygon Testnet (mumbai)
 BUSD: 0x60d875BB5061fB1cC068C588E78ddb86959b0840
@@ -24,4 +24,4 @@ uBUSD: 0x5C8426f2a9960aad2AdB111386d0423aa33a7fF5
 uUSDT: 0x09156C21C4E16644399d435AeAEe383eA97a9D48
 Parameters: ["0x60d875BB5061fB1cC068C588E78ddb86959b0840", "0x34830a94FBF97c76A4867e8E867B867CC6462200"]
 
-uTokenFactory: https://mumbai.polygonscan.com/address/0xe2578f8a53d3e0b4999d241be4cf647cb4735657
+uTokenFactory: https://mumbai.polygonscan.com/address/0x647cba558e9eb6bb30bca948c9a9c2641584d051#code
