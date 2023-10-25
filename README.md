@@ -52,7 +52,7 @@ Description of working of Smart Contract is as follows:
 
 **_Fee Collectors_**
 
-1. 30% of 0.369% will be transferred to the winner.
+1. 30% of 0.369% will be transferred to the reward distributor address which will send reward to the winner later.
 2. 30% of 0.369% will be transferred to the charity address.
 3. 30% of 0.369% will be transferred to the fund address.
 4. 10% of 0.369% will be transferred to the programmers address.
