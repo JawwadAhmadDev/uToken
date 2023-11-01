@@ -1,0 +1,17 @@
+
+1) Tether (USDT) --
+
+0xbB06DCA3AE6887fAbF931640f67cab3e3a16F4dC (MetisDao) **
+
+2) USDC --
+
+0xEA32A96608495e54156Ae48931A7c20f0dcc1a21 (MetisDao) **
+
+5) DAI --
+
+0x4c078361FC9BbB78DF910800A991C7c3DD2F6ce0 (MetisDao) **
+
+
+7) ChainLink (LINK) --
+
+0x79892E8A3Aea66C8F6893fa49eC6208ef07EC046 (MetisDao) **  (not a contract)
