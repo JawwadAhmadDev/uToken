@@ -16,10 +16,10 @@
 5) DAI --
 
 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1 (Arbitrum)
-
+<!--
 6) Shiba Inu --
 
-0x5033833c9fe8B9d3E09EEd2f73d2aaF7E3872fd1 (Arbitrum)
+0x5033833c9fe8B9d3E09EEd2f73d2aaF7E3872fd1 (Arbitrum) -->
 
 
 7) ChainLink (LINK) --
@@ -35,9 +35,9 @@
 
 0x5979D7b546E38E414F7E9822514be443A4800529 (Arbitrum)
 
-16) Optimismm (OP) --
+<!-- 16) Optimismm (OP) --
 
-0x4200000000000000000000000000000000000042 (Arbitrum)    (missing) actual address 0x88Ec17E173EbAE57B42E2ba7B2dDD69aAc73DBed
+0x4200000000000000000000000000000000000042 (Arbitrum)    (missing) actual address 0x88Ec17E173EbAE57B42E2ba7B2dDD69aAc73DBed -->
 
 25) Lido Dao (LDO)
 0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60 (Arbitrum)
