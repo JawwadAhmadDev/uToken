@@ -17,7 +17,7 @@
 
 7) ChainLink (LINK) --
 
-0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6 (Optimism)
+0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6 (Optimism) 
 
 8) Uniswap (UNI)
 

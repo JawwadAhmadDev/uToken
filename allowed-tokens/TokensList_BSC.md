@@ -1,6 +1,6 @@
-1) Tether (USDT) --
+<!-- 1) Tether (USDT) --
 
-0x0a70dDf7cDBa3E8b6277C9DDcAf2185e8B6f539f (BSC)
+0x0a70dDf7cDBa3E8b6277C9DDcAf2185e8B6f539f (BSC) -->
 
 
 3) MATIC --
