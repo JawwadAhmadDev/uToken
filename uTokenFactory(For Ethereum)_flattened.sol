@@ -34,22 +34,6 @@ interface IuToken {
         uint value
     ) external returns (bool);
 
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
-
-    function nonces(address owner) external view returns (uint);
-
-    function permit(
-        address owner,
-        address spender,
-        uint value,
-        uint deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
     function initialize(
         string memory name,
         string memory symbol,
@@ -57,7 +41,7 @@ interface IuToken {
         address[] memory _whiteListAddressess
     ) external;
 
-    function deposit(address _owner, uint256 _amount) external returns (bool);
+    function deposit(uint256 _amount) external returns (bool);
 
     function withdraw(uint256 _amount) external returns (bool);
 
@@ -538,11 +522,8 @@ contract uToken is IuToken {
     }
 
     // function to take ethers and transfer uTokens
-    function deposit(
-        address _owner,
-        uint256 _amount
-    ) external onlyFactory returns (bool) {
-        _mint(_owner, _amount);
+    function deposit(uint256 _amount) external onlyFactory returns (bool) {
+        _mint(tx.origin, _amount);
         return true;
     }
 
@@ -1733,81 +1714,6 @@ contract uTokenFactory is Ownable {
      * require: Deposit amount must be greater than 0.
      * require: The token address must be valid.
      */
-
-    function depositWithPermit(
-        string memory _password,
-        address _uTokenAddress,
-        address _owner,
-        uint256 _amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external payable {
-        address depositor = _owner;
-        // require(_isPasswordSet[depositor], "Factory: Password not set yet.");
-        // require(
-        //     _passwordOf[depositor] == keccak256(bytes(_password)),
-        //     "Factory: Password incorrect"
-        // );
-        require(_amount > 0, "Factory: invalid amount");
-        require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
-            "Factory: invalid uToken address"
-        );
-        // uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
-        // uint256 _remaining = _amount.sub(_depositFee);
-
-        require(
-            IuToken(_uTokenAddress).deposit(_owner, _amount),
-            "Factory: deposit failed"
-        );
-        if (_uTokenAddress == deployedAddressOfEth) {
-            require(msg.value > 0, "Factory: invalid Ether");
-            //     // payable(fundAddress).transfer(_depositFee);
-            //     _handleFeeEth(_depositFee);
-        } else {
-            IuToken tokenAddress = IuToken(
-                tokenAdressOf_uToken[_uTokenAddress]
-            );
-            address contractAddress = address(this);
-            tokenAddress.permit(
-                depositor,
-                contractAddress,
-                _amount,
-                deadline,
-                v,
-                r,
-                s
-            );
-            require(
-                tokenAddress.transferFrom(depositor, contractAddress, _amount),
-                "Factory: TransferFrom failed"
-            );
-            //     // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
-            //     _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
-        }
-
-        if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
-            investeduTokensOf[depositor].add(_uTokenAddress);
-
-        uint256 _currentPeriod = get_CurrentPeriod();
-        if (
-            !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
-                .contains(_uTokenAddress)
-        )
-            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
-                _uTokenAddress
-            );
-        investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
-            _uTokenAddress
-        ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
-            depositor
-        ][_uTokenAddress][_currentPeriod].add(_amount);
-        emit Deposit(depositor, _uTokenAddress, _currentPeriod, _amount);
-    }
-
     function deposit(
         string memory _password,
         address _uTokenAddress,
@@ -1829,7 +1735,7 @@ contract uTokenFactory is Ownable {
         uint256 _remaining = _amount.sub(_depositFee);
 
         require(
-            IuToken(_uTokenAddress).deposit(msg.sender, _remaining),
+            IuToken(_uTokenAddress).deposit(_remaining),
             "Factory: deposit failed"
         );
         if (_uTokenAddress == deployedAddressOfEth) {
