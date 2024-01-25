@@ -34,6 +34,12 @@ interface IuToken {
         uint value
     ) external returns (bool);
 
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+
+    function nonces(address owner) external view returns (uint);
+
     function permit(
         address owner,
         address spender,
