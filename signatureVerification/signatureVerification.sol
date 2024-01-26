@@ -9,49 +9,66 @@ contract VerifySignature {
         address verifyingContract;
     }
 
-    struct Message {
+     struct MessageForWithdraw {
+        address relayer;
         uint256 amount;
-        address to;
         string message;
     }
 
-    bytes32 constant EIP712DOMAIN_TYPEHASH =
+    struct MessageForTransfer {
+        address relayer;
+        address to;
+        uint256 amount;
+        string message;
+    }
+
+    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+
+    bytes32 constant MESSAGE_TYPEHASH_ForWithdraw = keccak256(
+        "Message(address relayer,uint256 amount,string message)"
+    );
+
+    bytes32 constant MESSAGE_TYPEHASH_forTransfer =
         keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
+        "Message(address relayer,address to,uint256 amount,string message)"
+    );
 
-    bytes32 constant MESSAGE_TYPEHASH =
-        keccak256("Message(uint256 amount,address to,string message)");
 
-    function verify(
-        address signer,
-        uint256 amount,
-        string memory message,
-        bytes memory signature
-    ) public view returns (bool) {
-        Message memory m = Message({
+    function verifyForWithdraw(address signer, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+        MessageForWithdraw memory m = MessageForWithdraw({
+            relayer: msg.sender,
             amount: amount,
-            to: msg.sender,
             message: message
         });
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator(),
-                keccak256(
-                    abi.encode(
-                        MESSAGE_TYPEHASH,
-                        m.amount,
-                        m.to,
-                        keccak256(bytes(m.message))
-                    )
-                )
-            )
-        );
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            domainSeparator(),
+            keccak256(abi.encode(MESSAGE_TYPEHASH_ForWithdraw, m.relayer, m.amount, keccak256(bytes(m.message))))
+        ));
 
         return recoverSigner(digest, signature) == signer;
     }
+
+    function verifyForTransfer(address signer, address to, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+        MessageForTransfer memory m = MessageForTransfer({
+            relayer: msg.sender,
+            to: to,
+            amount: amount,
+            message: message
+        });
+
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            domainSeparator(),
+            keccak256(abi.encode(MESSAGE_TYPEHASH_forTransfer, m.relayer, m.to, m.amount, keccak256(bytes(m.message))))
+        ));
+
+        return recoverSigner(digest, signature) == signer;
+    }
+
 
     function domainSeparator() internal view returns (bytes32) {
         // You should define your domain values here

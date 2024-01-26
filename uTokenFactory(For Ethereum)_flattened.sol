@@ -1501,6 +1501,7 @@ interface IERC20Permit {
 }
 
 contract VerifySignature {
+
     string public contractName;
 
     struct EIP712Domain {
@@ -1510,53 +1511,69 @@ contract VerifySignature {
         address verifyingContract;
     }
 
-    struct Message {
+     struct MessageForWithdraw {
+        address relayer;
         uint256 amount;
-        address to;
         string message;
     }
 
-    bytes32 constant EIP712DOMAIN_TYPEHASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
+    struct MessageForTransfer {
+        address relayer;
+        address to;
+        uint256 amount;
+        string message;
+    }
 
-    bytes32 constant MESSAGE_TYPEHASH =
-        keccak256("Message(uint256 amount,address to,string message)");
+    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+
+    bytes32 constant MESSAGE_TYPEHASH_ForWithdraw = keccak256(
+        "Message(address relayer,uint256 amount,string message)"
+    );
+
+    bytes32 constant MESSAGE_TYPEHASH_forTransfer =
+        keccak256(
+        "Message(address relayer,address to,uint256 amount,string message)"
+    );
 
     constructor(string memory _contractName) {
         contractName = _contractName;
     }
-
-    function verify(
-        address signer,
-        uint256 amount,
-        string memory message,
-        bytes memory signature
-    ) public view returns (bool) {
-        Message memory m = Message({
+    
+    function verifyForWithdraw(address signer, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+        MessageForWithdraw memory m = MessageForWithdraw({
+            relayer: msg.sender,
             amount: amount,
-            to: msg.sender,
             message: message
         });
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                domainSeparator(),
-                keccak256(
-                    abi.encode(
-                        MESSAGE_TYPEHASH,
-                        m.amount,
-                        m.to,
-                        keccak256(bytes(m.message))
-                    )
-                )
-            )
-        );
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            domainSeparator(),
+            keccak256(abi.encode(MESSAGE_TYPEHASH_ForWithdraw, m.relayer, m.amount, keccak256(bytes(m.message))))
+        ));
 
         return recoverSigner(digest, signature) == signer;
     }
+
+    function verifyForTransfer(address signer, address to, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+        MessageForTransfer memory m = MessageForTransfer({
+            relayer: msg.sender,
+            to: to,
+            amount: amount,
+            message: message
+        });
+
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            domainSeparator(),
+            keccak256(abi.encode(MESSAGE_TYPEHASH_forTransfer, m.relayer, m.to, m.amount, keccak256(bytes(m.message))))
+        ));
+
+        return recoverSigner(digest, signature) == signer;
+    }
+
 
     function domainSeparator() internal view returns (bytes32) {
         // You should define your domain values here
@@ -1564,7 +1581,7 @@ contract VerifySignature {
             keccak256(
                 abi.encode(
                     EIP712DOMAIN_TYPEHASH,
-                    keccak256(bytes(contractName)),
+                    keccak256(bytes("VerifySignature")),
                     keccak256(bytes("1")),
                     block.chainid,
                     address(this)
@@ -2087,8 +2104,6 @@ contract uTokenFactory is Ownable, VerifySignature {
             .add(thirtyPercentShare);
     }
 
-    // function verify(address signer, uint256 amount, string memory message, bytes memory signature)
-
     function withdrawWithPermit(
         // string memory _password,
         address _uTokenAddress,
@@ -2099,7 +2114,7 @@ contract uTokenFactory is Ownable, VerifySignature {
     ) external {
         // verifying the signature
         require(
-            verify(_signer, _amount, _message, _signature),
+            verifyForWithdraw(_signer, _amount, _message, _signature),
             "Factory: Invalid Signature"
         );
         address withdrawer = _signer;
@@ -2203,6 +2218,41 @@ contract uTokenFactory is Ownable, VerifySignature {
         }
 
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
+    }
+
+    function transferWithPermit(
+        // string memory _password,
+        address _uTokenAddress,
+        address _to,
+        address _signer,
+        uint256 _amount,
+        string memory _message,
+        bytes memory _signature
+    ) external returns (bool) {
+        // verifying signature
+        require(
+            verifyForTransfer(_signer, _to, _amount, _message, _signature),
+            "Factory: Invalid Signature"
+        );
+        // address caller = _signer;
+        // require(_isPasswordSet[caller], "Factory: Password not set yet.");
+        // require(
+        //     _passwordOf[caller] == keccak256(bytes(_password)),
+        //     "Factory: Password incorrect"
+        // );
+        require(_amount > 0, "Factory: Invalid amount");
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
+
+        require(
+            IuToken(_uTokenAddress).transfer(_to, _amount),
+            "Factory, transfer failed"
+        );
+        investeduTokensOf[_to].add(_uTokenAddress);
+        return true;
     }
 
     /**

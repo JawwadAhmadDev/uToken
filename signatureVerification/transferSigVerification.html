@@ -21,7 +21,7 @@
       name: "VerifySignature", // Your DApp name
       version: "1",
       chainId: 1, // Chain ID, change as per your network
-      verifyingContract: "0xddaAd340b0f1Ef65169Ae5E41A8b10776a75482d" // Your contract address
+      verifyingContract: "0xb27A31f1b0AF2946B7F582768f03239b1eC07c2c" // Your contract address
     };
 
     const domainType = [
@@ -33,6 +33,7 @@
 
     const messageType = [
       { name: 'relayer', type: 'address' },
+      { name: 'to', type: 'address' },
       { name: 'amount', type: 'uint256' },
       { name: 'message', type: 'string' }
     ];
@@ -41,20 +42,23 @@
       await connect();
 
       const message = {
-        relayer: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", // Example relayer address
+        relayer: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", // Replace with actual relayer address
+        to: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2", // Replace with actual recipient address
         amount: 100, // Example amount
         message: "Hello, EIP-712!" // Example message
       };
+     
 
       const dataToSign = JSON.stringify({
-          types: {
-              EIP712Domain: domainType,
-              Message: messageType
-          },
-          domain: domain,
-          primaryType: "Message",
-          message: message
+        types: {
+          EIP712Domain: domainType,
+          Message: messageType
+        },
+        domain: domain,
+        primaryType: "Message",
+        message: message
       });
+      
 
       try {
         const signature = await signTyped(dataToSign);
