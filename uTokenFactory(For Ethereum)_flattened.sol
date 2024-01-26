@@ -43,7 +43,7 @@ interface IuToken {
 
     function deposit(address _owner, uint256 _amount) external returns (bool);
 
-    function withdraw(uint256 _amount) external returns (bool);
+    function withdraw(address _owner, uint256 _amount) external returns (bool);
 
     function currency() external view returns (string memory);
 }
@@ -522,16 +522,20 @@ contract uToken is IuToken {
     }
 
     // function to take ethers and transfer uTokens
-    function deposit(address _owner, uint256 _amount) external onlyFactory returns (bool) {
+    function deposit(
+        address _owner,
+        uint256 _amount
+    ) external onlyFactory returns (bool) {
         _mint(_owner, _amount);
         return true;
     }
 
     // function to take uTokens and send Ethers back
     function withdraw(
+        address _owner,
         uint256 _amount
     ) external onlyFactory lock returns (bool) {
-        _burn(tx.origin, _amount);
+        _burn(_owner, _amount);
         return true;
     }
 
@@ -1496,13 +1500,107 @@ interface IERC20Permit {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-// File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
+contract VerifySignature {
+    string public contractName;
 
-// File: uTokenFactory(For Polygon).sol
+    struct EIP712Domain {
+        string name;
+        string version;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Message {
+        uint256 amount;
+        address to;
+        string message;
+    }
+
+    bytes32 constant EIP712DOMAIN_TYPEHASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+
+    bytes32 constant MESSAGE_TYPEHASH =
+        keccak256("Message(uint256 amount,address to,string message)");
+
+    constructor(string memory _contractName) {
+        contractName = _contractName;
+    }
+
+    function verify(
+        address signer,
+        uint256 amount,
+        string memory message,
+        bytes memory signature
+    ) public view returns (bool) {
+        Message memory m = Message({
+            amount: amount,
+            to: msg.sender,
+            message: message
+        });
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        MESSAGE_TYPEHASH,
+                        m.amount,
+                        m.to,
+                        keccak256(bytes(m.message))
+                    )
+                )
+            )
+        );
+
+        return recoverSigner(digest, signature) == signer;
+    }
+
+    function domainSeparator() internal view returns (bytes32) {
+        // You should define your domain values here
+        return
+            keccak256(
+                abi.encode(
+                    EIP712DOMAIN_TYPEHASH,
+                    keccak256(bytes(contractName)),
+                    keccak256(bytes("1")),
+                    block.chainid,
+                    address(this)
+                )
+            );
+    }
+
+    function recoverSigner(
+        bytes32 digest,
+        bytes memory signature
+    ) internal pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
+        return ecrecover(digest, v, r, s);
+    }
+
+    function splitSignature(
+        bytes memory sig
+    ) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "invalid signature length");
+
+        assembly {
+            // first 32 bytes, after the length prefix
+            r := mload(add(sig, 32))
+            // second 32 bytes
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes)
+            v := byte(0, mload(add(sig, 96)))
+        }
+
+        return (r, s, v);
+    }
+}
 
 pragma solidity ^0.8.18;
 
-contract uTokenFactory is Ownable {
+contract uTokenFactory is Ownable, VerifySignature {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1596,8 +1694,9 @@ contract uTokenFactory is Ownable {
 
     constructor(
         address[] memory _allowedTokens,
-        address[] memory _whiteListAddressess
-    ) {
+        address[] memory _whiteListAddressess,
+        string memory _contractName
+    ) VerifySignature(_contractName) {
         deployTime = block.timestamp;
         whiteListAddresses = _whiteListAddressess;
 
@@ -1749,12 +1848,15 @@ contract uTokenFactory is Ownable {
         _addAllowedTokens(_allowedTokens);
     }
 
-
     function depositWithPermit(
         // string memory _password,
         address _uTokenAddress,
         address _owner,
-        uint256 _amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s
+        uint256 _amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external payable {
         address depositor = _owner;
         // require(_isPasswordSet[depositor], "Factory: Password not set yet.");
@@ -1780,26 +1882,39 @@ contract uTokenFactory is Ownable {
         //     // payable(fundAddress).transfer(_depositFee);
         //     // _handleFeeEth(_depositFee);
         // } else {
-            address tokenAddress = tokenAdressOf_uToken[_uTokenAddress]; 
-            IERC20Permit(tokenAddress).permit(_owner, address(this), _amount, deadline, v, r, s);
-            require(
-                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
-                    _owner,
-                    address(this),
-                    _amount
-                ),
-                "Factory: TransferFrom failed"
-            );
-            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
-            // _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
+        address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
+        IERC20Permit(tokenAddress).permit(
+            _owner,
+            address(this),
+            _amount,
+            deadline,
+            v,
+            r,
+            s
+        );
+        require(
+            IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                _owner,
+                address(this),
+                _amount
+            ),
+            "Factory: TransferFrom failed"
+        );
+        // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+        // _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         // }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
             investeduTokensOf[depositor].add(_uTokenAddress);
 
         uint256 _currentPeriod = get_CurrentPeriod();
-        if (!(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod]).contains(_uTokenAddress))
-            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(_uTokenAddress);
+        if (
+            !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
+                .contains(_uTokenAddress)
+        )
+            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
+                _uTokenAddress
+            );
         investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
             _uTokenAddress
         ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
@@ -1807,6 +1922,7 @@ contract uTokenFactory is Ownable {
         ][_uTokenAddress][_currentPeriod].add(_amount);
         emit Deposit(depositor, _uTokenAddress, _currentPeriod, _amount);
     }
+
     /**
      * @dev Handles the depositing of tokens.
      *
@@ -1971,6 +2087,62 @@ contract uTokenFactory is Ownable {
             .add(thirtyPercentShare);
     }
 
+    // function verify(address signer, uint256 amount, string memory message, bytes memory signature)
+
+    function withdrawWithPermit(
+        // string memory _password,
+        address _uTokenAddress,
+        address _signer,
+        uint256 _amount,
+        string memory _message,
+        bytes memory _signature
+    ) external {
+        // verifying the signature
+        require(
+            verify(_signer, _amount, _message, _signature),
+            "Factory: Invalid Signature"
+        );
+        address withdrawer = _signer;
+        // require(_isPasswordSet[withdrawer], "Factory: Password not set yet.");
+        // require(
+        //     _passwordOf[withdrawer] == keccak256(bytes(_password)),
+        //     "Factory: Password incorrect"
+        // );
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
+        uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
+        require(_amount > 0, "Factory: invalid amount");
+        require(balance >= _amount, "Factory: Not enought tokens");
+
+        require(
+            IuToken(_uTokenAddress).withdraw(withdrawer, _amount),
+            "Factory: withdraw failed"
+        );
+
+        if (_uTokenAddress == deployedAddressOfEth) {
+            payable(withdrawer).transfer(_amount);
+        } else {
+            require(
+                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(
+                    withdrawer,
+                    _amount
+                ),
+                "Factory: transfer failed"
+            );
+        }
+
+        if (balance.sub(_amount) == 0) {
+            investeduTokensOf[withdrawer].remove(_uTokenAddress);
+            investeduTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
+                .remove(_uTokenAddress);
+        }
+
+        emit Withdraw(withdrawer, _uTokenAddress, _amount);
+    }
+
     /**
      * @dev Handles the withdrawal of tokens.
      *
@@ -2008,7 +2180,7 @@ contract uTokenFactory is Ownable {
         require(balance >= _amount, "Factory: Not enought tokens");
 
         require(
-            IuToken(_uTokenAddress).withdraw(_amount),
+            IuToken(_uTokenAddress).withdraw(withdrawer, _amount),
             "Factory: withdraw failed"
         );
 
