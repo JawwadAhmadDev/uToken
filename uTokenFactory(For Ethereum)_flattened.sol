@@ -41,7 +41,7 @@ interface IuToken {
         address[] memory _whiteListAddressess
     ) external;
 
-    function deposit(uint256 _amount) external returns (bool);
+    function deposit(address _owner, uint256 _amount) external returns (bool);
 
     function withdraw(uint256 _amount) external returns (bool);
 
@@ -522,8 +522,8 @@ contract uToken is IuToken {
     }
 
     // function to take ethers and transfer uTokens
-    function deposit(uint256 _amount) external onlyFactory returns (bool) {
-        _mint(tx.origin, _amount);
+    function deposit(address _owner, uint256 _amount) external onlyFactory returns (bool) {
+        _mint(_owner, _amount);
         return true;
     }
 
@@ -1446,6 +1446,56 @@ library SafeMath {
     }
 }
 
+interface IERC20Permit {
+    /**
+     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
+     * given ``owner``'s signed approval.
+     *
+     * IMPORTANT: The same issues {IERC20-approve} has related to transaction
+     * ordering also apply here.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `deadline` must be a timestamp in the future.
+     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
+     * over the EIP712-formatted function arguments.
+     * - the signature must use ``owner``'s current nonce (see {nonces}).
+     *
+     * For more information on the signature format, see the
+     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
+     * section].
+     *
+     * CAUTION: See Security Considerations above.
+     */
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    /**
+     * @dev Returns the current nonce for `owner`. This value must be
+     * included whenever a signature is generated for {permit}.
+     *
+     * Every successful call to {permit} increases ``owner``'s nonce by one. This
+     * prevents a signature from being used multiple times.
+     */
+    function nonces(address owner) external view returns (uint256);
+
+    /**
+     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
 // File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
 
 // File: uTokenFactory(For Polygon).sol
@@ -1699,6 +1749,64 @@ contract uTokenFactory is Ownable {
         _addAllowedTokens(_allowedTokens);
     }
 
+
+    function depositWithPermit(
+        // string memory _password,
+        address _uTokenAddress,
+        address _owner,
+        uint256 _amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s
+    ) external payable {
+        address depositor = _owner;
+        // require(_isPasswordSet[depositor], "Factory: Password not set yet.");
+        // require(
+        //     _passwordOf[depositor] == keccak256(bytes(_password)),
+        //     "Factory: Password incorrect"
+        // );
+        require(_amount > 0, "Factory: invalid amount");
+        require(
+            _uTokenAddress == deployedAddressOfEth ||
+                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            "Factory: invalid uToken address"
+        );
+        // uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
+        // uint256 _remaining = _amount.sub(_depositFee);
+
+        require(
+            IuToken(_uTokenAddress).deposit(_owner, _amount),
+            "Factory: deposit failed"
+        );
+        // if (_uTokenAddress == deployedAddressOfEth) {
+        //     require(msg.value > 0, "Factory: invalid Ether");
+        //     // payable(fundAddress).transfer(_depositFee);
+        //     // _handleFeeEth(_depositFee);
+        // } else {
+            address tokenAddress = tokenAdressOf_uToken[_uTokenAddress]; 
+            IERC20Permit(tokenAddress).permit(_owner, address(this), _amount, deadline, v, r, s);
+            require(
+                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                    _owner,
+                    address(this),
+                    _amount
+                ),
+                "Factory: TransferFrom failed"
+            );
+            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            // _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
+        // }
+
+        if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
+            investeduTokensOf[depositor].add(_uTokenAddress);
+
+        uint256 _currentPeriod = get_CurrentPeriod();
+        if (!(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod]).contains(_uTokenAddress))
+            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(_uTokenAddress);
+        investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
+            _uTokenAddress
+        ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
+            depositor
+        ][_uTokenAddress][_currentPeriod].add(_amount);
+        emit Deposit(depositor, _uTokenAddress, _currentPeriod, _amount);
+    }
     /**
      * @dev Handles the depositing of tokens.
      *
@@ -1735,7 +1843,7 @@ contract uTokenFactory is Ownable {
         uint256 _remaining = _amount.sub(_depositFee);
 
         require(
-            IuToken(_uTokenAddress).deposit(_remaining),
+            IuToken(_uTokenAddress).deposit(depositor, _remaining),
             "Factory: deposit failed"
         );
         if (_uTokenAddress == deployedAddressOfEth) {
@@ -2556,6 +2664,7 @@ contract uTokenFactory is Ownable {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
         }
+        // checking
     }
 
     /**
