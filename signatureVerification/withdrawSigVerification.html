@@ -18,10 +18,10 @@
     window.Buffer = buffer.Buffer; // getting this from buffer module for frontend.
 
     const domain = {
-      name: "VerifySignature", // Your DApp name
+      name: "uTokenFactory", // Your DApp name
       version: "1",
       chainId: 1, // Chain ID, change as per your network
-      verifyingContract: "0xddaAd340b0f1Ef65169Ae5E41A8b10776a75482d" // Your contract address
+      verifyingContract: "0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8" // Your contract address
     };
 
     const domainType = [
@@ -42,7 +42,7 @@
 
       const message = {
         relayer: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", // Example relayer address
-        amount: 100, // Example amount
+        amount: 1900, // Example amount
         message: "Hello, EIP-712!" // Example message
       };
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract VerifySignature {
+contract Testing {
     struct EIP712Domain {
         string name;
         string version;
@@ -92,7 +92,7 @@ contract VerifySignature {
             keccak256(
                 abi.encode(
                     EIP712DOMAIN_TYPEHASH,
-                    keccak256(bytes("VerifySignature")),
+                    keccak256(bytes("Testing")),
                     keccak256(bytes("1")),
                     block.chainid,
                     address(this)

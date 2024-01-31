@@ -15,10 +15,10 @@
   <script type="text/javascript">
     window.Buffer = buffer.Buffer // getting this from buffer module for frontend.
 
-    const domainName = "MyToken" // put your token name 
+    const domainName = "uToken" // put your token name 
     const domainVersion = "1" // leave this to "1"
     const chainId = 1 // this is for the chain's ID. value is 1 for remix
-    const contractAddress = "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3" // Put the address here from remix
+    const contractAddress = "0xe2f236E332dA002a85475A794630dEe8a0a5C3F8" // Put the address here from remix
 
     var account = null;
 
@@ -126,7 +126,7 @@
     async function main() {
       await connect()
 
-      const permit = await createPermit("0x9D7f74d0C41E726EC95884E0e97Fa6129e3b5E99", 1000, 0, 2661766724)
+      const permit = await createPermit("0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8", 1000, 2, 2661766724)
       console.log(`r: 0x${permit.r.toString('hex')}, s: 0x${permit.s.toString('hex')}, v: ${permit.v}, sig: ${permit.signature}`)
     }
   </script>

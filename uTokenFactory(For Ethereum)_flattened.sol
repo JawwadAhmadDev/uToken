@@ -1557,12 +1557,12 @@ contract VerifySignature {
         return recoverSigner(digest, signature) == signer;
     }
 
-    function verifyForTransfer(address signer, address to, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+    function verifyForTransfer(address _relayer, address _signer, address _to, uint256 _amount, string memory _message, bytes memory _signature) public view returns (bool) {
         MessageForTransfer memory m = MessageForTransfer({
-            relayer: msg.sender,
-            to: to,
-            amount: amount,
-            message: message
+            relayer: _relayer,
+            to: _to,
+            amount: _amount,
+            message: _message
         });
 
         bytes32 digest = keccak256(abi.encodePacked(
@@ -1571,7 +1571,7 @@ contract VerifySignature {
             keccak256(abi.encode(MESSAGE_TYPEHASH_forTransfer, m.relayer, m.to, m.amount, keccak256(bytes(m.message))))
         ));
 
-        return recoverSigner(digest, signature) == signer;
+        return recoverSigner(digest, _signature) == _signer;
     }
 
 
@@ -1581,7 +1581,7 @@ contract VerifySignature {
             keccak256(
                 abi.encode(
                     EIP712DOMAIN_TYPEHASH,
-                    keccak256(bytes("VerifySignature")),
+                    keccak256(bytes(contractName)),
                     keccak256(bytes("1")),
                     block.chainid,
                     address(this)
@@ -2220,20 +2220,32 @@ contract uTokenFactory is Ownable, VerifySignature {
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
 
+
+    // address _uTokenAddress,
+    //     address _owner,
+    //     uint256 _amount,
+    //     uint256 deadline,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
     function transferWithPermit(
         // string memory _password,
         address _uTokenAddress,
+        address _owner,
         address _to,
-        address _signer,
         uint256 _amount,
-        string memory _message,
-        bytes memory _signature
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+        // string memory _message,
+        // bytes memory _signature
     ) external returns (bool) {
         // verifying signature
-        require(
-            verifyForTransfer(_signer, _to, _amount, _message, _signature),
-            "Factory: Invalid Signature"
-        );
+        // require(
+        //     verifyForTransfer(msg.sender, _signer, _to, _amount, _message, _signature),
+        //     "Factory: Invalid Signature"
+        // );
         // address caller = _signer;
         // require(_isPasswordSet[caller], "Factory: Password not set yet.");
         // require(
@@ -2247,10 +2259,28 @@ contract uTokenFactory is Ownable, VerifySignature {
             "Factory: invalid uToken address"
         );
 
-        require(
-            IuToken(_uTokenAddress).transfer(_to, _amount),
-            "Factory, transfer failed"
+        address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
+        IERC20Permit(tokenAddress).permit(
+            _owner,
+            address(this),
+            _amount,
+            deadline,
+            v,
+            r,
+            s
         );
+        require(
+            IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                _owner,
+                _to,
+                _amount
+            ),
+            "Factory: TransferFrom failed"
+        );
+        // require(
+        //     IuToken(_uTokenAddress).transfer(_to, _amount),
+        //     "Factory, transfer failed"
+        // );
         investeduTokensOf[_to].add(_uTokenAddress);
         return true;
     }
