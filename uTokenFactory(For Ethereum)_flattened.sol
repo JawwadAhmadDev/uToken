@@ -1501,7 +1501,6 @@ interface IERC20Permit {
 }
 
 contract VerifySignature {
-
     string public contractName;
 
     struct EIP712Domain {
@@ -1511,7 +1510,7 @@ contract VerifySignature {
         address verifyingContract;
     }
 
-     struct MessageForWithdraw {
+    struct MessageForWithdraw {
         address relayer;
         uint256 amount;
         string message;
@@ -1524,40 +1523,61 @@ contract VerifySignature {
         string message;
     }
 
-    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-    );
+    bytes32 constant EIP712DOMAIN_TYPEHASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
 
-    bytes32 constant MESSAGE_TYPEHASH_ForWithdraw = keccak256(
-        "Message(address relayer,uint256 amount,string message)"
-    );
+    bytes32 constant MESSAGE_TYPEHASH_ForWithdraw =
+        keccak256("Message(address relayer,uint256 amount,string message)");
 
     bytes32 constant MESSAGE_TYPEHASH_forTransfer =
         keccak256(
-        "Message(address relayer,address to,uint256 amount,string message)"
-    );
+            "Message(address relayer,address to,uint256 amount,string message)"
+        );
 
     constructor(string memory _contractName) {
         contractName = _contractName;
     }
-    
-    function verifyForWithdraw(address signer, uint256 amount, string memory message, bytes memory signature) public view returns (bool) {
+
+    function verifyForWithdraw(
+        address signer,
+        uint256 amount,
+        string memory message,
+        bytes memory signature
+    ) public view returns (bool) {
         MessageForWithdraw memory m = MessageForWithdraw({
             relayer: msg.sender,
             amount: amount,
             message: message
         });
 
-        bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01",
-            domainSeparator(),
-            keccak256(abi.encode(MESSAGE_TYPEHASH_ForWithdraw, m.relayer, m.amount, keccak256(bytes(m.message))))
-        ));
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        MESSAGE_TYPEHASH_ForWithdraw,
+                        m.relayer,
+                        m.amount,
+                        keccak256(bytes(m.message))
+                    )
+                )
+            )
+        );
 
         return recoverSigner(digest, signature) == signer;
     }
 
-    function verifyForTransfer(address _relayer, address _signer, address _to, uint256 _amount, string memory _message, bytes memory _signature) public view returns (bool) {
+    function verifyForTransfer(
+        address _relayer,
+        address _signer,
+        address _to,
+        uint256 _amount,
+        string memory _message,
+        bytes memory _signature
+    ) public view returns (bool) {
         MessageForTransfer memory m = MessageForTransfer({
             relayer: _relayer,
             to: _to,
@@ -1565,15 +1585,24 @@ contract VerifySignature {
             message: _message
         });
 
-        bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01",
-            domainSeparator(),
-            keccak256(abi.encode(MESSAGE_TYPEHASH_forTransfer, m.relayer, m.to, m.amount, keccak256(bytes(m.message))))
-        ));
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator(),
+                keccak256(
+                    abi.encode(
+                        MESSAGE_TYPEHASH_forTransfer,
+                        m.relayer,
+                        m.to,
+                        m.amount,
+                        keccak256(bytes(m.message))
+                    )
+                )
+            )
+        );
 
         return recoverSigner(digest, _signature) == _signer;
     }
-
 
     function domainSeparator() internal view returns (bytes32) {
         // You should define your domain values here
@@ -1887,11 +1916,11 @@ contract uTokenFactory is Ownable, VerifySignature {
                 uTokensOfAllowedTokens.contains(_uTokenAddress),
             "Factory: invalid uToken address"
         );
-        // uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
-        // uint256 _remaining = _amount.sub(_depositFee);
+        uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
+        uint256 _remaining = _amount.sub(_depositFee);
 
         require(
-            IuToken(_uTokenAddress).deposit(_owner, _amount),
+            IuToken(_uTokenAddress).deposit(_owner, _remaining),
             "Factory: deposit failed"
         );
         // if (_uTokenAddress == deployedAddressOfEth) {
@@ -1918,7 +1947,7 @@ contract uTokenFactory is Ownable, VerifySignature {
             "Factory: TransferFrom failed"
         );
         // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
-        // _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
+        _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         // }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2220,7 +2249,6 @@ contract uTokenFactory is Ownable, VerifySignature {
         emit Withdraw(withdrawer, _uTokenAddress, _amount);
     }
 
-
     // address _uTokenAddress,
     //     address _owner,
     //     uint256 _amount,
@@ -2238,9 +2266,14 @@ contract uTokenFactory is Ownable, VerifySignature {
         uint8 v,
         bytes32 r,
         bytes32 s
-        // string memory _message,
-        // bytes memory _signature
-    ) external returns (bool) {
+    )
+        external
+        returns (
+            // string memory _message,
+            // bytes memory _signature
+            bool
+        )
+    {
         // verifying signature
         // require(
         //     verifyForTransfer(msg.sender, _signer, _to, _amount, _message, _signature),
