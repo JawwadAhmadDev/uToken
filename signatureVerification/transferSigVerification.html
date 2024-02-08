@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EIP-712 Signature Example</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.9/dist/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  
+  <script src="https://bundle.run/buffer@6.0.3"></script>
+</head>
+<body>
+  <button id="signButton">Sign Message</button>
+
+  <script type="text/javascript">
+    window.Buffer = buffer.Buffer; // getting this from buffer module for frontend.
+
+    const domain = {
+      name: "uTokenFactory", // Your DApp name
+      version: "1",
+      chainId: 1, // Chain ID, change as per your network 
+      verifyingContract: "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47" // Your contract address
+    };
+
+    const domainType = [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' },
+    ];
+
+    const messageType = [
+      { name: 'relayer', type: 'address' },
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'message', type: 'string' }
+    ];
+
+    document.getElementById('signButton').addEventListener('click', async () => {
+      await connect();
+
+      const message = {
+        relayer: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", // Replace with actual relayer address
+        to: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2", // Replace with actual recipient address
+        amount: 100, // Example amount
+        message: "Hello, EIP-712!" // Example message
+      };
+     
+
+      const dataToSign = JSON.stringify({
+        types: {
+          EIP712Domain: domainType,
+          Message: messageType
+        },
+        domain: domain,
+        primaryType: "Message",
+        message: message
+      });
+      
+
+      try {
+        const signature = await signTyped(dataToSign);
+        console.log('Signature:', signature);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    async function connect() {
+      // This helps connect webpage to wallet.
+      const providerOptions = {
+        walletconnect: {
+          package: WalletConnectProvider.default, // required
+          options: {
+            rpc: {
+              1: "https://cloudflare-eth.com",
+              137: "https://polygon-rpc.com",
+              80001: "https://rpc-mumbai.maticvigil.com/"
+              // ...
+            },
+          }
+        }
+      };
+
+      const Web3Modal = window.Web3Modal.default;
+      const web3Modal = new Web3Modal({
+        network: "mainnet", // optional
+        cacheProvider: false, // optional
+        providerOptions, // required
+        theme: "dark"
+      });
+
+      const provider = await web3Modal.connect();
+
+      window.web3 = new Web3(provider);
+      var accounts = await web3.eth.getAccounts();
+      account = accounts[0];
+    }
+
+    function signTyped(dataToSign) {
+      // call this method to sign EIP 712 data
+      return new Promise((resolve, reject) => {
+        web3.currentProvider.sendAsync({
+          method: "eth_signTypedData_v4",
+          params: [account, dataToSign],
+          from: account
+        }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result.result)
+        })
+      })
+    }
+  </script>
+</body>
+</html>
