@@ -1747,6 +1747,7 @@ contract uTokenFactory is Ownable, VerifySignature {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
+        currencyOf_uToken[deployedAddressOfEth] = IuToken(deployedAddressOfEth).currency();
         _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
