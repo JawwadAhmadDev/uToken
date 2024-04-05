@@ -1760,8 +1760,6 @@ contract uTokenFactory is Ownable, VerifySignature {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
-        currencyOf_uToken[deployedAddressOfEth] = IuToken(deployedAddressOfEth)
-            .currency();
         _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
@@ -1972,11 +1970,11 @@ contract uTokenFactory is Ownable, VerifySignature {
 
         // if native currency then add accordingly otherwise add tokens and add amount of that token
         if (_uTokenAddress == deployedAddressOfEth)
-            nativeCurrencyDepositedBy[depositor].add(_amount);
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(_amount);
         else {
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
+            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
         }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2061,12 +2059,12 @@ contract uTokenFactory is Ownable, VerifySignature {
 
         // if native currency then add accordingly otherwise add tokens and add amount of that token
         if (_uTokenAddress == deployedAddressOfEth)
-            nativeCurrencyDepositedBy[depositor].add(_amount);
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(msg.value);
         else {
             address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
+            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
         }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2904,10 +2902,19 @@ contract uTokenFactory is Ownable, VerifySignature {
         return ((block.timestamp - deployTime) / timeLimitForReward) + 1;
     }
 
+    function get_CurrentPeriod_for369days() public view returns (uint) {
+        return
+            ((block.timestamp - deployTime) / timeLimitForReward_369days) + 1;
+    }
+
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the previous period.
     function get_PreviousPeriod() public view returns (uint) {
         return ((block.timestamp - deployTime) / timeLimitForReward);
+    }
+
+    function get_PreviousPeriod_for369days() public view returns (uint) {
+        return ((block.timestamp - deployTime) / timeLimitForReward_369days);
     }
 
     // Calculates and returns the start and end times for the current period.
@@ -2932,6 +2939,24 @@ contract uTokenFactory is Ownable, VerifySignature {
                 deployTime +
                 (timeLimitForReward * (currentTimePeriod - 1));
             endTime = timeLimitForReward + startTime;
+        }
+    }
+
+    function get_CurrentPeriod_StartAndEndTime_for369days()
+        public
+        view
+        returns (uint startTime, uint endTime)
+    {
+        uint currentTimePeriod = get_CurrentPeriod_for369days();
+
+        if (currentTimePeriod == 1) {
+            startTime = deployTime;
+            endTime = deployTime + timeLimitForReward_369days;
+        } else {
+            startTime =
+                deployTime +
+                (timeLimitForReward_369days * (currentTimePeriod - 1));
+            endTime = timeLimitForReward_369days + startTime;
         }
     }
 
