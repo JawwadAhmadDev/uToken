@@ -1760,7 +1760,8 @@ contract uTokenFactory is Ownable, VerifySignature {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
-        _addAllowedTokens(_allowedTokens);
+        if(_allowedTokens.length != 0)
+            _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
     }
