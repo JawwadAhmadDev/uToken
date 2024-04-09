@@ -1651,6 +1651,18 @@ contract uTokenFactory is Ownable, VerifySignature {
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    // all investors of the system
+    EnumerableSet.AddressSet private allDepositors;
+
+    // overall investment of a depostitor
+    // mapping: depositor => tokens
+    mapping(address => EnumerableSet.AddressSet) private depositedTokensOf;
+    // mapping: depositor => amount of deposited native currency
+    mapping(address => uint256) private nativeCurrencyDepositedBy;
+    // mapping: depositor => token => amount
+    mapping(address => mapping(address => uint256))
+        private depositedAmountOfUserForToken;
+
     // uToken -> Token Address (against which contract is deployed)
     mapping(address => address) private tokenAdressOf_uToken;
     mapping(address => string) private currencyOf_uToken;
@@ -1706,6 +1718,7 @@ contract uTokenFactory is Ownable, VerifySignature {
 
     // time periods for reward
     uint256 public timeLimitForReward = 129600;
+    uint256 public timeLimitForReward_369days = 31881600; // 369 days
     // uint256 public timeLimitForRewardCollection = 10;
     uint256 public deployTime;
 
@@ -1747,7 +1760,8 @@ contract uTokenFactory is Ownable, VerifySignature {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
-        _addAllowedTokens(_allowedTokens);
+        if(_allowedTokens.length != 0)
+            _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
     }
@@ -1950,6 +1964,20 @@ contract uTokenFactory is Ownable, VerifySignature {
         _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         // }
 
+        // If this is first time to deposit in the system, add it to the depositors list of the system
+        if (!(allDepositors.contains(depositor))) allDepositors.add(depositor);
+
+        // investment details update for 369 days mappings.
+
+        // if native currency then add accordingly otherwise add tokens and add amount of that token
+        if (_uTokenAddress == deployedAddressOfEth)
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(_amount);
+        else {
+            if (!depositedTokensOf[depositor].contains(tokenAddress))
+                depositedTokensOf[depositor].add(tokenAddress);
+            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
+        }
+
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
             investeduTokensOf[depositor].add(_uTokenAddress);
 
@@ -2023,6 +2051,21 @@ contract uTokenFactory is Ownable, VerifySignature {
             );
             // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
+        }
+
+        // If this is first time to deposit in the system, add it to the depositors list of the system
+        if (!(allDepositors.contains(depositor))) allDepositors.add(depositor);
+
+        // investment details update for 369 days mappings.
+
+        // if native currency then add accordingly otherwise add tokens and add amount of that token
+        if (_uTokenAddress == deployedAddressOfEth)
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(msg.value);
+        else {
+            address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
+            if (!depositedTokensOf[depositor].contains(tokenAddress))
+                depositedTokensOf[depositor].add(tokenAddress);
+            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
         }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2430,6 +2473,13 @@ contract uTokenFactory is Ownable, VerifySignature {
         timeLimitForReward = _time;
     }
 
+    // function to change the time limit for reward of 369 days
+    function changeTimeLimitForReward_369days(
+        uint256 _time
+    ) external onlyOwner {
+        timeLimitForReward_369days = _time;
+    }
+
     // function to change time limit for reward collection. only owner is authorized.
     // function changeTimeLimitForRewardCollection(
     //     uint256 _time
@@ -2594,6 +2644,61 @@ contract uTokenFactory is Ownable, VerifySignature {
         address _token
     ) public view returns (address) {
         return uTokenAddressOf_token[_token];
+    }
+
+    //-------------------- Investment Details for 369 days -------------------------------//
+    function getAllDepositors_inSystem()
+        public
+        view
+        returns (address[] memory _allDepositors)
+    {
+        _allDepositors = allDepositors.values();
+    }
+
+    function getNativeCurrencyDepositedBy(
+        address _depositor
+    ) public view returns (uint256 _depositedNativeCurrency) {
+        _depositedNativeCurrency = nativeCurrencyDepositedBy[_depositor];
+    }
+
+    struct InvestmentOfUser {
+        address tokenAddress;
+        uint256 amount;
+    }
+
+    function getInvestmentDetails_OfUser(
+        address _depositor
+    ) public view returns (InvestmentOfUser[] memory investmentDetails) {
+        address[] memory totalTokens = depositedTokensOf[_depositor].values();
+        uint256 tokensCount = totalTokens.length;
+
+        investmentDetails = new InvestmentOfUser[](tokensCount);
+        if (tokensCount > 0) {
+            for (uint i; i < tokensCount; i++) {
+                investmentDetails[i] = InvestmentOfUser({
+                    tokenAddress: totalTokens[i],
+                    amount: depositedAmountOfUserForToken[_depositor][
+                        totalTokens[i]
+                    ]
+                });
+            }
+        }
+    }
+
+    function get_currentWinner_for369Days() public view returns (address) {
+        uint256 previousTimePeriod = ((block.timestamp - deployTime) /
+            timeLimitForReward_369days);
+
+        address[] memory depositors = getAllDepositors_inSystem();
+        uint256 depositorsLength = depositors.length;
+
+        if (depositorsLength == 0) return address(0);
+
+        uint randomNumber = uint(
+            keccak256(abi.encodePacked(previousTimePeriod, deployTime))
+        ) % depositorsLength;
+
+        return depositors[randomNumber];
     }
 
     /**
@@ -2798,10 +2903,19 @@ contract uTokenFactory is Ownable, VerifySignature {
         return ((block.timestamp - deployTime) / timeLimitForReward) + 1;
     }
 
+    function get_CurrentPeriod_for369days() public view returns (uint) {
+        return
+            ((block.timestamp - deployTime) / timeLimitForReward_369days) + 1;
+    }
+
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the previous period.
     function get_PreviousPeriod() public view returns (uint) {
         return ((block.timestamp - deployTime) / timeLimitForReward);
+    }
+
+    function get_PreviousPeriod_for369days() public view returns (uint) {
+        return ((block.timestamp - deployTime) / timeLimitForReward_369days);
     }
 
     // Calculates and returns the start and end times for the current period.
@@ -2826,6 +2940,24 @@ contract uTokenFactory is Ownable, VerifySignature {
                 deployTime +
                 (timeLimitForReward * (currentTimePeriod - 1));
             endTime = timeLimitForReward + startTime;
+        }
+    }
+
+    function get_CurrentPeriod_StartAndEndTime_for369days()
+        public
+        view
+        returns (uint startTime, uint endTime)
+    {
+        uint currentTimePeriod = get_CurrentPeriod_for369days();
+
+        if (currentTimePeriod == 1) {
+            startTime = deployTime;
+            endTime = deployTime + timeLimitForReward_369days;
+        } else {
+            startTime =
+                deployTime +
+                (timeLimitForReward_369days * (currentTimePeriod - 1));
+            endTime = timeLimitForReward_369days + startTime;
         }
     }
 
