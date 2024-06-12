@@ -42,3 +42,12 @@ USDT: 0x192cFDA3F9b53bf480866f4992298Cb2d4AE17F7
 
 Paramters: ["0xda71F8B4F096419f935F935434D7B4bC8B7Bd4dB", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
 uTokenFactory: https://testnet.bscscan.com/address/0xdbf775e02d202bfc95e9575cb170a5fed7e38a56#code
+
+
+
+
+
+
+Reward Distributor: 
+Sepolia: https://sepolia.etherscan.io/address/0x49d6dd8d58934aac6338c3c084e1aea48b6e71df#code
+BNB: https://testnet.bscscan.com/address/0xaf8786a5288783456a0db7d87e78c3b83446d7e8#code

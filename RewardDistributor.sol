@@ -1,6 +1,4 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/IERC20.sol)
-
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 /**
@@ -76,4 +74,61 @@ interface IERC20 {
      * Emits a {Transfer} event.
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool);
+}
+
+
+contract RewardDistributor {
+    address public owner;
+
+    address public immutable u369Address_30 = 0x7c81e517C256666A57424969038b6E91238e798D;        // 30%
+    address public immutable u369gifthAddress_30 = 0x908640438eE0cBc982E62355f119DCf86F9C7752;   // 30%
+    address public immutable u369impactAddress_30 = 0x2568C2F2E66cB20D8392bdBad7B93A02Afe3E803;  // 30%
+    address public immutable u369devsncomAddress_10 = 0xCC18F97a8f88Ae469F4729DC414EF51Cac7550F0;// 10%
+
+
+    constructor() {
+        owner = msg.sender; 
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function.");
+        _;
+    }
+
+    function distributeEth() external payable onlyOwner {
+        uint256 nativeCurrency = msg.value;
+
+        if (nativeCurrency > 0) {
+            uint256 thirtyPercent = nativeCurrency * 30 / 100;
+            uint256 tenPercent = nativeCurrency * 10 / 100;
+
+            payable(u369gifthAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369impactAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369devsncomAddress_10).transfer(tenPercent); // 10%
+            payable(u369Address_30).transfer(address(this).balance); // remaining
+        }
+    }
+
+    function distributeERC20(
+        address[] memory tokenAddresses,
+        uint256[] memory amounts
+    ) external onlyOwner {
+        address sender = msg.sender;
+        // Distribute ERC20 tokens
+        require(tokenAddresses.length == amounts.length, "RewardDistributor: Amount for each token in not entered");
+        for(uint i = 0; i < tokenAddresses.length; i++){
+            uint256 amountToDistribute = amounts[i];
+            address tokenAddress = tokenAddresses[i];
+            
+            require(amountToDistribute > 0, "RewardDistributor: Invalid amount");
+
+            uint256 thirtyPercent = amountToDistribute * 30 / 100;
+            uint256 tenPercent = amountToDistribute * 10 / 100;
+
+            require(IERC20(tokenAddress).transferFrom(sender, u369gifthAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");  // 30%
+            require(IERC20(tokenAddress).transferFrom(sender, u369impactAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");   // 30%
+            require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, tenPercent), "RewardDistributor: TransferFrom Failed.");    // 10%
+            require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, IERC20(tokenAddress).balanceOf(address(this))), "RewardDistributor: TransferFrom Failed.");            // remaining
+        }    
+    }
 }
