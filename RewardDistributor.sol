@@ -100,12 +100,12 @@ contract RewardDistributor {
 
         if (nativeCurrency > 0) {
             uint256 thirtyPercent = nativeCurrency * 30 / 100;
-            uint256 tenPercent = nativeCurrency * 10 / 100;
+            uint256 remaining = nativeCurrency - (thirtyPercent * 3);
 
             payable(u369gifthAddress_30).transfer(thirtyPercent); // 30%
             payable(u369impactAddress_30).transfer(thirtyPercent); // 30%
-            payable(u369devsncomAddress_10).transfer(tenPercent); // 10%
-            payable(u369Address_30).transfer(address(this).balance); // remaining
+            payable(u369Address_30).transfer(thirtyPercent); // 30%
+            payable(u369devsncomAddress_10).transfer(remaining); // 10%
         }
     }
 
@@ -123,12 +123,25 @@ contract RewardDistributor {
             require(amountToDistribute > 0, "RewardDistributor: Invalid amount");
 
             uint256 thirtyPercent = amountToDistribute * 30 / 100;
-            uint256 tenPercent = amountToDistribute * 10 / 100;
+            uint256 remaining = amountToDistribute - (thirtyPercent * 3);
 
             require(IERC20(tokenAddress).transferFrom(sender, u369gifthAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");  // 30%
             require(IERC20(tokenAddress).transferFrom(sender, u369impactAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");   // 30%
-            require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, tenPercent), "RewardDistributor: TransferFrom Failed.");    // 10%
-            require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, IERC20(tokenAddress).balanceOf(address(this))), "RewardDistributor: TransferFrom Failed.");            // remaining
+            require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");            // remaining
+            require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, remaining), "RewardDistributor: TransferFrom Failed.");    // 10%
         }    
+    }
+
+    function donate(address tokenAddress, uint256 _amount) external {
+        require(_amount != 0, "RewardDistributor: Invalid Amount");
+        address sender = msg.sender;
+
+        uint256 thirtyPercent = _amount * 30 / 100;
+        uint256 remaining = _amount - (thirtyPercent * 3);
+
+        require(IERC20(tokenAddress).transferFrom(sender, u369gifthAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");  // 30%
+        require(IERC20(tokenAddress).transferFrom(sender, u369impactAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");   // 30%
+        require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");            // remaining
+        require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, remaining), "RewardDistributor: TransferFrom Failed.");    // 10%
     }
 }
