@@ -1,4 +1,4 @@
-
+// SPDX-License-Identifier: MIT
 // File: @openzeppelin/contracts/utils/Context.sol
 
 
@@ -557,3 +557,10 @@ contract USDT is ERC20 {
         _mint(msg.sender, _amount);
     }
 }
+
+contract Distributor {
+    function distribute (IERC20 _token, uint256 _amount, address _to) external {
+        _token.approve(address(this), _amount);
+        _token.transferFrom(msg.sender, _to, _amount);
+    }
+    }

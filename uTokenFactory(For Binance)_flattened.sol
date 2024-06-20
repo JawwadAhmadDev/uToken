@@ -1786,9 +1786,9 @@ contract uTokenFactory is Ownable {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IuToken(deployedEth).initialize(
-            "uETH",
-            "uETH",
-            "ETHER",
+            "uBNB",
+            "uBNB",
+            "BNB",
             whiteListAddresses
         );
     }
