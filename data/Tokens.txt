@@ -49,5 +49,5 @@ uTokenFactory: https://testnet.bscscan.com/address/0x529bf19b47b157a73c3df1a08d9
 
 
 Reward Distributor: 
-Sepolia: https://sepolia.etherscan.io/address/0x49d6dd8d58934aac6338c3c084e1aea48b6e71df#code
+Sepolia: https://sepolia.etherscan.io/address/0xc1a971929249654212d6b071a59059adbbd740ba#code
 BNB: https://testnet.bscscan.com/address/0x24cff4cdfd27d125d2d4f8e52007fb4d09f06001#code
