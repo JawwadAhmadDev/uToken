@@ -1722,11 +1722,11 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x8c70B2AAd00298f118Dc23872C49798d911bB787; // address which will receive all fees
-    address public charityAddress = 0xbEd67EB35F81a37a71B0Af5B7c3886C186d5666b; // address which will receive share of charity.
-    address public forthAddress = 0xD35842D260dB8381B77014Eab8CC9c0F1572Fe29;
+    address public fundAddress = 0x7c81e517C256666A57424969038b6E91238e798D; // address which will receive all fees
+    address public charityAddress = 0x2568C2F2E66cB20D8392bdBad7B93A02Afe3E803; // address which will receive share of charity.
+    address public forthAddress = 0xCC18F97a8f88Ae469F4729DC414EF51Cac7550F0;
     address public rewardDistributer =
-        0x735D4524f47B5191A4C82501f4Ca40AD4F637437;
+        0x908640438eE0cBc982E62355f119DCf86F9C7752;
 
     event Deposit(
         address depositor,
