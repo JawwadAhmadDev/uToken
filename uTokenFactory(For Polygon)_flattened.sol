@@ -2419,7 +2419,7 @@ contract uTokenFactory is Ownable, VerifySignature {
      *
      * require The password and recovery number for the caller should not have been set before.
      */
-    function setPasswordAndRecoveryNumber(
+    function setMasterKeyAndSignKey(
         string memory _password,
         string memory _recoveryNumber
     ) external {

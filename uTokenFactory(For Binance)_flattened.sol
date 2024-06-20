@@ -2414,7 +2414,7 @@ contract uTokenFactory is Ownable {
      *
      * require The password and recovery number for the caller should not have been set before.
      */
-    function setPasswordAndRecoveryNumber(
+    function setMasterKeyAndSignKey(
         string memory _password,
         string memory _recoveryNumber
     ) external {
@@ -2683,6 +2683,9 @@ contract uTokenFactory is Ownable {
     function get_currentWinner_for369Days() public view returns (address) {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             timeLimitForReward_369days);
+    
+        if(previousTimePeriod == 0)
+            return address(0);
 
         address[] memory depositors = getAllDepositors_inSystem();
         uint256 depositorsLength = depositors.length;
