@@ -132,7 +132,21 @@ contract RewardDistributor {
         }    
     }
 
-    function donate(address tokenAddress, uint256 _amount) external {
+     function donateEth() external payable {
+        uint256 nativeCurrency = msg.value;
+
+        if (nativeCurrency > 0) {
+            uint256 thirtyPercent = nativeCurrency * 30 / 100;
+            uint256 remaining = nativeCurrency - (thirtyPercent * 3);
+
+            payable(u369gifthAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369impactAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369Address_30).transfer(thirtyPercent); // 30%
+            payable(u369devsncomAddress_10).transfer(remaining); // 10%
+        }
+    }
+
+    function donateERC20(address tokenAddress, uint256 _amount) external {
         require(_amount != 0, "RewardDistributor: Invalid Amount");
         address sender = msg.sender;
 
