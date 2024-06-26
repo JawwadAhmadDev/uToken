@@ -132,7 +132,7 @@ contract RewardDistributor {
         }    
     }
 
-     function donateEth() external payable {
+     function donateAndDistribute() external payable {
         uint256 nativeCurrency = msg.value;
 
         if (nativeCurrency > 0) {
@@ -146,7 +146,7 @@ contract RewardDistributor {
         }
     }
 
-    function donateERC20(address tokenAddress, uint256 _amount) external {
+    function donateAndDistributeERC20(address tokenAddress, uint256 _amount) external {
         require(_amount != 0, "RewardDistributor: Invalid Amount");
         address sender = msg.sender;
 
