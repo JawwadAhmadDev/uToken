@@ -41,7 +41,7 @@ BUSD: 0xc4a5647c15a756f664b1F5fa3ffD18A1352E443B
 USDT: 0x82C9d1f83070aBBc609d6A58DB41b15Ca57C0F63
 
 Paramters: ["0xc4a5647c15a756f664b1F5fa3ffD18A1352E443B", "0x82C9d1f83070aBBc609d6A58DB41b15Ca57C0F63"]
-uTokenFactory: https://testnet.bscscan.com/address/0xe59f7f0f2ef76540f32b1b167ac4bc981f76effe#code
+uTokenFactory: https://testnet.bscscan.com/address/0x198baa18d7777770d11c6cb56e6f4097a3f9f7bb#code
 
 
 
@@ -49,5 +49,5 @@ uTokenFactory: https://testnet.bscscan.com/address/0xe59f7f0f2ef76540f32b1b167ac
 
 
 Reward Distributor: 
-Sepolia: https://sepolia.etherscan.io/address/0xdd25471acfc3b29f67e5918d4d1d9493365140ba#code
-BNB: https://testnet.bscscan.com/address/0x43c425f66e3b3fa495817cb8ca3b70ae1888eb71#code
+Sepolia: https://sepolia.etherscan.io/address/0xeb88322f6d548922c983dd0e5f991a8004f5bc71#code
+BNB: https://testnet.bscscan.com/address/0x24d628db3b359176745d50ae89144b3c0f4787b3#code

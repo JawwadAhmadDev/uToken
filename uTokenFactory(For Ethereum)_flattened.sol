@@ -527,7 +527,7 @@ contract uToken is IuToken {
     }
 
     // function to take uTokens and send Ethers back
-    function burnAndProtect(
+    function burnAndUnprotect(
         address _owner,
         uint256 _amount
     ) external onlyFactory lock returns (bool) {
