@@ -33,7 +33,7 @@ BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
 USDT: 0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
-uTokenFactory: https://sepolia.etherscan.io/address/0x9e4476f8ac13dcd07c9676e25aa641e5e0c283c4#code
+uTokenFactory: https://sepolia.etherscan.io/address/0x18d7987fd1eebd66e6a5741b5883c488a648c67f#code
 
 
 Binance:
