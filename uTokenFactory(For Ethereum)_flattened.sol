@@ -39,7 +39,10 @@ interface IuToken {
 
     function protect(address _owner, uint256 _amount) external returns (bool);
 
-    function burnAndUnprotect(address _owner, uint256 _amount) external returns (bool);
+    function burnAndUnprotect(
+        address _owner,
+        uint256 _amount
+    ) external returns (bool);
 
     function currency() external view returns (string memory);
 }
@@ -1722,11 +1725,11 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x7c81e517C256666A57424969038b6E91238e798D; // address which will receive all fees
-    address public charityAddress = 0x2568C2F2E66cB20D8392bdBad7B93A02Afe3E803; // address which will receive share of charity.
-    address public forthAddress = 0xCC18F97a8f88Ae469F4729DC414EF51Cac7550F0;
+    address public fundAddress = 0x23f7c530D41D437Cf82f2164084A009836c26080; // address which will receive all fees
+    address public charityAddress = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // address which will receive share of charity.
+    address public forthAddress = 0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
     address public rewardDistributer =
-        0x908640438eE0cBc982E62355f119DCf86F9C7752;
+        0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
 
     event Protect(
         address depositor,
@@ -1755,8 +1758,7 @@ contract uTokenFactory is Ownable {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
-        if(_allowedTokens.length != 0)
-            _addAllowedTokens(_allowedTokens);
+        if (_allowedTokens.length != 0) _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
     }
@@ -1786,7 +1788,7 @@ contract uTokenFactory is Ownable {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IuToken(deployedEth).initialize(
-            "uETHER",
+            "uETH",
             "uETH",
             "ETHER",
             whiteListAddresses
@@ -2055,12 +2057,18 @@ contract uTokenFactory is Ownable {
 
         // if native currency then add accordingly otherwise add tokens and add amount of that token
         if (_uTokenAddress == deployedAddressOfEth)
-            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(msg.value);
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[
+                depositor
+            ].add(msg.value);
         else {
             address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
+            depositedAmountOfUserForToken[depositor][
+                tokenAddress
+            ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
+                _amount
+            );
         }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2683,9 +2691,8 @@ contract uTokenFactory is Ownable {
     function get_currentWinner_for369Days() public view returns (address) {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             timeLimitForReward_369days);
-    
-        if(previousTimePeriod == 0)
-            return address(0);
+
+        if (previousTimePeriod == 0) return address(0);
 
         address[] memory depositors = getAllDepositors_inSystem();
         uint256 depositorsLength = depositors.length;
