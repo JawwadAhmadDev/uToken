@@ -1725,11 +1725,11 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x23f7c530D41D437Cf82f2164084A009836c26080; // address which will receive all fees
-    address public charityAddress = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // address which will receive share of charity.
-    address public forthAddress = 0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
-    address public rewardDistributer =
-        0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
+    address public u369_30 = 0x23f7c530D41D437Cf82f2164084A009836c26080; // address which will receive all fees
+    address public u369impact_30 = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // address which will receive share of charity.
+    address public u369community_dev_30 =
+        0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
+    address public u369gift_30 = 0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
 
     event Protect(
         address depositor,
@@ -1936,7 +1936,7 @@ contract uTokenFactory is Ownable {
     //     );
     //     // if (_uTokenAddress == deployedAddressOfEth) {
     //     //     require(msg.value > 0, "Factory: invalid Ether");
-    //     //     // payable(fundAddress).transfer(_depositFee);
+    //     //     // payable(u369_30).transfer(_depositFee);
     //     //     // _handleFeeEth(_depositFee);
     //     // } else {
     //     address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
@@ -1957,7 +1957,7 @@ contract uTokenFactory is Ownable {
     //         ),
     //         "Factory: TransferFrom failed"
     //     );
-    //     // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+    //     // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
     //     _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
     //     // }
 
@@ -2035,7 +2035,7 @@ contract uTokenFactory is Ownable {
         );
         if (_uTokenAddress == deployedAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
-            // payable(fundAddress).transfer(_depositFee);
+            // payable(u369_30).transfer(_depositFee);
             _handleFeeEth(_depositFee);
         } else {
             require(
@@ -2046,7 +2046,7 @@ contract uTokenFactory is Ownable {
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(fundAddress, _depositFee), "Factory: transfer failed");
+            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
         }
 
@@ -2106,14 +2106,14 @@ contract uTokenFactory is Ownable {
             .mul(percentOfForthAddress)
             .div(ZOOM);
         // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfu369_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        payable(rewardDistributer).transfer(thirtyPercentShare);
-        payable(fundAddress).transfer(thirtyPercentShare);
-        payable(charityAddress).transfer(thirtyPercentShare);
-        payable(forthAddress).transfer(shareOfForthAddress);
+        payable(u369gift_30).transfer(thirtyPercentShare);
+        payable(u369_30).transfer(thirtyPercentShare);
+        payable(u369impact_30).transfer(thirtyPercentShare);
+        payable(u369community_dev_30).transfer(shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -2151,14 +2151,17 @@ contract uTokenFactory is Ownable {
             .mul(percentOfForthAddress)
             .div(ZOOM);
         // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfCharityAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        IERC20(_tokenAddress).transfer(rewardDistributer, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(fundAddress, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(charityAddress, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(forthAddress, shareOfForthAddress);
+        IERC20(_tokenAddress).transfer(u369gift_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(u369_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(u369impact_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(
+            u369community_dev_30,
+            shareOfForthAddress
+        );
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -2536,7 +2539,7 @@ contract uTokenFactory is Ownable {
     //         uint256 _ethInPeriod = get_ETHInPeriod(period);
     //         // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
     //         if (_ethInPeriod > 0) {
-    //             payable(rewardDistributer).transfer(_ethInPeriod);
+    //             payable(u369gift_30).transfer(_ethInPeriod);
     //         }
 
     //         address[] memory _tokens = get_TokensDepositedInPeriod(period);
@@ -2549,11 +2552,11 @@ contract uTokenFactory is Ownable {
     //                         _token
     //                     );
     //                 IERC20(_token).transfer(
-    //                     rewardDistributer,
+    //                     u369gift_30,
     //                     rewardAmountOfTokenInPeriod
     //                 );
     //                 RewardOfToken(
-    //                     rewardDistributer,
+    //                     u369gift_30,
     //                     period,
     //                     _token,
     //                     rewardAmountOfTokenInPeriod
@@ -2562,7 +2565,7 @@ contract uTokenFactory is Ownable {
     //         }
 
     //         isRewardCollectedOfPeriod[period] = true;
-    //         emit RewardOfETH(rewardDistributer, period, _ethInPeriod);
+    //         emit RewardOfETH(u369gift_30, period, _ethInPeriod);
 
     //         if (period == 1) break;
     //         period--;
