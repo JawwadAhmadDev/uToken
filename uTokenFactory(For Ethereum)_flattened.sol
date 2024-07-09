@@ -1449,200 +1449,6 @@ library SafeMath {
     }
 }
 
-// interface IERC20Permit {
-//     /**
-//      * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
-//      * given ``owner``'s signed approval.
-//      *
-//      * IMPORTANT: The same issues {IERC20-approve} has related to transaction
-//      * ordering also apply here.
-//      *
-//      * Emits an {Approval} event.
-//      *
-//      * Requirements:
-//      *
-//      * - `spender` cannot be the zero address.
-//      * - `deadline` must be a timestamp in the future.
-//      * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
-//      * over the EIP712-formatted function arguments.
-//      * - the signature must use ``owner``'s current nonce (see {nonces}).
-//      *
-//      * For more information on the signature format, see the
-//      * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
-//      * section].
-//      *
-//      * CAUTION: See Security Considerations above.
-//      */
-//     function permit(
-//         address owner,
-//         address spender,
-//         uint256 value,
-//         uint256 deadline,
-//         uint8 v,
-//         bytes32 r,
-//         bytes32 s
-//     ) external;
-
-//     /**
-//      * @dev Returns the current nonce for `owner`. This value must be
-//      * included whenever a signature is generated for {permit}.
-//      *
-//      * Every successful call to {permit} increases ``owner``'s nonce by one. This
-//      * prevents a signature from being used multiple times.
-//      */
-//     function nonces(address owner) external view returns (uint256);
-
-//     /**
-//      * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
-//      */
-//     // solhint-disable-next-line func-name-mixedcase
-//     function DOMAIN_SEPARATOR() external view returns (bytes32);
-// }
-
-// contract VerifySignature {
-//     string public contractName;
-
-//     struct EIP712Domain {
-//         string name;
-//         string version;
-//         uint256 chainId;
-//         address verifyingContract;
-//     }
-
-//     struct MessageForWithdraw {
-//         address relayer;
-//         uint256 amount;
-//         string message;
-//     }
-
-//     struct MessageForTransfer {
-//         address relayer;
-//         address to;
-//         uint256 amount;
-//         string message;
-//     }
-
-//     bytes32 constant EIP712DOMAIN_TYPEHASH =
-//         keccak256(
-//             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-//         );
-
-//     bytes32 constant MESSAGE_TYPEHASH_ForWithdraw =
-//         keccak256("Message(address relayer,uint256 amount,string message)");
-
-//     bytes32 constant MESSAGE_TYPEHASH_forTransfer =
-//         keccak256(
-//             "Message(address relayer,address to,uint256 amount,string message)"
-//         );
-
-//     constructor(string memory _contractName) {
-//         contractName = _contractName;
-//     }
-
-//     function verifyForWithdraw(
-//         address signer,
-//         uint256 amount,
-//         string memory message,
-//         bytes memory signature
-//     ) public view returns (bool) {
-//         MessageForWithdraw memory m = MessageForWithdraw({
-//             relayer: msg.sender,
-//             amount: amount,
-//             message: message
-//         });
-
-//         bytes32 digest = keccak256(
-//             abi.encodePacked(
-//                 "\x19\x01",
-//                 domainSeparator(),
-//                 keccak256(
-//                     abi.encode(
-//                         MESSAGE_TYPEHASH_ForWithdraw,
-//                         m.relayer,
-//                         m.amount,
-//                         keccak256(bytes(m.message))
-//                     )
-//                 )
-//             )
-//         );
-
-//         return recoverSigner(digest, signature) == signer;
-//     }
-
-//     function verifyForTransfer(
-//         address _relayer,
-//         address _signer,
-//         address _to,
-//         uint256 _amount,
-//         string memory _message,
-//         bytes memory _signature
-//     ) public view returns (bool) {
-//         MessageForTransfer memory m = MessageForTransfer({
-//             relayer: _relayer,
-//             to: _to,
-//             amount: _amount,
-//             message: _message
-//         });
-
-//         bytes32 digest = keccak256(
-//             abi.encodePacked(
-//                 "\x19\x01",
-//                 domainSeparator(),
-//                 keccak256(
-//                     abi.encode(
-//                         MESSAGE_TYPEHASH_forTransfer,
-//                         m.relayer,
-//                         m.to,
-//                         m.amount,
-//                         keccak256(bytes(m.message))
-//                     )
-//                 )
-//             )
-//         );
-
-//         return recoverSigner(digest, _signature) == _signer;
-//     }
-
-//     function domainSeparator() internal view returns (bytes32) {
-//         // You should define your domain values here
-//         return
-//             keccak256(
-//                 abi.encode(
-//                     EIP712DOMAIN_TYPEHASH,
-//                     keccak256(bytes(contractName)),
-//                     keccak256(bytes("1")),
-//                     block.chainid,
-//                     address(this)
-//                 )
-//             );
-//     }
-
-//     function recoverSigner(
-//         bytes32 digest,
-//         bytes memory signature
-//     ) internal pure returns (address) {
-//         (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
-//         return ecrecover(digest, v, r, s);
-//     }
-
-//     function splitSignature(
-//         bytes memory sig
-//     ) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
-//         require(sig.length == 65, "invalid signature length");
-
-//         assembly {
-//             // first 32 bytes, after the length prefix
-//             r := mload(add(sig, 32))
-//             // second 32 bytes
-//             s := mload(add(sig, 64))
-//             // final byte (first byte of the next 32 bytes)
-//             v := byte(0, mload(add(sig, 96)))
-//         }
-
-//         return (r, s, v);
-//     }
-// }
-
 pragma solidity ^0.8.18;
 
 contract uTokenFactory is Ownable {
@@ -1725,11 +1531,11 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public u369_30 = 0x23f7c530D41D437Cf82f2164084A009836c26080; // address which will receive all fees
-    address public u369impact_30 = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // address which will receive share of charity.
+    address public u369_30 = 0x23f7c530D41D437Cf82f2164084A009836c26080;
+    address public u369gift_30 = 0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
+    address public u369impact_30 = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d;
     address public u369community_dev_30 =
         0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
-    address public u369gift_30 = 0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
 
     event Protect(
         address depositor,
@@ -1904,95 +1710,6 @@ contract uTokenFactory is Ownable {
     ) external onlyOwner {
         _addAllowedTokens(_allowedTokens);
     }
-
-    // function depositWithPermit(
-    //     // string memory _password,
-    //     address _uTokenAddress,
-    //     address _owner,
-    //     uint256 _amount,
-    //     uint256 deadline,
-    //     uint8 v,
-    //     bytes32 r,
-    //     bytes32 s
-    // ) external payable {
-    //     address depositor = _owner;
-    //     // require(_isPasswordSet[depositor], "Factory: Password not set yet.");
-    //     // require(
-    //     //     _passwordOf[depositor] == keccak256(bytes(_password)),
-    //     //     "Factory: Password incorrect"
-    //     // );
-    //     require(_amount > 0, "Factory: invalid amount");
-    //     require(
-    //         _uTokenAddress == deployedAddressOfEth ||
-    //             uTokensOfAllowedTokens.contains(_uTokenAddress),
-    //         "Factory: invalid uToken address"
-    //     );
-    //     uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
-    //     uint256 _remaining = _amount.sub(_depositFee);
-
-    //     require(
-    //         IuToken(_uTokenAddress).deposit(_owner, _remaining),
-    //         "Factory: deposit failed"
-    //     );
-    //     // if (_uTokenAddress == deployedAddressOfEth) {
-    //     //     require(msg.value > 0, "Factory: invalid Ether");
-    //     //     // payable(u369_30).transfer(_depositFee);
-    //     //     // _handleFeeEth(_depositFee);
-    //     // } else {
-    //     address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
-    //     IERC20Permit(tokenAddress).permit(
-    //         _owner,
-    //         address(this),
-    //         _amount,
-    //         deadline,
-    //         v,
-    //         r,
-    //         s
-    //     );
-    //     require(
-    //         IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
-    //             _owner,
-    //             address(this),
-    //             _amount
-    //         ),
-    //         "Factory: TransferFrom failed"
-    //     );
-    //     // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
-    //     _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
-    //     // }
-
-    //     // If this is first time to deposit in the system, add it to the depositors list of the system
-    //     if (!(allDepositors.contains(depositor))) allDepositors.add(depositor);
-
-    //     // investment details update for 369 days mappings.
-
-    //     // if native currency then add accordingly otherwise add tokens and add amount of that token
-    //     if (_uTokenAddress == deployedAddressOfEth)
-    //         nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(_amount);
-    //     else {
-    //         if (!depositedTokensOf[depositor].contains(tokenAddress))
-    //             depositedTokensOf[depositor].add(tokenAddress);
-    //         depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
-    //     }
-
-    //     if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
-    //         investeduTokensOf[depositor].add(_uTokenAddress);
-
-    //     uint256 _currentPeriod = get_CurrentPeriod();
-    //     if (
-    //         !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
-    //             .contains(_uTokenAddress)
-    //     )
-    //         investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
-    //             _uTokenAddress
-    //         );
-    //     investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
-    //         _uTokenAddress
-    //     ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
-    //         depositor
-    //     ][_uTokenAddress][_currentPeriod].add(_amount);
-    //     emit Deposit(depositor, _uTokenAddress, _currentPeriod, _amount);
-    // }
 
     /**
      * @dev Handles the depositing of tokens.
@@ -2182,60 +1899,6 @@ contract uTokenFactory is Ownable {
             .add(thirtyPercentShare);
     }
 
-    // function withdrawWithPermit(
-    //     // string memory _password,
-    //     address _uTokenAddress,
-    //     address _signer,
-    //     uint256 _amount,
-    //     string memory _message,
-    //     bytes memory _signature
-    // ) external {
-    //     // verifying the signature
-    //     require(
-    //         verifyForWithdraw(_signer, _amount, _message, _signature),
-    //         "Factory: Invalid Signature"
-    //     );
-    //     address withdrawer = _signer;
-    //     // require(_isPasswordSet[withdrawer], "Factory: Password not set yet.");
-    //     // require(
-    //     //     _passwordOf[withdrawer] == keccak256(bytes(_password)),
-    //     //     "Factory: Password incorrect"
-    //     // );
-    //     require(
-    //         _uTokenAddress == deployedAddressOfEth ||
-    //             uTokensOfAllowedTokens.contains(_uTokenAddress),
-    //         "Factory: invalid uToken address"
-    //     );
-    //     uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
-    //     require(_amount > 0, "Factory: invalid amount");
-    //     require(balance >= _amount, "Factory: Not enought tokens");
-
-    //     require(
-    //         IuToken(_uTokenAddress).withdraw(withdrawer, _amount),
-    //         "Factory: withdraw failed"
-    //     );
-
-    //     if (_uTokenAddress == deployedAddressOfEth) {
-    //         payable(withdrawer).transfer(_amount);
-    //     } else {
-    //         require(
-    //             IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(
-    //                 withdrawer,
-    //                 _amount
-    //             ),
-    //             "Factory: transfer failed"
-    //         );
-    //     }
-
-    //     if (balance.sub(_amount) == 0) {
-    //         investeduTokensOf[withdrawer].remove(_uTokenAddress);
-    //         investeduTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
-    //             .remove(_uTokenAddress);
-    //     }
-
-    //     emit Withdraw(withdrawer, _uTokenAddress, _amount);
-    // }
-
     /**
      * @dev Handles the withdrawal of tokens.
      *
@@ -2297,75 +1960,6 @@ contract uTokenFactory is Ownable {
 
         emit BurnAndUnprotect(withdrawer, _uTokenAddress, _amount);
     }
-
-    // address _uTokenAddress,
-    //     address _owner,
-    //     uint256 _amount,
-    //     uint256 deadline,
-    //     uint8 v,
-    //     bytes32 r,
-    //     bytes32 s
-    // function transferWithPermit(
-    //     // string memory _password,
-    //     address _uTokenAddress,
-    //     address _owner,
-    //     address _to,
-    //     uint256 _amount,
-    //     uint256 deadline,
-    //     uint8 v,
-    //     bytes32 r,
-    //     bytes32 s
-    // )
-    //     external
-    //     returns (
-    //         // string memory _message,
-    //         // bytes memory _signature
-    //         bool
-    //     )
-    // {
-    //     // verifying signature
-    //     // require(
-    //     //     verifyForTransfer(msg.sender, _signer, _to, _amount, _message, _signature),
-    //     //     "Factory: Invalid Signature"
-    //     // );
-    //     // address caller = _signer;
-    //     // require(_isPasswordSet[caller], "Factory: Password not set yet.");
-    //     // require(
-    //     //     _passwordOf[caller] == keccak256(bytes(_password)),
-    //     //     "Factory: Password incorrect"
-    //     // );
-    //     require(_amount > 0, "Factory: Invalid amount");
-    //     require(
-    //         _uTokenAddress == deployedAddressOfEth ||
-    //             uTokensOfAllowedTokens.contains(_uTokenAddress),
-    //         "Factory: invalid uToken address"
-    //     );
-
-    //     address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
-    //     IERC20Permit(tokenAddress).permit(
-    //         _owner,
-    //         address(this),
-    //         _amount,
-    //         deadline,
-    //         v,
-    //         r,
-    //         s
-    //     );
-    //     require(
-    //         IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
-    //             _owner,
-    //             _to,
-    //             _amount
-    //         ),
-    //         "Factory: TransferFrom failed"
-    //     );
-    //     // require(
-    //     //     IuToken(_uTokenAddress).transfer(_to, _amount),
-    //     //     "Factory, transfer failed"
-    //     // );
-    //     investeduTokensOf[_to].add(_uTokenAddress);
-    //     return true;
-    // }
 
     /**
      * @dev Transfers tokens from the caller to the given address.
@@ -2464,16 +2058,6 @@ contract uTokenFactory is Ownable {
         _passwordOf[caller] = keccak256(bytes(_password));
     }
 
-    // function to change fund address. Only owner is authroized
-    function changeFundAddress(address _fundAddress) external onlyOwner {
-        fundAddress = _fundAddress;
-    }
-
-    // function to change charity address. only owner is authroized.
-    function changeCharityAddress(address _charityAddress) external onlyOwner {
-        charityAddress = _charityAddress;
-    }
-
     // function to change time limit for reward. only onwer is authorized.
     function changeTimeLimitForReward(uint256 _time) external onlyOwner {
         timeLimitForReward = _time;
@@ -2485,92 +2069,6 @@ contract uTokenFactory is Ownable {
     ) external onlyOwner {
         timeLimitForReward_369days = _time;
     }
-
-    // function to change time limit for reward collection. only owner is authorized.
-    // function changeTimeLimitForRewardCollection(
-    //     uint256 _time
-    // ) external onlyOwner {
-    //     timeLimitForRewardCollection = _time;
-    // }
-
-    // function to withdrawReward for winner
-    /**
-     * @dev Allows the winner of the reward to withdraw it within a specific time limit.
-     *
-     * This function allows the winner to withdraw the reward in the form of Ether and tokens.
-     * It iteratively checks the periods from current to the first one and withdraws the available
-     * rewards if the winner hasn't already collected them. It keeps track of rewards collected for each period.
-     * The function requires the caller to be the current winner and to withdraw within a specific time limit.
-     *
-     * @notice The function iterates over periods, thus the gas cost could increase with the number of periods.
-     *
-     * require: The caller of the function should be the current winner.
-     * require: The function should be called within a specific time limit after the end of the period.
-     *
-     * emit: RewardOfETH An event emitted when Ether reward is collected for a specific period.
-     * emit: RewardOfToken An event emitted when Token reward is collected for a specific period.
-     */
-    ////////////////////////////////////////////////////////////////
-    // Commented out for now because reward is transferred to the
-    // Fund Distributor account at the time of wrapping the tokens.
-    ////////////////////////////////////////////////////////////////
-    // function withdrawReward() external {
-    //     require(get_currentWinner() == msg.sender, "You are not winner"); // check caller is winner or not
-
-    //     // check whether user is coming within time limit
-    //     uint256 endPointOfLimit = get_TimeLimitForWinnerForCurrentPeriod();
-    //     uint256 startPointOfLimit = endPointOfLimit.sub(
-    //         timeLimitForRewardCollection
-    //     );
-    //     require(
-    //         block.timestamp > startPointOfLimit &&
-    //             block.timestamp <= endPointOfLimit,
-    //         "Time limit exceeded"
-    //     );
-
-    //     uint256 period = get_PreviousPeriod();
-    //     while (!(isRewardCollectedOfPeriod[period])) {
-    //         if (!isDepositedInPeriod[period]) {
-    //             if (period == 1) break;
-    //             period--;
-    //             continue;
-    //         }
-
-    //         uint256 _ethInPeriod = get_ETHInPeriod(period);
-    //         // uint256 _tokensCountInPeriod = get_TokensDepositedInPeriodCount(period);
-    //         if (_ethInPeriod > 0) {
-    //             payable(u369gift_30).transfer(_ethInPeriod);
-    //         }
-
-    //         address[] memory _tokens = get_TokensDepositedInPeriod(period);
-    //         uint256 _tokensCount = _tokens.length;
-    //         if (_tokensCount > 0) {
-    //             for (uint i; i < _tokensCount; i++) {
-    //                 address _token = _tokens[i];
-    //                 uint rewardAmountOfTokenInPeriod = get_rewardAmountOfTokenInPeriod(
-    //                         period,
-    //                         _token
-    //                     );
-    //                 IERC20(_token).transfer(
-    //                     u369gift_30,
-    //                     rewardAmountOfTokenInPeriod
-    //                 );
-    //                 RewardOfToken(
-    //                     u369gift_30,
-    //                     period,
-    //                     _token,
-    //                     rewardAmountOfTokenInPeriod
-    //                 );
-    //             }
-    //         }
-
-    //         isRewardCollectedOfPeriod[period] = true;
-    //         emit RewardOfETH(u369gift_30, period, _ethInPeriod);
-
-    //         if (period == 1) break;
-    //         period--;
-    //     }
-    // }
 
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
@@ -2968,18 +2466,6 @@ contract uTokenFactory is Ownable {
             endTime = timeLimitForReward_369days + startTime;
         }
     }
-
-    // Retrieves the time limit for the winner to collect their reward for the current period.
-    // The function returns a timestamp that represents the deadline for collecting the reward.
-    // It is calculated by adding the time limit for reward collection to the start time of the current period.
-    // function get_TimeLimitForWinnerForCurrentPeriod()
-    //     public
-    //     view
-    //     returns (uint256 rewardTimeLimit)
-    // {
-    //     (uint startTime, ) = get_CurrentPeriod_StartAndEndTime();
-    //     rewardTimeLimit = startTime + timeLimitForRewardCollection;
-    // }
 
     // Determines and returns the current winner.
     // The function calculates the previous time period based on the block timestamp, contract deployment time, and the reward time limit.
