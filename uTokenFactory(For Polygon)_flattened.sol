@@ -588,7 +588,7 @@ contract uToken is IuToken {
     function approve(
         address spender,
         uint256 amount
-    ) public virtual override onlyFactory returns (bool) {
+    ) public virtual override returns (bool) {
         address owner = tx.origin;
         _approve(owner, spender, amount);
         return true;
