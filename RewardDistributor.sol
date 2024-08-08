@@ -91,13 +91,13 @@ contract RewardDistributor {
     address public owner;
 
     address public immutable u369Address_30 =
-        0x23f7c530D41D437Cf82f2164084A009836c26080; // 30%
+        0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // 30%
     address public immutable u369gifthAddress_30 =
-        0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D; // 30%
+        0x7B95e28d8B4Dd51663b221Cd911d38694F90D196; // 30%
     address public immutable u369impactAddress_30 =
-        0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // 30%
+        0x4A058b1848d01455daedA203aCFaA11D2B133206; // 30%
     address public immutable u369devsncomAddress_10 =
-        0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534; // 10%
+        0xBeB63FCd4f767985eb535Cd5276103e538729E47; // 10%
 
     constructor() {
         owner = msg.sender;
