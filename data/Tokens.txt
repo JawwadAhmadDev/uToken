@@ -1,5 +1,6 @@
 Ethereum Mainnet Deployment Addresses:
 Fractal Contract: https://etherscan.io/address/0x39994d28a843dcaa4d4b67d9e05045b122331025#code
+uToken Factory: https://etherscan.io/address/0xd867b0db5f0663dfffa490050411273ce02bab9a#writeContract
 
 
 Netlify Link: https://649c9de463727c1c820743d2--guileless-hummingbird-5b966c.netlify.app/
