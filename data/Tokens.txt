@@ -1,3 +1,7 @@
+Ethereum Mainnet Deployment Addresses:
+Fractal Contract: https://etherscan.io/address/0x39994d28a843dcaa4d4b67d9e05045b122331025#code
+
+
 Netlify Link: https://649c9de463727c1c820743d2--guileless-hummingbird-5b966c.netlify.app/
 import the following private key. it is owner's account and all the assets are in
  this account such as BUSD and USDT.
