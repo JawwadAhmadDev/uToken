@@ -37,9 +37,12 @@ interface IuToken {
         address[] memory _whiteListAddressess
     ) external;
 
-    function deposit(address _owner, uint256 _amount) external returns (bool);
+    function protect(address _owner, uint256 _amount) external returns (bool);
 
-    function withdraw(address _owner, uint256 _amount) external returns (bool);
+    function burnAndUnprotect(
+        address _owner,
+        uint256 _amount
+    ) external returns (bool);
 
     function currency() external view returns (string memory);
 }
@@ -518,7 +521,7 @@ contract uToken is IuToken {
     }
 
     // function to take ethers and transfer uTokens
-    function deposit(
+    function protect(
         address _owner,
         uint256 _amount
     ) external onlyFactory returns (bool) {
@@ -527,7 +530,7 @@ contract uToken is IuToken {
     }
 
     // function to take uTokens and send Ethers back
-    function withdraw(
+    function burnAndUnprotect(
         address _owner,
         uint256 _amount
     ) external onlyFactory lock returns (bool) {
@@ -588,7 +591,7 @@ contract uToken is IuToken {
     function approve(
         address spender,
         uint256 amount
-    ) public virtual override onlyFactory returns (bool) {
+    ) public virtual override returns (bool) {
         address owner = tx.origin;
         _approve(owner, spender, amount);
         return true;
@@ -1722,19 +1725,19 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public fundAddress = 0x7c81e517C256666A57424969038b6E91238e798D; // address which will receive all fees
-    address public charityAddress = 0x2568C2F2E66cB20D8392bdBad7B93A02Afe3E803; // address which will receive share of charity.
-    address public forthAddress = 0xCC18F97a8f88Ae469F4729DC414EF51Cac7550F0;
+    address public fundAddress = 0x23f7c530D41D437Cf82f2164084A009836c26080; // address which will receive all fees
+    address public charityAddress = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // address which will receive share of charity.
+    address public forthAddress = 0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
     address public rewardDistributer =
-        0x908640438eE0cBc982E62355f119DCf86F9C7752;
+        0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
 
-    event Deposit(
+    event Protect(
         address depositor,
         address token,
         uint256 period,
         uint256 amount
     );
-    event Withdraw(address withdrawer, address token, uint256 amount);
+    event BurnAndUnprotect(address withdrawer, address token, uint256 amount);
     event RewardOfETH(
         address rewardCollector,
         uint256 period,
@@ -1755,8 +1758,7 @@ contract uTokenFactory is Ownable {
         whiteListAddresses = _whiteListAddressess;
 
         deployedAddressOfEth = _deployEth();
-        if(_allowedTokens.length != 0)
-            _addAllowedTokens(_allowedTokens);
+        if (_allowedTokens.length != 0) _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
     }
@@ -2007,7 +2009,7 @@ contract uTokenFactory is Ownable {
      * require: Deposit amount must be greater than 0.
      * require: The token address must be valid.
      */
-    function deposit(
+    function protect(
         string memory _password,
         address _uTokenAddress,
         uint256 _amount
@@ -2028,7 +2030,7 @@ contract uTokenFactory is Ownable {
         uint256 _remaining = _amount.sub(_depositFee);
 
         require(
-            IuToken(_uTokenAddress).deposit(depositor, _remaining),
+            IuToken(_uTokenAddress).protect(depositor, _remaining),
             "Factory: deposit failed"
         );
         if (_uTokenAddress == deployedAddressOfEth) {
@@ -2055,12 +2057,18 @@ contract uTokenFactory is Ownable {
 
         // if native currency then add accordingly otherwise add tokens and add amount of that token
         if (_uTokenAddress == deployedAddressOfEth)
-            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[depositor].add(msg.value);
+            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[
+                depositor
+            ].add(msg.value);
         else {
             address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][tokenAddress] = depositedAmountOfUserForToken[depositor][tokenAddress].add(_amount);
+            depositedAmountOfUserForToken[depositor][
+                tokenAddress
+            ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
+                _amount
+            );
         }
 
         if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
@@ -2079,7 +2087,7 @@ contract uTokenFactory is Ownable {
         ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
             depositor
         ][_uTokenAddress][_currentPeriod].add(_remaining);
-        emit Deposit(depositor, _uTokenAddress, _currentPeriod, _remaining);
+        emit Protect(depositor, _uTokenAddress, _currentPeriod, _remaining);
     }
 
     /**
@@ -2241,7 +2249,7 @@ contract uTokenFactory is Ownable {
      * require: Withdrawal amount must be greater than 0.
      * require: Caller's balance must be sufficient for the withdrawal.
      */
-    function withdraw(
+    function burnAndUnprotect(
         string memory _password,
         address _uTokenAddress,
         uint256 _amount
@@ -2262,7 +2270,7 @@ contract uTokenFactory is Ownable {
         require(balance >= _amount, "Factory: Not enought tokens");
 
         require(
-            IuToken(_uTokenAddress).withdraw(withdrawer, _amount),
+            IuToken(_uTokenAddress).burnAndUnprotect(withdrawer, _amount),
             "Factory: withdraw failed"
         );
 
@@ -2284,7 +2292,7 @@ contract uTokenFactory is Ownable {
                 .remove(_uTokenAddress);
         }
 
-        emit Withdraw(withdrawer, _uTokenAddress, _amount);
+        emit BurnAndUnprotect(withdrawer, _uTokenAddress, _amount);
     }
 
     // address _uTokenAddress,
@@ -2683,9 +2691,8 @@ contract uTokenFactory is Ownable {
     function get_currentWinner_for369Days() public view returns (address) {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             timeLimitForReward_369days);
-    
-        if(previousTimePeriod == 0)
-            return address(0);
+
+        if (previousTimePeriod == 0) return address(0);
 
         address[] memory depositors = getAllDepositors_inSystem();
         uint256 depositorsLength = depositors.length;

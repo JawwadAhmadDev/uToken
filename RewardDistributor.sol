@@ -17,7 +17,11 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     /**
      * @dev Returns the value of tokens in existence.
@@ -45,7 +49,10 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /**
      * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
@@ -73,21 +80,27 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 }
-
 
 contract RewardDistributor {
     address public owner;
 
-    address public immutable u369Address_30 = 0x7c81e517C256666A57424969038b6E91238e798D;        // 30%
-    address public immutable u369gifthAddress_30 = 0x908640438eE0cBc982E62355f119DCf86F9C7752;   // 30%
-    address public immutable u369impactAddress_30 = 0x2568C2F2E66cB20D8392bdBad7B93A02Afe3E803;  // 30%
-    address public immutable u369devsncomAddress_10 = 0xCC18F97a8f88Ae469F4729DC414EF51Cac7550F0;// 10%
-
+    address public immutable u369Address_30 =
+        0x23f7c530D41D437Cf82f2164084A009836c26080; // 30%
+    address public immutable u369gifthAddress_30 =
+        0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D; // 30%
+    address public immutable u369impactAddress_30 =
+        0x0d4228ff01dbE7167C3a35640D362faAfd42406d; // 30%
+    address public immutable u369devsncomAddress_10 =
+        0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534; // 10%
 
     constructor() {
-        owner = msg.sender; 
+        owner = msg.sender;
     }
 
     modifier onlyOwner() {
@@ -99,7 +112,7 @@ contract RewardDistributor {
         uint256 nativeCurrency = msg.value;
 
         if (nativeCurrency > 0) {
-            uint256 thirtyPercent = nativeCurrency * 30 / 100;
+            uint256 thirtyPercent = (nativeCurrency * 30) / 100;
             uint256 remaining = nativeCurrency - (thirtyPercent * 3);
 
             payable(u369gifthAddress_30).transfer(thirtyPercent); // 30%
@@ -115,33 +128,112 @@ contract RewardDistributor {
     ) external onlyOwner {
         address sender = msg.sender;
         // Distribute ERC20 tokens
-        require(tokenAddresses.length == amounts.length, "RewardDistributor: Amount for each token in not entered");
-        for(uint i = 0; i < tokenAddresses.length; i++){
+        require(
+            tokenAddresses.length == amounts.length,
+            "RewardDistributor: Amount for each token in not entered"
+        );
+        for (uint i = 0; i < tokenAddresses.length; i++) {
             uint256 amountToDistribute = amounts[i];
             address tokenAddress = tokenAddresses[i];
-            
-            require(amountToDistribute > 0, "RewardDistributor: Invalid amount");
 
-            uint256 thirtyPercent = amountToDistribute * 30 / 100;
+            require(
+                amountToDistribute > 0,
+                "RewardDistributor: Invalid amount"
+            );
+
+            uint256 thirtyPercent = (amountToDistribute * 30) / 100;
             uint256 remaining = amountToDistribute - (thirtyPercent * 3);
 
-            require(IERC20(tokenAddress).transferFrom(sender, u369gifthAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");  // 30%
-            require(IERC20(tokenAddress).transferFrom(sender, u369impactAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");   // 30%
-            require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");            // remaining
-            require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, remaining), "RewardDistributor: TransferFrom Failed.");    // 10%
-        }    
+            require(
+                IERC20(tokenAddress).transferFrom(
+                    sender,
+                    u369gifthAddress_30,
+                    thirtyPercent
+                ),
+                "RewardDistributor: TransferFrom Failed."
+            ); // 30%
+            require(
+                IERC20(tokenAddress).transferFrom(
+                    sender,
+                    u369impactAddress_30,
+                    thirtyPercent
+                ),
+                "RewardDistributor: TransferFrom Failed."
+            ); // 30%
+            require(
+                IERC20(tokenAddress).transferFrom(
+                    sender,
+                    u369Address_30,
+                    thirtyPercent
+                ),
+                "RewardDistributor: TransferFrom Failed."
+            ); // remaining
+            require(
+                IERC20(tokenAddress).transferFrom(
+                    sender,
+                    u369devsncomAddress_10,
+                    remaining
+                ),
+                "RewardDistributor: TransferFrom Failed."
+            ); // 10%
+        }
     }
 
-    function donate(address tokenAddress, uint256 _amount) external {
+    function donateAndDistribute() external payable {
+        uint256 nativeCurrency = msg.value;
+
+        if (nativeCurrency > 0) {
+            uint256 thirtyPercent = (nativeCurrency * 30) / 100;
+            uint256 remaining = nativeCurrency - (thirtyPercent * 3);
+
+            payable(u369gifthAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369impactAddress_30).transfer(thirtyPercent); // 30%
+            payable(u369Address_30).transfer(thirtyPercent); // 30%
+            payable(u369devsncomAddress_10).transfer(remaining); // 10%
+        }
+    }
+
+    function donateAndDistributeERC20(
+        address tokenAddress,
+        uint256 _amount
+    ) external {
         require(_amount != 0, "RewardDistributor: Invalid Amount");
         address sender = msg.sender;
 
-        uint256 thirtyPercent = _amount * 30 / 100;
+        uint256 thirtyPercent = (_amount * 30) / 100;
         uint256 remaining = _amount - (thirtyPercent * 3);
 
-        require(IERC20(tokenAddress).transferFrom(sender, u369gifthAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");  // 30%
-        require(IERC20(tokenAddress).transferFrom(sender, u369impactAddress_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");   // 30%
-        require(IERC20(tokenAddress).transferFrom(sender, u369Address_30, thirtyPercent), "RewardDistributor: TransferFrom Failed.");            // remaining
-        require(IERC20(tokenAddress).transferFrom(sender, u369devsncomAddress_10, remaining), "RewardDistributor: TransferFrom Failed.");    // 10%
+        require(
+            IERC20(tokenAddress).transferFrom(
+                sender,
+                u369gifthAddress_30,
+                thirtyPercent
+            ),
+            "RewardDistributor: TransferFrom Failed."
+        ); // 30%
+        require(
+            IERC20(tokenAddress).transferFrom(
+                sender,
+                u369impactAddress_30,
+                thirtyPercent
+            ),
+            "RewardDistributor: TransferFrom Failed."
+        ); // 30%
+        require(
+            IERC20(tokenAddress).transferFrom(
+                sender,
+                u369Address_30,
+                thirtyPercent
+            ),
+            "RewardDistributor: TransferFrom Failed."
+        ); // remaining
+        require(
+            IERC20(tokenAddress).transferFrom(
+                sender,
+                u369devsncomAddress_10,
+                remaining
+            ),
+            "RewardDistributor: TransferFrom Failed."
+        ); // 10%
     }
 }
