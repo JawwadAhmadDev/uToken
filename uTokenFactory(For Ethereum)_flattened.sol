@@ -1531,11 +1531,11 @@ contract uTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public u369_30 = 0x23f7c530D41D437Cf82f2164084A009836c26080;
-    address public u369gift_30 = 0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
-    address public u369impact_30 = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d;
-    address public u369community_dev_30 =
-        0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
+    address public u369_30 = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7;
+    address public u369gift_30 = 0x7B95e28d8B4Dd51663b221Cd911d38694F90D196;
+    address public u369impact_30 = 0x4A058b1848d01455daedA203aCFaA11D2B133206;
+    address public u369community_dev_10 =
+        0xBeB63FCd4f767985eb535Cd5276103e538729E47;
 
     event Protect(
         address depositor,
@@ -1830,7 +1830,7 @@ contract uTokenFactory is Ownable {
         payable(u369gift_30).transfer(thirtyPercentShare);
         payable(u369_30).transfer(thirtyPercentShare);
         payable(u369impact_30).transfer(thirtyPercentShare);
-        payable(u369community_dev_30).transfer(shareOfForthAddress);
+        payable(u369community_dev_10).transfer(shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -1876,7 +1876,7 @@ contract uTokenFactory is Ownable {
         IERC20(_tokenAddress).transfer(u369_30, thirtyPercentShare);
         IERC20(_tokenAddress).transfer(u369impact_30, thirtyPercentShare);
         IERC20(_tokenAddress).transfer(
-            u369community_dev_30,
+            u369community_dev_10,
             shareOfForthAddress
         );
 
