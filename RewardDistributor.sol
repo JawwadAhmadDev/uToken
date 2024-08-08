@@ -87,7 +87,6 @@ interface IERC20 {
     ) external returns (bool);
 }
 
-
 pragma solidity ^0.8.0;
 
 /**
@@ -200,7 +199,6 @@ abstract contract Ownable is Context {
 }
 
 contract RewardDistributor is Ownable {
-
     address public immutable u369Address_30 =
         0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // 30%
     address public immutable u369gifthAddress_30 =
@@ -210,9 +208,7 @@ contract RewardDistributor is Ownable {
     address public immutable u369devsncomAddress_10 =
         0xBeB63FCd4f767985eb535Cd5276103e538729E47; // 10%
 
-    constructor() {
-    }
-
+    constructor() {}
 
     function distributeEth() external payable onlyOwner {
         uint256 nativeCurrency = msg.value;
