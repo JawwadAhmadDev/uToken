@@ -99,8 +99,8 @@ contract RewardDistributor {
     address public immutable u369devsncomAddress_10 =
         0xBeB63FCd4f767985eb535Cd5276103e538729E47; // 10%
 
-    constructor() {
-        owner = msg.sender;
+    constructor(address _owner) {
+        owner = _owner;
     }
 
     modifier onlyOwner() {
