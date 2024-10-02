@@ -1518,8 +1518,8 @@ contract uxTokenFactory is Ownable {
 
     // fee detial
     uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public percentOfCharityWinnerAndFundAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
-    uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
+    uint256 public percentOfPublicGoodsAndSocialGoodAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
+    uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
     // time periods for reward
     uint256 public timeLimitForReward = 129600;
@@ -1531,11 +1531,10 @@ contract uxTokenFactory is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public u369_30 = 0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7;
-    address public u369gift_30 = 0x7B95e28d8B4Dd51663b221Cd911d38694F90D196;
-    address public u369impact_30 = 0x4A058b1848d01455daedA203aCFaA11D2B133206;
-    address public u369community_dev_10 =
-        0xBeB63FCd4f767985eb535Cd5276103e538729E47;
+    address public ux369gift_30 = 0x4651Ea80a87c8E9C0F8495943Ad2490a02777281;
+    address public ux369impact_30 = 0xbEF1B7Fb208D6107B90D9C39C484B095c9Db6684;
+    address public ux369_30 = 0xEBAf9a2eBCcc903D09392C62482c72221bBb5DDE;
+    address public ux369devs_10 = 0x6bD8C72d0f3F5738d4Be740B19bdb406Ae42eb2F;
 
     event Protect(
         address depositor,
@@ -1594,8 +1593,8 @@ contract uxTokenFactory is Ownable {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IuxToken(deployedEth).initialize(
-            "uETH",
-            "uETH",
+            "uxETH",
+            "uxETH",
             "ETHER",
             whiteListAddresses
         );
@@ -1629,8 +1628,8 @@ contract uxTokenFactory is Ownable {
         address _token
     ) internal returns (address deployedToken) {
         IERC20 __token = IERC20(_token);
-        string memory name = string.concat("u", __token.name());
-        string memory symbol = string.concat("u", __token.symbol());
+        string memory name = string.concat("ux", __token.name());
+        string memory symbol = string.concat("ux", __token.symbol());
         string memory currency = __token.symbol();
 
         bytes memory bytecode = type(uxToken).creationCode;
@@ -1752,7 +1751,7 @@ contract uxTokenFactory is Ownable {
         );
         if (_uTokenAddress == uxTokenAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
-            // payable(u369_30).transfer(_depositFee);
+            // payable(ux369_30).transfer(_depositFee);
             _handleFeeEth(_depositFee);
         } else {
             require(
@@ -1763,7 +1762,7 @@ contract uxTokenFactory is Ownable {
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressOf_uxToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
+            // require(IERC20(tokenAdressOf_uxToken[_uTokenAddress]).transfer(ux369_30, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(
                 tokenAdressOf_uxToken[_uTokenAddress],
                 _depositFee
@@ -1820,20 +1819,20 @@ contract uxTokenFactory is Ownable {
      */
     function _handleFeeEth(uint256 _depositFee) internal {
         uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfCharityWinnerAndFundAddress)
+            .mul(percentOfPublicGoodsAndSocialGoodAddress)
             .div(ZOOM);
-        uint256 shareOfForthAddress = _depositFee
-            .mul(percentOfForthAddress)
-            .div(ZOOM);
+        uint256 shareOfForthAddress = _depositFee.mul(percentofDevsAddress).div(
+            ZOOM
+        );
         // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfu369_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfux369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfux369_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        payable(u369gift_30).transfer(thirtyPercentShare);
-        payable(u369_30).transfer(thirtyPercentShare);
-        payable(u369impact_30).transfer(thirtyPercentShare);
-        payable(u369community_dev_10).transfer(shareOfForthAddress);
+        payable(ux369gift_30).transfer(thirtyPercentShare);
+        payable(ux369_30).transfer(thirtyPercentShare);
+        payable(ux369impact_30).transfer(thirtyPercentShare);
+        payable(ux369devs_10).transfer(shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -1865,23 +1864,20 @@ contract uxTokenFactory is Ownable {
         uint256 _depositFee
     ) internal {
         uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfCharityWinnerAndFundAddress)
+            .mul(percentOfPublicGoodsAndSocialGoodAddress)
             .div(ZOOM);
-        uint256 shareOfForthAddress = _depositFee
-            .mul(percentOfForthAddress)
-            .div(ZOOM);
+        uint256 shareOfForthAddress = _depositFee.mul(percentofDevsAddress).div(
+            ZOOM
+        );
         // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
+        // uint256 shareOfux369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
         // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
 
-        IERC20(_tokenAddress).transfer(u369gift_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(u369_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(u369impact_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(
-            u369community_dev_10,
-            shareOfForthAddress
-        );
+        IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare);
+        IERC20(_tokenAddress).transfer(ux369devs_10, shareOfForthAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
             timeLimitForReward) + 1;
@@ -2132,7 +2128,7 @@ contract uxTokenFactory is Ownable {
      *
      * @return The address of the token that corresponds to the given uToken.
      */
-    function get_TokenAddressOfuToken(
+    function get_TokenAddressOfuxToken(
         address _uToken
     ) public view returns (address) {
         return tokenAdressOf_uxToken[_uToken];
@@ -2147,7 +2143,7 @@ contract uxTokenFactory is Ownable {
      *
      * @return The address of the uToken that corresponds to the given token.
      */
-    function get_uTokenAddressOfToken(
+    function get_uxTokenAddressOfToken(
         address _token
     ) public view returns (address) {
         return uxTokenAddressOf_token[_token];
@@ -2192,7 +2188,11 @@ contract uxTokenFactory is Ownable {
         }
     }
 
-    function get_currentWinner_for369Days() public view returns (address) {
+    function get_CurrentRecipientCandidate_for369Days()
+        public
+        view
+        returns (address)
+    {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             timeLimitForReward_369days);
 
@@ -2326,7 +2326,7 @@ contract uxTokenFactory is Ownable {
     // Checks whether the entered password matches the one associated with the user address.
     // The stored password is hashed for security reasons, so the entered password is hashed
     // and compared with the stored hashed password.
-    function isPasswordCorrect(
+    function isSignKeyCorrect(
         address _user,
         string memory _password
     ) public view returns (bool) {
@@ -2335,7 +2335,7 @@ contract uxTokenFactory is Ownable {
 
     // Similar to the password check function, this function checks whether the entered recovery number
     // matches the one associated with the user address.
-    function isRecoveryNumberCorrect(
+    function isMasterKeyCorrect(
         address _user,
         string memory _recoveryNumber
     ) public view returns (bool) {
@@ -2343,13 +2343,13 @@ contract uxTokenFactory is Ownable {
     }
 
     // Checks whether a password has been set for the user address.
-    function isPasswordSet(address _user) public view returns (bool) {
+    function isSignKeySet(address _user) public view returns (bool) {
         return _isPasswordSet[_user];
     }
 
     // Checks whether a recovery number has been set for the user address.
     // Returns a boolean value that is true if a recovery number is set, and false otherwise.
-    function isRecoveryNumberSet(address _user) public view returns (bool) {
+    function isMasterKeySet(address _user) public view returns (bool) {
         return _isRecoveryNumberSet[_user];
     }
 
@@ -2477,7 +2477,11 @@ contract uxTokenFactory is Ownable {
     // Otherwise, it generates a random number using the keccak256 hash function with inputs as the previous time period and deployment time.
     // The modulus operator (%) is used to ensure the random number falls within the range of indices of the depositors array.
     // Finally, it returns the depositor at the index corresponding to the random number, hence determining the current winner.
-    function get_currentWinner() public view returns (address) {
+    function get_currentRecipientCandidate_for369Hours()
+        public
+        view
+        returns (address)
+    {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             timeLimitForReward);
 
@@ -2503,7 +2507,7 @@ contract uxTokenFactory is Ownable {
     // This process continues for all previous periods until it reaches a period where the reward has been collected or period 0,
     // effectively summing up all uncollected Ether rewards.
     // The function returns the cumulative Ether reward history as a single integer value.
-    function rewardHistoryForEth() public view returns (uint256 ethHistory) {
+    function rewardHistoryForETH() public view returns (uint256 ethHistory) {
         uint256 period = get_PreviousPeriod();
         while (!isRewardCollectedOfPeriod[period]) {
             ethHistory += get_ETHInPeriod(period);
