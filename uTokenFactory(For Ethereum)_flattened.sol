@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-interface IuToken {
+interface IuxToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -470,7 +470,7 @@ library EnumerableSet {
     }
 }
 
-contract uToken is IuToken {
+contract uxToken is IuxToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private whiteList; // set to store whitelist users.
@@ -1451,7 +1451,7 @@ library SafeMath {
 
 pragma solidity ^0.8.18;
 
-contract uTokenFactory is Ownable {
+contract uxTokenFactory is Ownable {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1469,20 +1469,20 @@ contract uTokenFactory is Ownable {
         private depositedAmountOfUserForToken;
 
     // uToken -> Token Address (against which contract is deployed)
-    mapping(address => address) private tokenAdressOf_uToken;
-    mapping(address => string) private currencyOf_uToken;
+    mapping(address => address) private tokenAdressOf_uxToken;
+    mapping(address => string) private currencyOf_uxToken;
     // token -> uToken
-    mapping(address => address) private uTokenAddressOf_token;
+    mapping(address => address) private uxTokenAddressOf_token;
 
     // Investment details of specific user.
     // investorAddress -> All uTokens addresses invested in
-    mapping(address => EnumerableSet.AddressSet) private investeduTokensOf;
+    mapping(address => EnumerableSet.AddressSet) private investeduxTokensOf;
     // investorAddress -> period -> All uTokens addresses
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private investeduTokens_OfUser_ForPeriod;
+        private investeduxTokens_OfUser_ForPeriod;
     // investor -> uTokenaddress -> period -> totalInvestment
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private investedAmount_OfUser_AgainstuTokens_ForPeriod;
+        private investedAmount_OfUser_AgainstuxTokens_ForPeriod;
 
     // (period count i.e. how much 365 hours passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
@@ -1505,9 +1505,9 @@ contract uTokenFactory is Ownable {
     mapping(address => bool) private _isRecoveryNumberSet;
 
     // tokens addresses.
-    address public deployedAddressOfEth;
+    address public uxTokenAddressOfEth;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
-    EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+    EnumerableSet.AddressSet private uxTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
     address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
 
     // salt for create2 opcode.
@@ -1517,7 +1517,7 @@ contract uTokenFactory is Ownable {
     uint256 public pendingFee;
 
     // fee detial
-    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
     uint256 public percentOfCharityWinnerAndFundAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
     uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
@@ -1563,7 +1563,7 @@ contract uTokenFactory is Ownable {
         deployTime = block.timestamp;
         whiteListAddresses = _whiteListAddressess;
 
-        deployedAddressOfEth = _deployEth();
+        uxTokenAddressOfEth = _deployEth();
         if (_allowedTokens.length != 0) _addAllowedTokens(_allowedTokens);
 
         // setting whitelist addresses.
@@ -1588,12 +1588,12 @@ contract uTokenFactory is Ownable {
      * @return deployedEth The address of the newly deployed uToken contract.
      */
     function _deployEth() internal returns (address deployedEth) {
-        bytes memory bytecode = type(uToken).creationCode;
+        bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuToken(deployedEth).initialize(
+        IuxToken(deployedEth).initialize(
             "uETH",
             "uETH",
             "ETHER",
@@ -1633,7 +1633,7 @@ contract uTokenFactory is Ownable {
         string memory symbol = string.concat("u", __token.symbol());
         string memory currency = __token.symbol();
 
-        bytes memory bytecode = type(uToken).creationCode;
+        bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedToken := create2(
@@ -1643,7 +1643,7 @@ contract uTokenFactory is Ownable {
                 salt
             )
         }
-        IuToken(deployedToken).initialize(
+        IuxToken(deployedToken).initialize(
             name,
             symbol,
             currency,
@@ -1668,8 +1668,8 @@ contract uTokenFactory is Ownable {
      *
      * 3) The `_deployToken` function deploys a new uToken contract for the given token.
      *
-     * 4) `tokenAdressOf_uToken`, `uTokenAddressOf_token`, `currencyOf_uToken`, `allowedTokens`, and
-     *    `uTokensOfAllowedTokens` are state variables (mappings or sets) that are updated for each token.
+     * 4) `tokenAdressOf_uxToken`, `uxTokenAddressOf_token`, `currencyOf_uxToken`, `allowedTokens`, and
+     *    `uxTokensOfAllowedTokens` are state variables (mappings or sets) that are updated for each token.
      *
      * require _token.isContract() Ensures the provided address corresponds to a contract.
      * require !(allowedTokens.contains(_token)) Ensures the token is not already in the allowedTokens set.
@@ -1686,12 +1686,12 @@ contract uTokenFactory is Ownable {
                 "Factory: Already added"
             );
             address _deployedAddress = _deployToken(_token);
-            tokenAdressOf_uToken[_deployedAddress] = _token;
-            uTokenAddressOf_token[_token] = _deployedAddress;
-            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress)
+            tokenAdressOf_uxToken[_deployedAddress] = _token;
+            uxTokenAddressOf_token[_token] = _deployedAddress;
+            currencyOf_uxToken[_deployedAddress] = IuxToken(_deployedAddress)
                 .currency();
             allowedTokens.add(_token);
-            uTokensOfAllowedTokens.add(_deployedAddress);
+            uxTokensOfAllowedTokens.add(_deployedAddress);
         }
     }
 
@@ -1739,32 +1739,35 @@ contract uTokenFactory is Ownable {
         );
         require(_amount > 0, "Factory: invalid amount");
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            _uTokenAddress == uxTokenAddressOfEth ||
+                uxTokensOfAllowedTokens.contains(_uTokenAddress),
             "Factory: invalid uToken address"
         );
-        uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
+        uint256 _depositFee = _amount.mul(benefactionFeePercent).div(ZOOM);
         uint256 _remaining = _amount.sub(_depositFee);
 
         require(
-            IuToken(_uTokenAddress).protect(depositor, _remaining),
+            IuxToken(_uTokenAddress).protect(depositor, _remaining),
             "Factory: deposit failed"
         );
-        if (_uTokenAddress == deployedAddressOfEth) {
+        if (_uTokenAddress == uxTokenAddressOfEth) {
             require(msg.value > 0, "Factory: invalid Ether");
             // payable(u369_30).transfer(_depositFee);
             _handleFeeEth(_depositFee);
         } else {
             require(
-                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                IERC20(tokenAdressOf_uxToken[_uTokenAddress]).transferFrom(
                     depositor,
                     address(this),
                     _amount
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
-            _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
+            // require(IERC20(tokenAdressOf_uxToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
+            _handleFeeTokens(
+                tokenAdressOf_uxToken[_uTokenAddress],
+                _depositFee
+            );
         }
 
         // If this is first time to deposit in the system, add it to the depositors list of the system
@@ -1773,12 +1776,12 @@ contract uTokenFactory is Ownable {
         // investment details update for 369 days mappings.
 
         // if native currency then add accordingly otherwise add tokens and add amount of that token
-        if (_uTokenAddress == deployedAddressOfEth)
+        if (_uTokenAddress == uxTokenAddressOfEth)
             nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[
                 depositor
             ].add(msg.value);
         else {
-            address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
+            address tokenAddress = tokenAdressOf_uxToken[_uTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
             depositedAmountOfUserForToken[depositor][
@@ -1788,20 +1791,20 @@ contract uTokenFactory is Ownable {
             );
         }
 
-        if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
-            investeduTokensOf[depositor].add(_uTokenAddress);
+        if (!(investeduxTokensOf[depositor].contains(_uTokenAddress)))
+            investeduxTokensOf[depositor].add(_uTokenAddress);
 
         uint256 _currentPeriod = get_CurrentPeriod();
         if (
-            !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
+            !(investeduxTokens_OfUser_ForPeriod[depositor][_currentPeriod])
                 .contains(_uTokenAddress)
         )
-            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
+            investeduxTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
                 _uTokenAddress
             );
-        investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
+        investedAmount_OfUser_AgainstuxTokens_ForPeriod[depositor][
             _uTokenAddress
-        ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
+        ][_currentPeriod] = investedAmount_OfUser_AgainstuxTokens_ForPeriod[
             depositor
         ][_uTokenAddress][_currentPeriod].add(_remaining);
         emit Protect(depositor, _uTokenAddress, _currentPeriod, _remaining);
@@ -1927,24 +1930,24 @@ contract uTokenFactory is Ownable {
             "Factory: Password incorrect"
         );
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            _uTokenAddress == uxTokenAddressOfEth ||
+                uxTokensOfAllowedTokens.contains(_uTokenAddress),
             "Factory: invalid uToken address"
         );
-        uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
+        uint256 balance = IuxToken(_uTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "Factory: invalid amount");
         require(balance >= _amount, "Factory: Not enought tokens");
 
         require(
-            IuToken(_uTokenAddress).burnAndUnprotect(withdrawer, _amount),
+            IuxToken(_uTokenAddress).burnAndUnprotect(withdrawer, _amount),
             "Factory: withdraw failed"
         );
 
-        if (_uTokenAddress == deployedAddressOfEth) {
+        if (_uTokenAddress == uxTokenAddressOfEth) {
             payable(withdrawer).transfer(_amount);
         } else {
             require(
-                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(
+                IERC20(tokenAdressOf_uxToken[_uTokenAddress]).transfer(
                     withdrawer,
                     _amount
                 ),
@@ -1953,8 +1956,8 @@ contract uTokenFactory is Ownable {
         }
 
         if (balance.sub(_amount) == 0) {
-            investeduTokensOf[withdrawer].remove(_uTokenAddress);
-            investeduTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
+            investeduxTokensOf[withdrawer].remove(_uTokenAddress);
+            investeduxTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
                 .remove(_uTokenAddress);
         }
 
@@ -1994,16 +1997,16 @@ contract uTokenFactory is Ownable {
         );
         require(_amount > 0, "Factory: Invalid amount");
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
+            _uTokenAddress == uxTokenAddressOfEth ||
+                uxTokensOfAllowedTokens.contains(_uTokenAddress),
             "Factory: invalid uToken address"
         );
 
         require(
-            IuToken(_uTokenAddress).transfer(_to, _amount),
+            IuxToken(_uTokenAddress).transfer(_to, _amount),
             "Factory, transfer failed"
         );
-        investeduTokensOf[_to].add(_uTokenAddress);
+        investeduxTokensOf[_to].add(_uTokenAddress);
         return true;
     }
 
@@ -2101,12 +2104,12 @@ contract uTokenFactory is Ownable {
      *
      * @return An array of addresses representing uTokens of allowed tokens.
      */
-    function all_uTokensOfAllowedTokens()
+    function all_uxTokensOfAllowedTokens()
         public
         view
         returns (address[] memory)
     {
-        return uTokensOfAllowedTokens.values();
+        return uxTokensOfAllowedTokens.values();
     }
 
     /**
@@ -2116,8 +2119,8 @@ contract uTokenFactory is Ownable {
      *
      * @return A number representing the count of uTokens of allowed tokens.
      */
-    function all_uTokensOfAllowedTokensCount() public view returns (uint256) {
-        return uTokensOfAllowedTokens.length();
+    function all_uxTokensOfAllowedTokensCount() public view returns (uint256) {
+        return uxTokensOfAllowedTokens.length();
     }
 
     /**
@@ -2132,7 +2135,7 @@ contract uTokenFactory is Ownable {
     function get_TokenAddressOfuToken(
         address _uToken
     ) public view returns (address) {
-        return tokenAdressOf_uToken[_uToken];
+        return tokenAdressOf_uxToken[_uToken];
     }
 
     /**
@@ -2147,7 +2150,7 @@ contract uTokenFactory is Ownable {
     function get_uTokenAddressOfToken(
         address _token
     ) public view returns (address) {
-        return uTokenAddressOf_token[_token];
+        return uxTokenAddressOf_token[_token];
     }
 
     //-------------------- Investment Details for 369 days -------------------------------//
@@ -2170,7 +2173,7 @@ contract uTokenFactory is Ownable {
         uint256 amount;
     }
 
-    function getInvestmentDetails_OfUser(
+    function getDepositDetails_OfUser(
         address _depositor
     ) public view returns (InvestmentOfUser[] memory investmentDetails) {
         address[] memory totalTokens = depositedTokensOf[_depositor].values();
@@ -2217,10 +2220,10 @@ contract uTokenFactory is Ownable {
      *
      * @return investeduTokens An array of uToken addresses in which the investor has invested.
      */
-    function getInvested_uTokensOfUser(
+    function getDeposited_uxTokensOfUser(
         address _investor
     ) public view returns (address[] memory investeduTokens) {
-        investeduTokens = investeduTokensOf[_investor].values();
+        investeduTokens = investeduxTokensOf[_investor].values();
     }
 
     /**
@@ -2234,11 +2237,11 @@ contract uTokenFactory is Ownable {
      *
      * @return investeduTokensForPeriod An array of uToken addresses in which the investor has invested during the specified period.
      */
-    function getInvesteduTokens_OfUser_ForPeriod(
+    function getDepositeduxTokens_OfUser_ForPeriod(
         address _investor,
         uint256 _period
     ) public view returns (address[] memory investeduTokensForPeriod) {
-        investeduTokensForPeriod = investeduTokens_OfUser_ForPeriod[_investor][
+        investeduTokensForPeriod = investeduxTokens_OfUser_ForPeriod[_investor][
             _period
         ].values();
     }
@@ -2255,12 +2258,12 @@ contract uTokenFactory is Ownable {
      *
      * @return investedAmount The amount invested by the investor in the specified uToken during the specified period.
      */
-    function getInvestedAmount_OfUser_AgainstuToken_ForPeriod(
+    function getDepositedAmount_OfUser_AgainstuxToken_ForPerio(
         address _investor,
         address _uToken,
         uint256 _period
     ) public view returns (uint256 investedAmount) {
-        investedAmount = investedAmount_OfUser_AgainstuTokens_ForPeriod[
+        investedAmount = investedAmount_OfUser_AgainstuxTokens_ForPeriod[
             _investor
         ][_uToken][_period];
     }
@@ -2287,7 +2290,7 @@ contract uTokenFactory is Ownable {
      *
      * @return investmentDetails An array of `InvestmentForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
      */
-    function getInvestmentDetails_OfUser_ForPeriod(
+    function getDepositDetails_OfUser_ForPeriod(
         address _investor,
         uint256 _period
     )
@@ -2295,7 +2298,7 @@ contract uTokenFactory is Ownable {
         view
         returns (InvestmentForPeriodOfUser[] memory investmentDetails)
     {
-        address[] memory totalTokens = investeduTokens_OfUser_ForPeriod[
+        address[] memory totalTokens = investeduxTokens_OfUser_ForPeriod[
             _investor
         ][_period].values();
         uint256 tokensCount = totalTokens.length;
@@ -2305,7 +2308,7 @@ contract uTokenFactory is Ownable {
             for (uint i; i < tokensCount; i++) {
                 investmentDetails[i] = InvestmentForPeriodOfUser({
                     uTokenAddress: totalTokens[i],
-                    amount: investedAmount_OfUser_AgainstuTokens_ForPeriod[
+                    amount: investedAmount_OfUser_AgainstuxTokens_ForPeriod[
                         _investor
                     ][totalTokens[i]][_period]
                 });
@@ -2314,10 +2317,10 @@ contract uTokenFactory is Ownable {
     }
 
     //  Retrieves the currency type associated with a uToken.
-    function get_CurrencyOfuToken(
+    function get_CurrencyOfuxToken(
         address _uToken
     ) public view returns (string memory currency) {
-        return currencyOf_uToken[_uToken];
+        return currencyOf_uxToken[_uToken];
     }
 
     // Checks whether the entered password matches the one associated with the user address.
