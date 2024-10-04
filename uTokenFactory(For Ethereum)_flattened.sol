@@ -1456,47 +1456,32 @@ contract uxTokenFactory is Ownable {
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    // all investors of the system
-    EnumerableSet.AddressSet private allDepositors;
+    EnumerableSet.AddressSet private allDepositors; // all investors of the system
 
     // overall investment of a depostitor
-    // mapping: depositor => tokens
-    mapping(address => EnumerableSet.AddressSet) private depositedTokensOf;
-    // mapping: depositor => amount of deposited native currency
-    mapping(address => uint256) private nativeCurrencyDepositedBy;
-    // mapping: depositor => token => amount
+    mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
+    mapping(address => uint256) private nativeCurrencyDepositedBy; // mapping: depositor => amount of deposited native currency
     mapping(address => mapping(address => uint256))
-        private depositedAmountOfUserForToken;
+        private depositedAmountOfUserForToken; // mapping: depositor => token => amount
 
-    // uxToken -> Token Address (against which contract is deployed)
-    mapping(address => address) private tokenAdressOf_uxToken;
+    mapping(address => address) private tokenAdressOf_uxToken; // uxToken -> Token Address (against which contract is deployed)
     mapping(address => string) private currencyOf_uxToken;
-    // token -> uxToken
-    mapping(address => address) private uxTokenAddressOf_token;
+    mapping(address => address) private uxTokenAddressOf_token; // token -> uxToken
 
     // Deposit details of specific user.
-    // depositorAddress -> All uxTokens addresses deposited in
-    mapping(address => EnumerableSet.AddressSet) private depositeduxTokensOf;
-    // depositorAddress -> period -> All uTokens addresses
+    mapping(address => EnumerableSet.AddressSet) private depositeduxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private depositeduxTokens_OfUser_ForPeriod;
-    // depositor -> uxTokenAddress -> period -> totalDeposits
+        private depositeduxTokens_OfUser_ForPeriod; // depositorAddress -> period -> All uTokens addresses
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private depositedAmount_OfUser_AgainstuxTokens_ForPeriod;
+        private depositedAmount_OfUser_AgainstuxTokens_ForPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
 
-    // (period count i.e. how much 365 hours passed) => depositors addresses.
-    mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
-    // (period count i.e. how much 365 hours passed) => depositedTokens address
-    mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
-    // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
-    mapping(uint256 => uint256) private ETHInPeriod;
-    // (period count) => tokenAddress => totalInvestedAmount
+    mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
+    mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
+    mapping(uint256 => uint256) private ETHInPeriod; // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
     mapping(uint256 => mapping(address => uint))
-        private rewardAmountOfTokenForPeriod;
-    // (period count) => boolean
-    mapping(uint256 => bool) private isRewardCollectedOfPeriod;
-    // period count => boolean (to check that in which period some investment is made.
-    mapping(uint256 => bool) private isDepositedInPeriod;
+        private rewardAmountOfTokenForPeriod; // (period count) => tokenAddress => totalInvestedAmount
+    mapping(uint256 => bool) private isRewardCollectedOfPeriod; // (period count) => boolean
+    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
 
     // mappings to store Sign Key and randomly generated Master key against user.
     mapping(address => bytes32) private _signKeyOf;
@@ -1511,10 +1496,7 @@ contract uxTokenFactory is Ownable {
     address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
 
     // salt for create2 opcode.
-    uint256 private _salt; // to handle create2 opcode.
-
-    // previous fee
-    uint256 public pendingFee;
+    uint256 private _salt;
 
     // fee detial
     uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
