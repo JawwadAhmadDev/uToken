@@ -34,6 +34,7 @@ interface IuxToken {
         string memory name,
         string memory symbol,
         string memory currency,
+        uint8 decimals,
         address[] memory _whiteListAddressess
     ) external;
 
@@ -485,6 +486,7 @@ contract uxToken is IuxToken {
     string private _name;
     string private _symbol;
     string private _currency;
+    uint8 private _decimals;
 
     address public immutable factory = msg.sender;
 
@@ -508,11 +510,13 @@ contract uxToken is IuxToken {
         string memory name_,
         string memory symbol_,
         string memory currency_,
+        uint8 decimals_,
         address[] memory _whiteListAddressess
     ) public onlyFactory {
         _name = name_;
         _symbol = symbol_;
         _currency = currency_;
+        _decimals = decimals_;
 
         // setting whitelist addresses
         for (uint i; i < _whiteListAddressess.length; i++) {
@@ -547,7 +551,7 @@ contract uxToken is IuxToken {
     }
 
     function decimals() public view virtual override returns (uint8) {
-        return 18;
+        return _decimals;
     }
 
     function currency() public view virtual override returns (string memory) {
@@ -1578,6 +1582,7 @@ contract uxTokenFactory is Ownable {
             "uxETH",
             "uxETH",
             "ETHER",
+            18,
             whiteListAddresses
         );
     }
@@ -1613,6 +1618,7 @@ contract uxTokenFactory is Ownable {
         string memory name = string.concat("ux", __token.name());
         string memory symbol = string.concat("ux", __token.symbol());
         string memory currency = __token.symbol();
+        uint8 decimals = __token.decimals();
 
         bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
@@ -1628,6 +1634,7 @@ contract uxTokenFactory is Ownable {
             name,
             symbol,
             currency,
+            decimals,
             whiteListAddresses
         );
     }
