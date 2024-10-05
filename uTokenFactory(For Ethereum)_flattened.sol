@@ -1775,7 +1775,7 @@ contract uxTokenFactory is Ownable {
             depositedAmountOfUserForToken[depositor][
                 tokenAddress
             ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
-                _amount
+                _remaining
             );
         }
 
@@ -2242,7 +2242,7 @@ contract uxTokenFactory is Ownable {
      *
      * @return depositedAmount The amount deposited by the depositor in the specified uxToken during the specified period.
      */
-    function getDepositedAmount_OfUser_AgainstuxToken_ForPerio(
+    function getDepositedAmount_OfUser_AgainstuxToken_ForPeriod(
         address _depositor,
         address _uxToken,
         uint256 _period
@@ -2287,7 +2287,7 @@ contract uxTokenFactory is Ownable {
         if (tokensCount > 0) {
             for (uint i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
-                    uTokenAddress: totalTokens[i],
+                    uxTokenAddress: totalTokens[i],
                     amount: depositedAmount_OfUser_AgainstuxTokens_ForPeriod[
                         _depositor
                     ][totalTokens[i]][_period]
