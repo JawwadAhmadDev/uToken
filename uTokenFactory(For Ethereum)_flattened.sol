@@ -1633,11 +1633,15 @@ contract uxTokenFactoryContract is Ownable {
     function _deployToken(
         address _token
     ) internal returns (address deployedToken) {
-        IERC20 __token = IERC20(_token);
-        string memory name = string.concat("ux", __token.name());
-        string memory symbol = string.concat("ux", __token.symbol());
-        string memory currency = __token.symbol();
-        uint8 decimals = __token.decimals();
+        IERC20 tokenContract = IERC20(_token);
+        string memory name = string(
+            abi.encodePacked("ux", tokenContract.name())
+        );
+        string memory symbol = string(
+            abi.encodePacked("ux", tokenContract.symbol())
+        );
+        string memory currency = tokenContract.symbol();
+        uint8 decimals = tokenContract.decimals();
 
         bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
@@ -1656,6 +1660,8 @@ contract uxTokenFactoryContract is Ownable {
             decimals,
             whiteListAddresses
         );
+
+        emit TokenDeployed(deployedToken, name);
     }
 
     /**
