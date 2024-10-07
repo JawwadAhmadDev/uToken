@@ -1455,7 +1455,7 @@ library SafeMath {
 
 pragma solidity ^0.8.18;
 
-contract uxTokenFactory is Ownable {
+contract uxTokenFactoryContract is Ownable {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1468,25 +1468,25 @@ contract uxTokenFactory is Ownable {
     // mapping(address => mapping(address => uint256))
     //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
 
-    mapping(address => address) private tokenAdressOf_uxToken; // uxToken -> Token Address (against which contract is deployed)
-    mapping(address => string) private currencyOf_uxToken;
-    mapping(address => address) private uxTokenAddressOf_token; // token -> uxToken
+    mapping(address => address) private tokenAdressForUxToken; // uxToken -> Token Address (against which contract is deployed)
+    mapping(address => string) private currencyOfUxToken;
+    mapping(address => address) private uxTokenAddressForToken; // token -> uxToken
 
     // Deposit details of specific user.
-    mapping(address => EnumerableSet.AddressSet) private depositeduxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
+    mapping(address => EnumerableSet.AddressSet) private depositedUxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private depositeduxTokens_OfUser_ForPeriod; // depositorAddress -> period -> All uTokens addresses
+        private depositedUxTokensOfUserForPeriod; // depositorAddress -> period -> All uTokens addresses
     mapping(address => mapping(address => uint256))
-        private depositedAmount_ofUser_againstuxToken; // depositor -> uxTokenAddress -> amount
+        private depositedAmountOfUserAgainstUxToken; // depositor -> uxTokenAddress -> amount
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private depositedAmount_ofUser_againstuxToken_forPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
+        private depositedAmountOfUserAgainstUxTokenForPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
 
-    mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
-    mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
+    mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
+    mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
     mapping(uint256 => uint256) private ETHInPeriod; // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
     mapping(uint256 => mapping(address => uint))
-        private rewardAmountOfTokenForPeriod; // (period count) => tokenAddress => totalInvestedAmount
-    mapping(uint256 => bool) private isRewardCollectedOfPeriod; // (period count) => boolean
+        private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
+    mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
     mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
 
     // mappings to store Sign Key and randomly generated Master key against user.
@@ -1511,8 +1511,8 @@ contract uxTokenFactory is Ownable {
     uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
     // time periods for reward
-    uint256 public timeLimitForReward_for369hours = 129600; // 369 hours
-    uint256 public timeLimitForReward_369days = 31881600; // 369 days
+    uint256 public rewardTimeLimitFor369Hours = 129600; // 369 hours
+    uint256 public rewardTimeLimitFor369Days = 31881600; // 369 days
     uint256 public deployTime;
 
     // zoom to handle percentage in the decimals
@@ -1543,17 +1543,32 @@ contract uxTokenFactory is Ownable {
         uint256 tokenAmount
     );
 
+    event TokenDeployed(address indexed tokenAddress, string name);
+    event TokenAdded(
+        address indexed tokenAddress,
+        address indexed deployedAddress
+    );
+
     constructor(
         address[] memory _allowedTokens,
-        address[] memory _whiteListAddressess
+        address[] memory _whiteListAddresses // Fixed typo
     ) {
+        require(_allowedTokens.length < 256, "Too many allowed tokens"); // Optional: limit on number of tokens
+        require(
+            _whiteListAddresses.length < 256,
+            "Too many whitelist addresses"
+        ); // Optional: limit on number of addresses
+
         deployTime = block.timestamp;
-        whiteListAddresses = _whiteListAddressess;
 
-        uxTokenAddressOfETH = _deployEth();
-        if (_allowedTokens.length != 0) _addAllowedTokens(_allowedTokens);
+        // Set the whitelist addresses
+        whiteListAddresses = _whiteListAddresses;
 
-        // setting whitelist addresses.
+        // Deploy ETH token and add allowed tokens if any
+        uxTokenAddressOfETH = _deployETH();
+        if (_allowedTokens.length > 0) {
+            _addAllowedTokens(_allowedTokens);
+        }
     }
 
     /**
@@ -1574,7 +1589,7 @@ contract uxTokenFactory is Ownable {
      *
      * @return deployedEth The address of the newly deployed uxToken contract.
      */
-    function _deployEth() internal returns (address deployedEth) {
+    function _deployETH() internal returns (address deployedEth) {
         bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
@@ -1587,6 +1602,8 @@ contract uxTokenFactory is Ownable {
             18,
             whiteListAddresses
         );
+
+        emit TokenDeployed(deployedEth, "uxETH");
     }
 
     /**
@@ -1658,7 +1675,7 @@ contract uxTokenFactory is Ownable {
      *
      * 3) The `_deployToken` function deploys a new uxToken contract for the given token.
      *
-     * 4) `tokenAdressOf_uxToken`, `uxTokenAddressOf_token`, `currencyOf_uxToken`, `allowedTokens`, and
+     * 4) `tokenAdressForUxToken`, `uxTokenAddressForToken`, `currencyOfUxToken`, `allowedTokens`, and
      *    `uxTokensOfAllowedTokens` are state variables (mappings or sets) that are updated for each token.
      *
      * require _token.isContract() Ensures the provided address corresponds to a contract.
@@ -1676,13 +1693,15 @@ contract uxTokenFactory is Ownable {
                 "Factory: Already added"
             );
             address _deployedAddress = _deployToken(_token);
-            tokenAdressOf_uxToken[_deployedAddress] = _token;
-            uxTokenAddressOf_token[_token] = _deployedAddress;
-            currencyOf_uxToken[_deployedAddress] = IuxToken(_deployedAddress)
+            tokenAdressForUxToken[_deployedAddress] = _token;
+            uxTokenAddressForToken[_token] = _deployedAddress;
+            currencyOfUxToken[_deployedAddress] = IuxToken(_deployedAddress)
                 .currency();
             allowedTokens.add(_token);
             uxTokensOfAllowedTokens.add(_deployedAddress);
         }
+
+        emit TokenAdded(tokenAddress, deployedAddress);
     }
 
     /**
@@ -1746,16 +1765,16 @@ contract uxTokenFactory is Ownable {
             _handleFeeETH(_depositFee);
         } else {
             require(
-                IERC20(tokenAdressOf_uxToken[_uxTokenAddress]).transferFrom(
+                IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
                     depositor,
                     address(this),
                     _amount
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressOf_uxToken[_uxTokenAddress]).transfer(ux369_30, _depositFee), "Factory: transfer failed");
+            // require(IERC20(tokenAdressForUxToken[_uxTokenAddress]).transfer(ux369_30, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(
-                tokenAdressOf_uxToken[_uxTokenAddress],
+                tokenAdressForUxToken[_uxTokenAddress],
                 _depositFee
             );
         }
@@ -1771,7 +1790,7 @@ contract uxTokenFactory is Ownable {
                 depositor
             ].add(msg.value);
         else {
-            address tokenAddress = tokenAdressOf_uxToken[_uxTokenAddress];
+            address tokenAddress = tokenAdressForUxToken[_uxTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
             // depositedAmountOfUserForToken[depositor][
@@ -1781,24 +1800,25 @@ contract uxTokenFactory is Ownable {
             // );
         }
 
-        if (!(depositeduxTokensOf[depositor].contains(_uxTokenAddress)))
-            depositeduxTokensOf[depositor].add(_uxTokenAddress);
+        if (!(depositedUxTokensOf[depositor].contains(_uxTokenAddress)))
+            depositedUxTokensOf[depositor].add(_uxTokenAddress);
 
         uint256 _currentPeriod = get_CurrentPeriod_for369hours();
         if (
-            !(depositeduxTokens_OfUser_ForPeriod[depositor][_currentPeriod])
+            !(depositedUxTokensOfUserForPeriod[depositor][_currentPeriod])
                 .contains(_uxTokenAddress)
         )
-            depositeduxTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
+            depositedUxTokensOfUserForPeriod[depositor][_currentPeriod].add(
                 _uxTokenAddress
             );
-        depositedAmount_ofUser_againstuxToken[depositor][
+        depositedAmountOfUserAgainstUxToken[depositor][
             _uxTokenAddress
-        ] = depositedAmount_ofUser_againstuxToken[depositor][_uxTokenAddress]
-            .add(_remaining);
-        depositedAmount_ofUser_againstuxToken_forPeriod[depositor][
+        ] = depositedAmountOfUserAgainstUxToken[depositor][_uxTokenAddress].add(
+            _remaining
+        );
+        depositedAmountOfUserAgainstUxTokenForPeriod[depositor][
             _uxTokenAddress
-        ][_currentPeriod] = depositedAmount_ofUser_againstuxToken_forPeriod[
+        ][_currentPeriod] = depositedAmountOfUserAgainstUxTokenForPeriod[
             depositor
         ][_uxTokenAddress][_currentPeriod].add(_remaining);
         emit Protect(depositor, _uxTokenAddress, _currentPeriod, _remaining);
@@ -1826,14 +1846,14 @@ contract uxTokenFactory is Ownable {
         payable(ux369devs_10).transfer(shareOfDevFundAddress);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            timeLimitForReward_for369hours) + 1;
+            rewardTimeLimitFor369Hours) + 1;
         if (!isDepositedInPeriod[currentTimePeriodCount])
             isDepositedInPeriod[currentTimePeriodCount] = true;
 
         if (
-            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
+            !(depositorsByPeriod[currentTimePeriodCount].contains(msg.sender))
         ) {
-            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
         ETHInPeriod[currentTimePeriodCount] = ETHInPeriod[
@@ -1867,22 +1887,23 @@ contract uxTokenFactory is Ownable {
         IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare);
 
         uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            timeLimitForReward_for369hours) + 1;
+            rewardTimeLimitFor369Hours) + 1;
         if (!isDepositedInPeriod[currentTimePeriodCount])
             isDepositedInPeriod[currentTimePeriodCount] = true;
 
         if (
-            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
+            !(depositorsByPeriod[currentTimePeriodCount].contains(msg.sender))
         ) {
-            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
-        if (!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
-            tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
+        if (!(tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
+            tokensByPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
-        rewardAmountOfTokenForPeriod[currentTimePeriodCount][
+        totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
             _tokenAddress
-        ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
-            .add(thirtyPercentShare);
+        ] = totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
+            _tokenAddress
+        ].add(thirtyPercentShare);
     }
 
     /**
@@ -1930,7 +1951,7 @@ contract uxTokenFactory is Ownable {
             payable(withdrawer).transfer(_amount);
         } else {
             require(
-                IERC20(tokenAdressOf_uxToken[_uxTokenAddress]).transfer(
+                IERC20(tokenAdressForUxToken[_uxTokenAddress]).transfer(
                     withdrawer,
                     _amount
                 ),
@@ -1938,27 +1959,27 @@ contract uxTokenFactory is Ownable {
             );
         }
 
-        depositedAmount_ofUser_againstuxToken[withdrawer][
+        depositedAmountOfUserAgainstUxToken[withdrawer][
             _uxTokenAddress
-        ] = depositedAmount_ofUser_againstuxToken[withdrawer][_uxTokenAddress]
+        ] = depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress]
             .sub(_amount);
 
         uint256 currentPeriod = get_CurrentPeriod_for369hours();
         if (
-            depositedAmount_ofUser_againstuxToken[withdrawer][_uxTokenAddress] <
-            depositedAmount_ofUser_againstuxToken_forPeriod[withdrawer][
+            depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] <
+            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
                 _uxTokenAddress
             ][currentPeriod]
         ) {
-            depositedAmount_ofUser_againstuxToken_forPeriod[withdrawer][
+            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
                 _uxTokenAddress
-            ][currentPeriod] = depositedAmount_ofUser_againstuxToken[
-                withdrawer
-            ][_uxTokenAddress];
+            ][currentPeriod] = depositedAmountOfUserAgainstUxToken[withdrawer][
+                _uxTokenAddress
+            ];
         }
         // if (balance.sub(_amount) == 0) {
         //     depositeduxTokensOf[withdrawer].remove(_uxTokenAddress);
-        //     depositeduxTokens_OfUser_ForPeriod[withdrawer][
+        //     depositedUxTokensOfUserForPeriod[withdrawer][
         //         get_CurrentPeriod_for369hours()
         //     ].remove(_uxTokenAddress);
         // }
@@ -2064,17 +2085,15 @@ contract uxTokenFactory is Ownable {
     }
 
     // function to change time limit for reward of 369 hours. only onwer is authorized.
-    function changeTimeLimitForReward_for369hours(
+    function changeRewardTimeLimitFor369Hours(
         uint256 _time
     ) external onlyOwner {
-        timeLimitForReward_for369hours = _time;
+        rewardTimeLimitFor369Hours = _time;
     }
 
     // function to change the time limit for reward of 369 days. only owner is authorized
-    function changeTimeLimitForReward_369days(
-        uint256 _time
-    ) external onlyOwner {
-        timeLimitForReward_369days = _time;
+    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
+        rewardTimeLimitFor369Days = _time;
     }
 
     //--------------------Read Functions -------------------------------//
@@ -2139,7 +2158,7 @@ contract uxTokenFactory is Ownable {
     function get_TokenAddressOfuxToken(
         address _uxToken
     ) public view returns (address) {
-        return tokenAdressOf_uxToken[_uxToken];
+        return tokenAdressForUxToken[_uxToken];
     }
 
     /**
@@ -2154,7 +2173,7 @@ contract uxTokenFactory is Ownable {
     function get_uxTokenAddressOfToken(
         address _token
     ) public view returns (address) {
-        return uxTokenAddressOf_token[_token];
+        return uxTokenAddressForToken[_token];
     }
 
     //-------------------- Deposit Details for 369 days -------------------------------//
@@ -2180,7 +2199,7 @@ contract uxTokenFactory is Ownable {
     function getDepositDetails_OfUser(
         address _depositor
     ) public view returns (DepositsOfUser[] memory depositDetails) {
-        address[] memory totaluxTokens = depositeduxTokensOf[_depositor]
+        address[] memory totaluxTokens = depositedUxTokensOf[_depositor]
             .values();
         uint256 tokensCount = totaluxTokens.length;
 
@@ -2189,7 +2208,7 @@ contract uxTokenFactory is Ownable {
             for (uint i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
                     uxTokenAddress: totaluxTokens[i],
-                    amount: depositedAmount_ofUser_againstuxToken[_depositor][
+                    amount: depositedAmountOfUserAgainstUxToken[_depositor][
                         totaluxTokens[i]
                     ]
                 });
@@ -2203,7 +2222,7 @@ contract uxTokenFactory is Ownable {
         returns (address)
     {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
-            timeLimitForReward_369days);
+            rewardTimeLimitFor369Days);
 
         if (previousTimePeriod == 0) return address(0);
 
@@ -2232,7 +2251,7 @@ contract uxTokenFactory is Ownable {
     function get_DepositeduxTokensOfUser(
         address _depositor
     ) public view returns (address[] memory depositeduxTokens) {
-        depositeduxTokens = depositeduxTokensOf[_depositor].values();
+        depositeduxTokens = depositedUxTokensOf[_depositor].values();
     }
 
     /**
@@ -2250,7 +2269,7 @@ contract uxTokenFactory is Ownable {
         address _depositor,
         uint256 _period
     ) public view returns (address[] memory depositeduxTokensForPeriod) {
-        depositeduxTokensForPeriod = depositeduxTokens_OfUser_ForPeriod[
+        depositeduxTokensForPeriod = depositedUxTokensOfUserForPeriod[
             _depositor
         ][_period].values();
     }
@@ -2272,7 +2291,7 @@ contract uxTokenFactory is Ownable {
         address _uxToken,
         uint256 _period
     ) public view returns (uint256 depositedAmount) {
-        depositedAmount = depositedAmount_ofUser_againstuxToken_forPeriod[
+        depositedAmount = depositedAmountOfUserAgainstUxTokenForPeriod[
             _depositor
         ][_uxToken][_period];
     }
@@ -2303,7 +2322,7 @@ contract uxTokenFactory is Ownable {
         address _depositor,
         uint256 _period
     ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
-        address[] memory totaluxTokens = depositeduxTokens_OfUser_ForPeriod[
+        address[] memory totaluxTokens = depositedUxTokensOfUserForPeriod[
             _depositor
         ][_period].values();
         uint256 tokensCount = totaluxTokens.length;
@@ -2313,7 +2332,7 @@ contract uxTokenFactory is Ownable {
             for (uint i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
                     uxTokenAddress: totaluxTokens[i],
-                    amount: depositedAmount_ofUser_againstuxToken_forPeriod[
+                    amount: depositedAmountOfUserAgainstUxTokenForPeriod[
                         _depositor
                     ][totaluxTokens[i]][_period]
                 });
@@ -2325,7 +2344,7 @@ contract uxTokenFactory is Ownable {
     function get_CurrencyOfuxToken(
         address _uxToken
     ) public view returns (string memory currency) {
-        return currencyOf_uxToken[_uxToken];
+        return currencyOfUxToken[_uxToken];
     }
 
     // Checks whether the entered signKey matches the one associated with the user address.
@@ -2368,7 +2387,7 @@ contract uxTokenFactory is Ownable {
     function get_TokensDepositedInPeriod(
         uint256 _period
     ) public view returns (address[] memory tokens) {
-        return tokensInPeriod[_period].values();
+        return tokensByPeriod[_period].values();
     }
 
     // Retrieves the count of unique tokens that were deposited within the given period.
@@ -2376,23 +2395,23 @@ contract uxTokenFactory is Ownable {
     function get_TokensDepositedInPeriodCount(
         uint256 _period
     ) public view returns (uint256) {
-        return tokensInPeriod[_period].length();
+        return tokensByPeriod[_period].length();
     }
 
     // Retrieves an array of addresses that made a deposit within the given period.
     // The return is an array of addresses, where each address represents a unique depositor.
-    function get_DepositorsInPeriod_for369hours(
+    function get_depositorsByPeriod_for369hours(
         uint256 _period
     ) public view returns (address[] memory depositors) {
-        return depositorsInPeriod[_period].values();
+        return depositorsByPeriod[_period].values();
     }
 
     // Retrieves the count of unique depositors that made a deposit within the given period.
     // The return is an integer representing the number of unique depositors.
-    function get_DepositorsInPeriodCount_for369hours(
+    function get_depositorsByPeriodCount_for369hours(
         uint256 _period
     ) public view returns (uint) {
-        return depositorsInPeriod[_period].length();
+        return depositorsByPeriod[_period].length();
     }
 
     // Retrieves the total amount of Ether that was deposited within the given period.
@@ -2407,32 +2426,29 @@ contract uxTokenFactory is Ownable {
         uint256 _period,
         address _token
     ) public view returns (uint256) {
-        return rewardAmountOfTokenForPeriod[_period][_token];
+        return totalRewardAmountForTokenInPeriod[_period][_token];
     }
 
     // Calculates and returns the current period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the current period for 369 hours.
     function get_CurrentPeriod_for369hours() public view returns (uint) {
         return
-            ((block.timestamp - deployTime) / timeLimitForReward_for369hours) +
-            1;
+            ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours) + 1;
     }
 
     // The function returns an integer representing the current period for 369 days.
     function get_CurrentPeriod_for369days() public view returns (uint) {
-        return
-            ((block.timestamp - deployTime) / timeLimitForReward_369days) + 1;
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days) + 1;
     }
 
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the previous period for 369 hours.
     function get_PreviousPeriod_for369hours() public view returns (uint) {
-        return ((block.timestamp - deployTime) /
-            timeLimitForReward_for369hours);
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours);
     }
 
     function get_PreviousPeriod_for369days() public view returns (uint) {
-        return ((block.timestamp - deployTime) / timeLimitForReward_369days);
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days);
     }
 
     // Calculates and returns the start and end times for the current period.
@@ -2451,13 +2467,13 @@ contract uxTokenFactory is Ownable {
 
         if (currentTimePeriod_for369hours == 1) {
             startTime = deployTime;
-            endTime = deployTime + timeLimitForReward_for369hours;
+            endTime = deployTime + rewardTimeLimitFor369Hours;
         } else {
             startTime =
                 deployTime +
-                (timeLimitForReward_for369hours *
+                (rewardTimeLimitFor369Hours *
                     (currentTimePeriod_for369hours - 1));
-            endTime = timeLimitForReward_for369hours + startTime;
+            endTime = rewardTimeLimitFor369Hours + startTime;
         }
     }
 
@@ -2470,13 +2486,13 @@ contract uxTokenFactory is Ownable {
 
         if (currentTimePeriod_for369days == 1) {
             startTime = deployTime;
-            endTime = deployTime + timeLimitForReward_369days;
+            endTime = deployTime + rewardTimeLimitFor369Days;
         } else {
             startTime =
                 deployTime +
-                (timeLimitForReward_369days *
+                (rewardTimeLimitFor369Days *
                     (currentTimePeriod_for369days - 1));
-            endTime = timeLimitForReward_369days + startTime;
+            endTime = rewardTimeLimitFor369Days + startTime;
         }
     }
 
@@ -2493,12 +2509,12 @@ contract uxTokenFactory is Ownable {
         returns (address)
     {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
-            timeLimitForReward_for369hours);
+            rewardTimeLimitFor369Hours);
 
-        address[] memory depositors = get_DepositorsInPeriod_for369hours(
+        address[] memory depositors = get_depositorsByPeriod_for369hours(
             previousTimePeriod
         );
-        uint256 depositorsLength = get_DepositorsInPeriodCount_for369hours(
+        uint256 depositorsLength = get_depositorsByPeriodCount_for369hours(
             previousTimePeriod
         );
 
@@ -2523,7 +2539,7 @@ contract uxTokenFactory is Ownable {
         returns (uint256 ethHistory)
     {
         uint256 period = get_PreviousPeriod_for369hours();
-        while (!isRewardCollectedOfPeriod[period]) {
+        while (!hasRewardBeenCollectedForPeriod[period]) {
             ethHistory += get_ETHInPeriod(period);
             if (period == 0) break;
             period--;
@@ -2531,12 +2547,12 @@ contract uxTokenFactory is Ownable {
     }
 
     // Checks if the reward for a specified period has been collected.
-    // The function takes a period number as an input and checks the corresponding value in the `isRewardCollectedOfPeriod` mapping.
+    // The function takes a period number as an input and checks the corresponding value in the `hasRewardBeenCollectedForPeriod` mapping.
     // If the reward for that period has been collected, the function returns true; otherwise, it returns false.
-    function IsRewardCollectedOfPeriod_for369hours(
+    function hasRewardBeenCollectedForPeriod_for369hours(
         uint256 _period
     ) public view returns (bool) {
-        return isRewardCollectedOfPeriod[_period];
+        return hasRewardBeenCollectedForPeriod[_period];
     }
 
     // Struct to represent reward against a specific token
@@ -2578,7 +2594,7 @@ contract uxTokenFactory is Ownable {
         uint256 period = get_PreviousPeriod_for369hours();
         uint[] memory _pendingPeriods = new uint[](period);
         uint256 count;
-        while (!isRewardCollectedOfPeriod[period]) {
+        while (!hasRewardBeenCollectedForPeriod[period]) {
             if (!isDepositedInPeriod[period]) {
                 if (period == 0) break;
                 period--;
