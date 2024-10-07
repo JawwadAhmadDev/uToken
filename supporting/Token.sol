@@ -532,10 +532,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
     ) internal virtual {}
 }
 
-// File: Token.sol
-
-
-pragma solidity ^0.8.18;
 
 
 contract BUSD is ERC20 {

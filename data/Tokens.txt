@@ -1,3 +1,17 @@
+Ethereum Mainnet Deployment Addresses:
+Fractal Contract: https://etherscan.io/address/0x39994d28a843dcaa4d4b67d9e05045b122331025#code
+uToken Factory: https://etherscan.io/address/0xd867b0db5f0663dfffa490050411273ce02bab9a#writeContract
+
+
+Arbitrum Sepolia Testnet:
+BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
+USDT (6 decimals): 0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA
+Reward Distributor: https://sepolia.arbiscan.io/address/0x0a2a333ede7c5695204664e774446c58dbda4100#code
+uTokenFactory: https://sepolia.arbiscan.io/address/0x6328572c7d41d278fdf4f89f3e03112f7c3a3d28#code
+Parameters:
+Allowed Tokens: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
+
+
 Netlify Link: https://649c9de463727c1c820743d2--guileless-hummingbird-5b966c.netlify.app/
 import the following private key. it is owner's account and all the assets are in
  this account such as BUSD and USDT.

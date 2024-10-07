@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-interface IuToken {
+interface IuxToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -34,6 +34,7 @@ interface IuToken {
         string memory name,
         string memory symbol,
         string memory currency,
+        uint8 decimals,
         address[] memory _whiteListAddressess
     ) external;
 
@@ -470,7 +471,7 @@ library EnumerableSet {
     }
 }
 
-contract uToken is IuToken {
+contract uxToken is IuxToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private whiteList; // set to store whitelist users.
@@ -485,13 +486,14 @@ contract uToken is IuToken {
     string private _name;
     string private _symbol;
     string private _currency;
+    uint8 private _decimals;
 
     address public immutable factory = msg.sender;
 
     // Re-entracy attack
     uint private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "uWTokenForEth: LOCKED");
+        require(unlocked == 1, "uxWTokenForETH: LOCKED");
         unlocked = 0;
         _;
         unlocked = 1;
@@ -499,7 +501,7 @@ contract uToken is IuToken {
     // modifier: will be applied on the functions which can only be called from factory.
     // such as deposit and withdraw.
     modifier onlyFactory() {
-        require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
+        require(msg.sender == factory, "uxWTokenForETH: NOT AUTHORIZED");
         _;
     }
 
@@ -508,11 +510,13 @@ contract uToken is IuToken {
         string memory name_,
         string memory symbol_,
         string memory currency_,
+        uint8 decimals_,
         address[] memory _whiteListAddressess
     ) public onlyFactory {
         _name = name_;
         _symbol = symbol_;
         _currency = currency_;
+        _decimals = decimals_;
 
         // setting whitelist addresses
         for (uint i; i < _whiteListAddressess.length; i++) {
@@ -520,7 +524,7 @@ contract uToken is IuToken {
         }
     }
 
-    // function to take ethers and transfer uTokens
+    // function to take ethers and transfer uxTokens
     function protect(
         address _owner,
         uint256 _amount
@@ -529,7 +533,7 @@ contract uToken is IuToken {
         return true;
     }
 
-    // function to take uTokens and send Ethers back
+    // function to take uxTokens and send Ethers back
     function burnAndUnprotect(
         address _owner,
         uint256 _amount
@@ -547,7 +551,7 @@ contract uToken is IuToken {
     }
 
     function decimals() public view virtual override returns (uint8) {
-        return 18;
+        return _decimals;
     }
 
     function currency() public view virtual override returns (string memory) {
@@ -1451,91 +1455,74 @@ library SafeMath {
 
 pragma solidity ^0.8.18;
 
-contract uTokenFactory is Ownable {
+contract uxTokenFactoryContract is Ownable {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    // all investors of the system
-    EnumerableSet.AddressSet private allDepositors;
+    EnumerableSet.AddressSet private allDepositors; // all investors of the system
 
     // overall investment of a depostitor
-    // mapping: depositor => tokens
-    mapping(address => EnumerableSet.AddressSet) private depositedTokensOf;
-    // mapping: depositor => amount of deposited native currency
-    mapping(address => uint256) private nativeCurrencyDepositedBy;
-    // mapping: depositor => token => amount
-    mapping(address => mapping(address => uint256))
-        private depositedAmountOfUserForToken;
+    // mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
+    mapping(address => uint256) private nativeCurrencyDepositedBy; // mapping: depositor => amount of deposited native currency
+    // mapping(address => mapping(address => uint256))
+    //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
 
-    // uToken -> Token Address (against which contract is deployed)
-    mapping(address => address) private tokenAdressOf_uToken;
-    mapping(address => string) private currencyOf_uToken;
-    // token -> uToken
-    mapping(address => address) private uTokenAddressOf_token;
+    mapping(address => address) private tokenAdressForUxToken; // uxToken -> Token Address (against which contract is deployed)
+    mapping(address => string) private currencyOfUxToken;
+    mapping(address => address) private uxTokenAddressForToken; // token -> uxToken
 
-    // Investment details of specific user.
-    // investorAddress -> All uTokens addresses invested in
-    mapping(address => EnumerableSet.AddressSet) private investeduTokensOf;
-    // investorAddress -> period -> All uTokens addresses
+    // Deposit details of specific user.
+    mapping(address => EnumerableSet.AddressSet) private depositedUxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private investeduTokens_OfUser_ForPeriod;
-    // investor -> uTokenaddress -> period -> totalInvestment
+        private depositedUxTokensOfUserForPeriod; // depositorAddress -> period -> All uTokens addresses
+    mapping(address => mapping(address => uint256))
+        private depositedAmountOfUserAgainstUxToken; // depositor -> uxTokenAddress -> amount
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private investedAmount_OfUser_AgainstuTokens_ForPeriod;
+        private depositedAmountOfUserAgainstUxTokenForPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
 
-    // (period count i.e. how much 15 days passed) => depositors addresses.
-    mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod;
-    // (period count i.e. how much 15 days passed) => depositedTokens address
-    mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod;
-    // (period count i.e. how much 15 days passed) => deposited Ethers in the this period
-    mapping(uint256 => uint256) private ethInPeriod;
-    // (period count) => tokenAddress => totalInvestedAmount
+    mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
+    mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
+    mapping(uint256 => uint256) private ETHInPeriod; // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
     mapping(uint256 => mapping(address => uint))
-        private rewardAmountOfTokenForPeriod;
-    // (period count) => boolean
-    mapping(uint256 => bool) private isRewardCollectedOfPeriod;
-    // period count => boolean (to check that in which period some investment is made.
-    mapping(uint256 => bool) private isDepositedInPeriod;
+        private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
+    mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
+    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
 
-    // mappings to store password and randomly generated phrase against user.
-    mapping(address => bytes32) private _passwordOf;
-    mapping(address => bool) private _isPasswordSet;
-    mapping(address => bytes32) private _recoveryNumberOf;
-    mapping(address => bool) private _isRecoveryNumberSet;
+    // mappings to store Sign Key and randomly generated Master key against user.
+    mapping(address => bytes32) private _signKeyOf;
+    mapping(address => bool) private _isSignKeySetOf;
+    mapping(address => bytes32) private _masterKeyOf;
+    mapping(address => bool) private _isMasterKeySetOf;
 
     // tokens addresses.
-    address public deployedAddressOfEth;
+    address public uxTokenAddressOfETH;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
-    EnumerableSet.AddressSet private uTokensOfAllowedTokens; // uTokens addresses of allowed ERC20 Tokens
+    EnumerableSet.AddressSet private uxTokensOfAllowedTokens; // uxTokens addresses of allowed ERC20 Tokens
     address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
 
     // salt for create2 opcode.
-    uint256 private _salt; // to handle create2 opcode.
-
-    // previous fee
-    uint256 public pendingFee;
+    uint256 private _salt;
 
     // fee detial
-    uint256 public depositFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public percentOfCharityWinnerAndFundAddress = 30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
-    uint256 public percentOfForthAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
+    uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
+        30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
+    uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
     // time periods for reward
-    uint256 public timeLimitForReward = 129600;
-    uint256 public timeLimitForReward_369days = 31881600; // 369 days
-    // uint256 public timeLimitForRewardCollection = 10;
+    uint256 public rewardTimeLimitFor369Hours = 129600; // 369 hours
+    uint256 public rewardTimeLimitFor369Days = 31881600; // 369 days
     uint256 public deployTime;
 
     // zoom to handle percentage in the decimals
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public u369_30 = 0x23f7c530D41D437Cf82f2164084A009836c26080;
-    address public u369gift_30 = 0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D;
-    address public u369impact_30 = 0x0d4228ff01dbE7167C3a35640D362faAfd42406d;
-    address public u369community_dev_30 =
-        0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534;
+    address public ux369gift_30 = 0x4651Ea80a87c8E9C0F8495943Ad2490a02777281;
+    address public ux369impact_30 = 0xbEF1B7Fb208D6107B90D9C39C484B095c9Db6684;
+    address public ux369_30 = 0xEBAf9a2eBCcc903D09392C62482c72221bBb5DDE;
+    address public ux369devs_10 = 0x6bD8C72d0f3F5738d4Be740B19bdb406Ae42eb2F;
 
     event Protect(
         address depositor,
@@ -1556,28 +1543,43 @@ contract uTokenFactory is Ownable {
         uint256 tokenAmount
     );
 
+    event TokenDeployed(address indexed tokenAddress, string name);
+    event TokenAdded(
+        address indexed tokenAddress,
+        address indexed deployedAddress
+    );
+
     constructor(
         address[] memory _allowedTokens,
-        address[] memory _whiteListAddressess
+        address[] memory _whiteListAddresses // Fixed typo
     ) {
+        require(_allowedTokens.length < 256, "Too many allowed tokens"); // Optional: limit on number of tokens
+        require(
+            _whiteListAddresses.length < 256,
+            "Too many whitelist addresses"
+        ); // Optional: limit on number of addresses
+
         deployTime = block.timestamp;
-        whiteListAddresses = _whiteListAddressess;
 
-        deployedAddressOfEth = _deployEth();
-        if (_allowedTokens.length != 0) _addAllowedTokens(_allowedTokens);
+        // Set the whitelist addresses
+        whiteListAddresses = _whiteListAddresses;
 
-        // setting whitelist addresses.
+        // Deploy ETH token and add allowed tokens if any
+        uxTokenAddressOfETH = _deployETH();
+        if (_allowedTokens.length > 0) {
+            _addAllowedTokens(_allowedTokens);
+        }
     }
 
     /**
-     * @dev Function to deploy a new instance of uToken smart contract and initialize it.
+     * @dev Function to deploy a new instance of uxToken smart contract and initialize it.
      *
      * The function uses the Ethereum assembly language for optimized, low-level operations.
      * It uses the CREATE2 operation code (EVM opcode) to create a new smart contract on the blockchain, with a
      * predetermined address. The address depends on the sender, salt, and init code. The `create2` opcode provides
      * more control over the address of the newly created contract compared to the regular `create` (or CREATE1) opcode.
      *
-     * `uToken.creationCode` is the bytecode used for deploying the uToken contract.
+     * `uxToken.creationCode` is the bytecode used for deploying the uxToken contract.
      *
      * Salt is a value used in the CREATE2 function to generate the new contract address. The salt in this function is
      * generated by hashing a continually incrementing number (_salt) using keccak256, which is the standard Ethereum hashing function.
@@ -1585,55 +1587,63 @@ contract uTokenFactory is Ownable {
      * The deployed contract is then initialized by calling its `initialize` method. This sets the
      * name, symbol, underlying asset, and whitelist addresses of the token.
      *
-     * @return deployedEth The address of the newly deployed uToken contract.
+     * @return deployedEth The address of the newly deployed uxToken contract.
      */
-    function _deployEth() internal returns (address deployedEth) {
-        bytes memory bytecode = type(uToken).creationCode;
+    function _deployETH() internal returns (address deployedEth) {
+        bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuToken(deployedEth).initialize(
-            "uETH",
-            "uETH",
+        IuxToken(deployedEth).initialize(
+            "uxETH",
+            "uxETH",
             "ETHER",
+            18,
             whiteListAddresses
         );
+
+        emit TokenDeployed(deployedEth, "uxETH");
     }
 
     /**
-     * @dev Deploys a new instance of uToken for a given ERC20 token and initializes it.
+     * @dev Deploys a new instance of uxToken for a given ERC20 token and initializes it.
      *
      * This function creates a new contract instance for any ERC20 token on the Ethereum blockchain,
-     * with a name and symbol prefixed with 'u'. The address of the new contract is deterministic,
+     * with a name and symbol prefixed with 'ux'. The address of the new contract is deterministic,
      * and depends on the sender, the salt, and the initialization code.
      *
-     * @param _token The address of the ERC20 token for which the uToken needs to be deployed.
+     * @param _token The address of the ERC20 token for which the uxToken needs to be deployed.
      *
-     * @return deployedToken The address of the newly deployed uToken contract.
+     * @return deployedToken The address of the newly deployed uxToken contract.
      *
      * Notes:
      *
      * 1) The `IERC20` interface is used to interact with the ERC20 token. It gets the name and symbol
-     *    of the token, which are used to create a corresponding uToken with a prefixed name and symbol.
+     *    of the token, which are used to create a corresponding uxToken with a prefixed name and symbol.
      *
      * 2) The salt is generated by hashing an incrementing number (_salt) using the keccak256 hashing function.
      *
      * 3) Ethereum's low-level assembly language is used for optimized operations.
-     *    Specifically, the CREATE2 opcode is used to deploy the new uToken contract.
+     *    Specifically, the CREATE2 opcode is used to deploy the new uxToken contract.
      *
-     * 4) The `initialize` method of the new uToken contract is called to set its name, symbol,
+     * 4) The `initialize` method of the new uxToken contract is called to set its name, symbol,
      *    underlying asset symbol, and whitelist addresses.
      */
     function _deployToken(
         address _token
     ) internal returns (address deployedToken) {
-        IERC20 __token = IERC20(_token);
-        string memory name = string.concat("u", __token.name());
-        string memory symbol = string.concat("u", __token.symbol());
-        string memory currency = __token.symbol();
+        IERC20 tokenContract = IERC20(_token);
+        string memory name = string(
+            abi.encodePacked("ux", tokenContract.name())
+        );
+        string memory symbol = string(
+            abi.encodePacked("ux", tokenContract.symbol())
+        );
+        string memory currency = tokenContract.symbol();
+        uint8 decimals = tokenContract.decimals();
 
-        bytes memory bytecode = type(uToken).creationCode;
+        bytes memory bytecode = type(uxToken).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedToken := create2(
@@ -1643,19 +1653,22 @@ contract uTokenFactory is Ownable {
                 salt
             )
         }
-        IuToken(deployedToken).initialize(
+        IuxToken(deployedToken).initialize(
             name,
             symbol,
             currency,
+            decimals,
             whiteListAddresses
         );
+
+        emit TokenDeployed(deployedToken, name);
     }
 
     /**
-     * @dev Adds an array of token addresses to the list of allowed tokens and deploys uToken for each.
+     * @dev Adds an array of token addresses to the list of allowed tokens and deploys uxToken for each.
      *
      * This function iterates through the array of input addresses, checks if each address corresponds to a contract,
-     * checks if it's not already in the list of allowed tokens, deploys a uToken for it, and updates the corresponding
+     * checks if it's not already in the list of allowed tokens, deploys a uxToken for it, and updates the corresponding
      * mappings and sets.
      *
      * @param _allowedTokens An array of addresses representing the ERC20 tokens to be allowed.
@@ -1666,32 +1679,38 @@ contract uTokenFactory is Ownable {
      *
      * 2) The `contains` function checks if the token is already in the `allowedTokens` set.
      *
-     * 3) The `_deployToken` function deploys a new uToken contract for the given token.
+     * 3) The `_deployToken` function deploys a new uxToken contract for the given token.
      *
-     * 4) `tokenAdressOf_uToken`, `uTokenAddressOf_token`, `currencyOf_uToken`, `allowedTokens`, and
-     *    `uTokensOfAllowedTokens` are state variables (mappings or sets) that are updated for each token.
+     * 4) `tokenAdressForUxToken`, `uxTokenAddressForToken`, `currencyOfUxToken`, `allowedTokens`, and
+     *    `uxTokensOfAllowedTokens` are state variables (mappings or sets) that are updated for each token.
      *
      * require _token.isContract() Ensures the provided address corresponds to a contract.
      * require !(allowedTokens.contains(_token)) Ensures the token is not already in the allowedTokens set.
      */
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        for (uint i; i < _allowedTokens.length; i++) {
-            address _token = _allowedTokens[i];
+        uint256 length = _allowedTokens.length;
+        for (uint256 i = 0; i < length; i++) {
+            address tokenAddress = _allowedTokens[i]; // Store in a local variable
+
             require(
-                _token.isContract(),
-                "uTokenFactory: INVALID ALLOWED TOKEN ADDRESS"
+                tokenAddress.isContract(),
+                "uxTokenFactory: INVALID ALLOWED TOKEN ADDRESS"
             );
             require(
-                !(allowedTokens.contains(_token)),
+                !allowedTokens.contains(tokenAddress),
                 "Factory: Already added"
             );
-            address _deployedAddress = _deployToken(_token);
-            tokenAdressOf_uToken[_deployedAddress] = _token;
-            uTokenAddressOf_token[_token] = _deployedAddress;
-            currencyOf_uToken[_deployedAddress] = IuToken(_deployedAddress)
+
+            address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
+            tokenAdressForUxToken[deployedAddress] = tokenAddress;
+            uxTokenAddressForToken[tokenAddress] = deployedAddress;
+            currencyOfUxToken[deployedAddress] = IuxToken(deployedAddress)
                 .currency();
-            allowedTokens.add(_token);
-            uTokensOfAllowedTokens.add(_deployedAddress);
+
+            allowedTokens.add(tokenAddress);
+            uxTokensOfAllowedTokens.add(deployedAddress);
+
+            emit TokenAdded(tokenAddress, deployedAddress);
         }
     }
 
@@ -1714,11 +1733,11 @@ contract uTokenFactory is Ownable {
     /**
      * @dev Handles the depositing of tokens.
      *
-     * This function allows the sender to deposit tokens into the contract. It verifies the password of the sender,
+     * This function allows the sender to deposit tokens into the contract. It verifies the sign key of the sender,
      * checks the deposited amount, verifies the token type, and then executes the deposit and divides up the deposit fee.
      *
-     * @param _password The password of the depositor for verification.
-     * @param _uTokenAddress The address of the token being deposited.
+     * @param _signKey The sign key of the depositor for verification.
+     * @param _uxTokenAddress The address of the token being deposited.
      * @param _amount The amount of the token being deposited.
      *
      * require: Caller's password must be set.
@@ -1727,131 +1746,128 @@ contract uTokenFactory is Ownable {
      * require: The token address must be valid.
      */
     function protect(
-        string memory _password,
-        address _uTokenAddress,
+        string memory _signKey,
+        address _uxTokenAddress,
         uint256 _amount
     ) external payable {
         address depositor = msg.sender;
-        require(_isPasswordSet[depositor], "Factory: Password not set yet.");
+
+        // Validate sign key
+        require(_isSignKeySetOf[depositor], "Factory: SignKey not set yet.");
         require(
-            _passwordOf[depositor] == keccak256(bytes(_password)),
-            "Factory: Password incorrect"
+            _signKeyOf[depositor] == keccak256(bytes(_signKey)),
+            "Factory: SignKey incorrect"
         );
         require(_amount > 0, "Factory: invalid amount");
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
-            "Factory: invalid uToken address"
+            _uxTokenAddress == uxTokenAddressOfETH ||
+                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
+            "Factory: invalid uxToken address"
         );
-        uint256 _depositFee = _amount.mul(depositFeePercent).div(ZOOM);
-        uint256 _remaining = _amount.sub(_depositFee);
 
+        // Calculate deposit fee and remaining amount
+        uint256 depositFee = (_amount * benefactionFeePercent) / ZOOM;
+        uint256 remaining = _amount - depositFee;
+
+        // Call protect method on uxToken contract
         require(
-            IuToken(_uTokenAddress).protect(depositor, _remaining),
+            IuxToken(_uxTokenAddress).protect(depositor, remaining),
             "Factory: deposit failed"
         );
-        if (_uTokenAddress == deployedAddressOfEth) {
+
+        // Handle fees and deposits
+        if (_uxTokenAddress == uxTokenAddressOfETH) {
             require(msg.value > 0, "Factory: invalid Ether");
-            // payable(u369_30).transfer(_depositFee);
-            _handleFeeEth(_depositFee);
+            _handleFeeETH(depositFee);
         } else {
             require(
-                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transferFrom(
+                IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
                     depositor,
                     address(this),
                     _amount
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(u369_30, _depositFee), "Factory: transfer failed");
-            _handleFeeTokens(tokenAdressOf_uToken[_uTokenAddress], _depositFee);
-        }
-
-        // If this is first time to deposit in the system, add it to the depositors list of the system
-        if (!(allDepositors.contains(depositor))) allDepositors.add(depositor);
-
-        // investment details update for 369 days mappings.
-
-        // if native currency then add accordingly otherwise add tokens and add amount of that token
-        if (_uTokenAddress == deployedAddressOfEth)
-            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[
-                depositor
-            ].add(msg.value);
-        else {
-            address tokenAddress = tokenAdressOf_uToken[_uTokenAddress];
-            if (!depositedTokensOf[depositor].contains(tokenAddress))
-                depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][
-                tokenAddress
-            ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
-                _amount
+            _handleFeeTokens(
+                tokenAdressForUxToken[_uxTokenAddress],
+                depositFee
             );
         }
 
-        if (!(investeduTokensOf[depositor].contains(_uTokenAddress)))
-            investeduTokensOf[depositor].add(_uTokenAddress);
+        // Add depositor to the list if it's the first deposit
+        if (!allDepositors.contains(depositor)) {
+            allDepositors.add(depositor);
+        }
 
-        uint256 _currentPeriod = get_CurrentPeriod();
+        // Update deposit details for 369 days mappings
+        if (_uxTokenAddress == uxTokenAddressOfETH) {
+            nativeCurrencyDepositedBy[depositor] += msg.value;
+        }
+
+        if (!depositedUxTokensOf[depositor].contains(_uxTokenAddress)) {
+            depositedUxTokensOf[depositor].add(_uxTokenAddress);
+        }
+
+        uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
         if (
-            !(investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod])
-                .contains(_uTokenAddress)
-        )
-            investeduTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
-                _uTokenAddress
+            !depositedUxTokensOfUserForPeriod[depositor][currentPeriod]
+                .contains(_uxTokenAddress)
+        ) {
+            depositedUxTokensOfUserForPeriod[depositor][currentPeriod].add(
+                _uxTokenAddress
             );
-        investedAmount_OfUser_AgainstuTokens_ForPeriod[depositor][
-            _uTokenAddress
-        ][_currentPeriod] = investedAmount_OfUser_AgainstuTokens_ForPeriod[
-            depositor
-        ][_uTokenAddress][_currentPeriod].add(_remaining);
-        emit Protect(depositor, _uTokenAddress, _currentPeriod, _remaining);
+        }
+        depositedAmountOfUserAgainstUxToken[depositor][
+            _uxTokenAddress
+        ] += remaining;
+        depositedAmountOfUserAgainstUxTokenForPeriod[depositor][
+            _uxTokenAddress
+        ][currentPeriod] += remaining;
+
+        emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
     }
 
     /**
      * @dev Handles the deposit fee for Ethereum deposits.
      *
-     * This function divides the deposit fee into the respective shares for the charity, winner, fund, and forth addresses.
+     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
      * It also checks and updates the depositors and deposited Ether amount for the current time period.
      *
      * @param _depositFee The amount of the deposit fee in Ether.
      */
-    function _handleFeeEth(uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfCharityWinnerAndFundAddress)
-            .div(ZOOM);
-        uint256 shareOfForthAddress = _depositFee
-            .mul(percentOfForthAddress)
-            .div(ZOOM);
-        // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfu369_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
+    function _handleFeeETH(uint256 _depositFee) internal {
+        uint256 thirtyPercentShare = (_depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        uint256 shareOfDevFundAddress = (_depositFee * percentofDevsAddress) /
+            ZOOM;
 
-        payable(u369gift_30).transfer(thirtyPercentShare);
-        payable(u369_30).transfer(thirtyPercentShare);
-        payable(u369impact_30).transfer(thirtyPercentShare);
-        payable(u369community_dev_30).transfer(shareOfForthAddress);
+        // Transfer fees
+        payable(ux369gift_30).transfer(thirtyPercentShare);
+        payable(ux369_30).transfer(thirtyPercentShare);
+        payable(ux369impact_30).transfer(thirtyPercentShare);
+        payable(ux369devs_10).transfer(shareOfDevFundAddress);
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            timeLimitForReward) + 1;
-        if (!isDepositedInPeriod[currentTimePeriodCount])
+        // Calculate current time period
+        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
+            rewardTimeLimitFor369Hours +
+            1;
+
+        // Update period deposits and depositors
+        if (!isDepositedInPeriod[currentTimePeriodCount]) {
             isDepositedInPeriod[currentTimePeriodCount] = true;
-
-        if (
-            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
-        ) {
-            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
-        ethInPeriod[currentTimePeriodCount] = ethInPeriod[
-            currentTimePeriodCount
-        ].add(thirtyPercentShare);
+        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
+            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
+        }
+
+        ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare; // Combine operations to minimize storage writes
     }
 
     /**
      * @dev Handles the deposit fee for token deposits.
      *
-     * This function divides the deposit fee into the respective shares for the charity, winner, fund, and forth addresses.
+     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
      * It also checks and updates the depositors, deposited tokens, and reward amount for the current time period.
      *
      * @param _tokenAddress The address of the token being deposited.
@@ -1861,90 +1877,100 @@ contract uTokenFactory is Ownable {
         address _tokenAddress,
         uint256 _depositFee
     ) internal {
-        uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfCharityWinnerAndFundAddress)
-            .div(ZOOM);
-        uint256 shareOfForthAddress = _depositFee
-            .mul(percentOfForthAddress)
-            .div(ZOOM);
-        // uint256 shareOfWinnerAddress = thirtyPercentShare;
-        // uint256 shareOfu369impact_30 = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfFundAddress = thirtyPercentShare; // because winner and charity will receive same percentage.
-        // uint256 shareOfForthAddress = _depositFee - (thirtyPercentShare * 3); // it will receive remaining 10% percent
+        uint256 thirtyPercentShare = (_depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
 
-        IERC20(_tokenAddress).transfer(u369gift_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(u369_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(u369impact_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(
-            u369community_dev_30,
-            shareOfForthAddress
+        // Transfer fees and require success
+        require(
+            IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare),
+            "Transfer to ux369gift_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare),
+            "Transfer to ux369_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare),
+            "Transfer to ux369impact_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare),
+            "Transfer to ux369devs_10 failed"
         );
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            timeLimitForReward) + 1;
-        if (!isDepositedInPeriod[currentTimePeriodCount])
-            isDepositedInPeriod[currentTimePeriodCount] = true;
+        // Calculate current time period
+        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
+            rewardTimeLimitFor369Hours +
+            1;
 
-        if (
-            !(depositorsInPeriod[currentTimePeriodCount].contains(msg.sender))
-        ) {
-            depositorsInPeriod[currentTimePeriodCount].add(msg.sender);
+        // Update period deposits and depositors
+        if (!isDepositedInPeriod[currentTimePeriodCount]) {
+            isDepositedInPeriod[currentTimePeriodCount] = true;
         }
-        if (!(tokensInPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
-            tokensInPeriod[currentTimePeriodCount].add(_tokenAddress);
+
+        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
+            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
-        rewardAmountOfTokenForPeriod[currentTimePeriodCount][
+
+        if (!tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress)) {
+            tokensByPeriod[currentTimePeriodCount].add(_tokenAddress);
+        }
+
+        totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
             _tokenAddress
-        ] = rewardAmountOfTokenForPeriod[currentTimePeriodCount][_tokenAddress]
-            .add(thirtyPercentShare);
+        ] += thirtyPercentShare; // Combine operations
     }
 
     /**
      * @dev Handles the withdrawal of tokens.
      *
-     * This function allows the sender to withdraw tokens from the contract. It verifies the password of the sender,
+     * This function allows the sender to withdraw tokens from the contract. It verifies the signKey of the sender,
      * checks the withdrawal amount, verifies the token type, and then executes the withdrawal.
      *
-     * @param _password The password of the withdrawer for verification.
-     * @param _uTokenAddress The address of the token being withdrawn.
+     * @param _signKey The sign key of the withdrawer for verification.
+     * @param _uxTokenAddress The address of the token being withdrawn.
      * @param _amount The amount of the token being withdrawn.
      *
-     * require: Caller's password must be set.
-     * require: Caller's password must match the stored password.
+     * require: Caller's signKey must be set.
+     * require: Caller's signKey must match the stored signKey.
      * require: The token address must be valid.
      * require: Withdrawal amount must be greater than 0.
      * require: Caller's balance must be sufficient for the withdrawal.
      */
     function burnAndUnprotect(
-        string memory _password,
-        address _uTokenAddress,
+        string memory _signKey,
+        address _uxTokenAddress,
         uint256 _amount
     ) external {
         address withdrawer = msg.sender;
-        require(_isPasswordSet[withdrawer], "Factory: Password not set yet.");
+
+        require(_isSignKeySetOf[withdrawer], "Factory: SignKey not set yet.");
         require(
-            _passwordOf[withdrawer] == keccak256(bytes(_password)),
-            "Factory: Password incorrect"
+            _signKeyOf[withdrawer] == keccak256(bytes(_signKey)),
+            "Factory: SignKey incorrect"
         );
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
-            "Factory: invalid uToken address"
+            _uxTokenAddress == uxTokenAddressOfETH ||
+                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
+            "Factory: invalid uxToken address"
         );
-        uint256 balance = IuToken(_uTokenAddress).balanceOf(withdrawer);
+
+        uint256 balance = IuxToken(_uxTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "Factory: invalid amount");
-        require(balance >= _amount, "Factory: Not enought tokens");
+        require(balance >= _amount, "Factory: Not enough tokens");
 
         require(
-            IuToken(_uTokenAddress).burnAndUnprotect(withdrawer, _amount),
+            IuxToken(_uxTokenAddress).burnAndUnprotect(withdrawer, _amount),
             "Factory: withdraw failed"
         );
 
-        if (_uTokenAddress == deployedAddressOfEth) {
+        // Transfer the amount based on the token type
+        if (_uxTokenAddress == uxTokenAddressOfETH) {
             payable(withdrawer).transfer(_amount);
         } else {
             require(
-                IERC20(tokenAdressOf_uToken[_uTokenAddress]).transfer(
+                IERC20(tokenAdressForUxToken[_uxTokenAddress]).transfer(
                     withdrawer,
                     _amount
                 ),
@@ -1952,13 +1978,30 @@ contract uTokenFactory is Ownable {
             );
         }
 
-        if (balance.sub(_amount) == 0) {
-            investeduTokensOf[withdrawer].remove(_uTokenAddress);
-            investeduTokens_OfUser_ForPeriod[withdrawer][get_CurrentPeriod()]
-                .remove(_uTokenAddress);
+        // Update the deposited amounts
+        uint256 previousAmount = depositedAmountOfUserAgainstUxToken[
+            withdrawer
+        ][_uxTokenAddress];
+        depositedAmountOfUserAgainstUxToken[withdrawer][
+            _uxTokenAddress
+        ] = previousAmount.sub(_amount);
+
+        // Update the current period deposits
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
+        if (
+            depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] <
+            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
+                _uxTokenAddress
+            ][currentPeriod]
+        ) {
+            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
+                _uxTokenAddress
+            ][currentPeriod] = depositedAmountOfUserAgainstUxToken[withdrawer][
+                _uxTokenAddress
+            ];
         }
 
-        emit BurnAndUnprotect(withdrawer, _uTokenAddress, _amount);
+        emit BurnAndUnprotect(withdrawer, _uxTokenAddress, _amount);
     }
 
     /**
@@ -1968,106 +2011,108 @@ contract uTokenFactory is Ownable {
      * checks the transfer amount, verifies the token type, and then executes the transfer. After successful transfer,
      * it adds the transferred token address to the receiver's list of tokens.
      *
-     * @param _password The password of the sender for verification.
-     * @param _uTokenAddress The address of the token being transferred.
+     * @param _signKey The signKey of the sender for verification.
+     * @param _uxTokenAddress The address of the token being transferred.
      * @param _to The recipient's address.
      * @param _amount The amount of the token being transferred.
      *
      * @return true if the transfer is successful, throws an error otherwise.
      *
-     * require: Caller's password must be set.
-     * require: Caller's password must match the stored password.
+     * require: Caller's signKey must be set.
+     * require: Caller's signKey must match the stored signKey.
      * require: The token address must be valid.
      * require: Transfer amount must be greater than 0.
      */
     function transfer(
-        string memory _password,
-        address _uTokenAddress,
+        string memory _signKey,
+        address _uxTokenAddress,
         address _to,
         uint256 _amount
     ) external returns (bool) {
         address caller = msg.sender;
-        require(_isPasswordSet[caller], "Factory: Password not set yet.");
+
+        require(_isSignKeySetOf[caller], "Factory: SignKey not set yet.");
         require(
-            _passwordOf[caller] == keccak256(bytes(_password)),
-            "Factory: Password incorrect"
+            _signKeyOf[caller] == keccak256(bytes(_signKey)),
+            "Factory: SignKey incorrect"
         );
         require(_amount > 0, "Factory: Invalid amount");
         require(
-            _uTokenAddress == deployedAddressOfEth ||
-                uTokensOfAllowedTokens.contains(_uTokenAddress),
-            "Factory: invalid uToken address"
+            _uxTokenAddress == uxTokenAddressOfETH ||
+                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
+            "Factory: invalid uxToken address"
         );
 
+        // Transfer the tokens
         require(
-            IuToken(_uTokenAddress).transfer(_to, _amount),
-            "Factory, transfer failed"
+            IuxToken(_uxTokenAddress).transfer(_to, _amount),
+            "Factory: transfer failed"
         );
-        investeduTokensOf[_to].add(_uTokenAddress);
+
         return true;
     }
 
     /**
-     * @dev Allows a user to set their password and recovery number for the first time.
+     * @dev Allows a user to set their SignKey and MasterKey for the first time.
      *
-     * This function sets the password and recovery number of the caller (msg.sender).
-     * Both the password and recovery number are hashed for secure storage. The function
-     * can only be called if neither the password nor the recovery number has been set before.
+     * This function sets the SignKey and MasterKey of the caller (msg.sender).
+     * Both the SignKey and MasterKey are hashed for secure storage. The function
+     * can only be called if neither the SignKey nor the MasterKey has been set before.
      *
-     * @param _password The password provided by the user.
-     * @param _recoveryNumber The recovery number provided by the user.
+     * @param _signKey The SignKey provided by the user.
+     * @param _masterKey The MasterKey provided by the user.
      *
-     * require The password and recovery number for the caller should not have been set before.
+     * require The SignKey and MasterKey for the caller should not have been set before.
      */
     function setMasterKeyAndSignKey(
-        string memory _password,
-        string memory _recoveryNumber
+        string memory _signKey,
+        string memory _masterKey
     ) external {
         address caller = msg.sender;
         require(
-            (!(_isPasswordSet[caller]) && !(_isRecoveryNumberSet[caller])),
-            "Factory: Already set"
+            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
+            "Factory: SignKey already set"
         );
-        _passwordOf[caller] = keccak256(bytes(_password));
-        _recoveryNumberOf[caller] = keccak256(bytes(_recoveryNumber));
-        _isPasswordSet[caller] = true;
-        _isRecoveryNumberSet[caller] = true;
+        _signKeyOf[caller] = keccak256(bytes(_signKey));
+        _masterKeyOf[caller] = keccak256(bytes(_masterKey));
+        _isSignKeySetOf[caller] = true;
+        _isMasterKeySetOf[caller] = true;
     }
 
     /**
-     * @dev Allows a user to change their password using their recovery number.
+     * @dev Allows a user to change their SignKey using their MaskterKey.
      *
-     * This function changes the password of the caller (msg.sender) after verifying their recovery number.
-     * The new password is hashed for secure storage. This function can only be called if the user's recovery
+     * This function changes the SignKey of the caller (msg.sender) after verifying their MaskterKey.
+     * The new SignKey is hashed for secure storage. This function can only be called if the user's recovery
      * number matches the one provided in the function argument.
      *
-     * @param _recoveryNumber The recovery number provided by the user.
-     * @param _password The new password provided by the user.
+     * @param _masterKey The MaskterKey provided by the user.
+     * @param _signKey The new SignKey provided by the user.
      *
-     * require The recovery number provided should match the recovery number stored for the caller.
+     * require The MaskterKey provided should match the MaskterKey stored for the caller.
      */
-    function changePassword(
-        string memory _recoveryNumber,
-        string memory _password
+    function changeSignKey(
+        string memory _masterKey,
+        string memory _signKey
     ) external {
         address caller = msg.sender;
         require(
-            _recoveryNumberOf[caller] == keccak256(bytes(_recoveryNumber)),
+            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
             "Factory: incorrect recovery number"
         );
-        _passwordOf[caller] = keccak256(bytes(_password));
+        _signKeyOf[caller] = keccak256(bytes(_signKey));
     }
 
-    // function to change time limit for reward. only onwer is authorized.
-    function changeTimeLimitForReward(uint256 _time) external onlyOwner {
-        timeLimitForReward = _time;
-    }
-
-    // function to change the time limit for reward of 369 days
-    function changeTimeLimitForReward_369days(
+    // function to change time limit for reward of 369 hours. only onwer is authorized.
+    function changeRewardTimeLimitFor369Hours(
         uint256 _time
     ) external onlyOwner {
-        timeLimitForReward_369days = _time;
+        rewardTimeLimitFor369Hours = _time;
+    }
+
+    // function to change the time limit for reward of 369 days. only owner is authorized
+    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
+        rewardTimeLimitFor369Days = _time;
     }
 
     //--------------------Read Functions -------------------------------//
@@ -2079,7 +2124,7 @@ contract uTokenFactory is Ownable {
      *
      * @return An array of addresses representing allowed tokens.
      */
-    function all_AllowedTokens() public view returns (address[] memory) {
+    function allAllowedTokens() public view returns (address[] memory) {
         return allowedTokens.values();
     }
 
@@ -2090,68 +2135,68 @@ contract uTokenFactory is Ownable {
      *
      * @return A number representing the count of allowed tokens.
      */
-    function all_AllowedTokensCount() public view returns (uint256) {
+    function allAllowedTokensCount() public view returns (uint256) {
         return allowedTokens.length();
     }
 
     /**
-     * @dev Returns the addresses of all uTokens of the allowed tokens.
+     * @dev Returns the addresses of all uxTokens of the allowed tokens.
      *
-     * This function returns an array of the addresses of all uTokens that correspond to currently allowed tokens.
+     * This function returns an array of the addresses of all uxTokens that correspond to currently allowed tokens.
      *
      * @return An array of addresses representing uTokens of allowed tokens.
      */
-    function all_uTokensOfAllowedTokens()
+    function allUxTokensOfAllowedTokens()
         public
         view
         returns (address[] memory)
     {
-        return uTokensOfAllowedTokens.values();
+        return uxTokensOfAllowedTokens.values();
     }
 
     /**
-     * @dev Returns the count of all uTokens of the allowed tokens.
+     * @dev Returns the count of all uxTokens of the allowed tokens.
      *
-     * This function returns the total count of uTokens that correspond to currently allowed tokens.
+     * This function returns the total count of uxTokens that correspond to currently allowed tokens.
      *
-     * @return A number representing the count of uTokens of allowed tokens.
+     * @return A number representing the count of uxTokens of allowed tokens.
      */
-    function all_uTokensOfAllowedTokensCount() public view returns (uint256) {
-        return uTokensOfAllowedTokens.length();
+    function allUxTokensOfAllowedTokensCount() public view returns (uint256) {
+        return uxTokensOfAllowedTokens.length();
     }
 
     /**
-     * @dev Returns the address of the token corresponding to the given uToken.
+     * @dev Returns the address of the token corresponding to the given uxToken.
      *
-     * This function takes the address of a uToken and returns the address of the corresponding token.
+     * This function takes the address of a uxToken and returns the address of the corresponding token.
      *
-     * @param _uToken The address of the uToken.
+     * @param _uxToken The address of the uToken.
      *
-     * @return The address of the token that corresponds to the given uToken.
+     * @return The address of the token that corresponds to the given uxToken.
      */
-    function get_TokenAddressOfuToken(
-        address _uToken
+    function getTokenAddressForUxToken(
+        address _uxToken
     ) public view returns (address) {
-        return tokenAdressOf_uToken[_uToken];
+        return tokenAdressForUxToken[_uxToken];
     }
 
     /**
-     * @dev Returns the address of the uToken corresponding to the given token.
+     * @dev Returns the address of the uxToken corresponding to the given token.
      *
-     * This function takes the address of a token and returns the address of the corresponding uToken.
+     * This function takes the address of a token and returns the address of the corresponding uxToken.
      *
      * @param _token The address of the token.
      *
-     * @return The address of the uToken that corresponds to the given token.
+     * @return The address of the uxToken that corresponds to the given token.
      */
-    function get_uTokenAddressOfToken(
+    function getUxTokenAddressForToken(
         address _token
     ) public view returns (address) {
-        return uTokenAddressOf_token[_token];
+        return uxTokenAddressForToken[_token];
     }
 
-    //-------------------- Investment Details for 369 days -------------------------------//
-    function getAllDepositors_inSystem()
+    //-------------------- Deposit Details for 369 days -------------------------------//
+    function getAllDepositorsInSystem()
         public
         view
         returns (address[] memory _allDepositors)
@@ -2165,37 +2210,42 @@ contract uTokenFactory is Ownable {
         _depositedNativeCurrency = nativeCurrencyDepositedBy[_depositor];
     }
 
-    struct InvestmentOfUser {
-        address tokenAddress;
+    struct DepositsOfUser {
+        address uxTokenAddress;
         uint256 amount;
     }
 
-    function getInvestmentDetails_OfUser(
+    function getDepositDetailsForUser(
         address _depositor
-    ) public view returns (InvestmentOfUser[] memory investmentDetails) {
-        address[] memory totalTokens = depositedTokensOf[_depositor].values();
-        uint256 tokensCount = totalTokens.length;
+    ) public view returns (DepositsOfUser[] memory depositDetails) {
+        address[] memory totaluxTokens = depositedUxTokensOf[_depositor]
+            .values();
+        uint256 tokensCount = totaluxTokens.length;
 
-        investmentDetails = new InvestmentOfUser[](tokensCount);
+        depositDetails = new DepositsOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint i; i < tokensCount; i++) {
-                investmentDetails[i] = InvestmentOfUser({
-                    tokenAddress: totalTokens[i],
-                    amount: depositedAmountOfUserForToken[_depositor][
-                        totalTokens[i]
+                depositDetails[i] = DepositsOfUser({
+                    uxTokenAddress: totaluxTokens[i],
+                    amount: depositedAmountOfUserAgainstUxToken[_depositor][
+                        totaluxTokens[i]
                     ]
                 });
             }
         }
     }
 
-    function get_currentWinner_for369Days() public view returns (address) {
+    function getCurrentRecipientCandidateFor369Days()
+        public
+        view
+        returns (address)
+    {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
-            timeLimitForReward_369days);
+            rewardTimeLimitFor369Days);
 
         if (previousTimePeriod == 0) return address(0);
 
-        address[] memory depositors = getAllDepositors_inSystem();
+        address[] memory depositors = getAllDepositorsInSystem();
         uint256 depositorsLength = depositors.length;
 
         if (depositorsLength == 0) return address(0);
@@ -2208,146 +2258,141 @@ contract uTokenFactory is Ownable {
     }
 
     /**
-     * @dev Returns the addresses of all uTokens invested by a specific investor.
+     * @dev Returns the addresses of all uxTokens deposited by a specific depositor.
      *
-     * This function takes the address of an investor and returns an array of addresses
-     * representing all uTokens that the investor has invested in.
+     * This function takes the address of an depositor and returns an array of addresses
+     * representing all uxTokens that the depositor has deposited in.
      *
-     * @param _investor The address of the investor.
+     * @param _depositor The address of the depositor.
      *
-     * @return investeduTokens An array of uToken addresses in which the investor has invested.
+     * @return depositeduxTokens An array of uxToken addresses in which the depositor has deposited.
      */
-    function getInvested_uTokensOfUser(
-        address _investor
-    ) public view returns (address[] memory investeduTokens) {
-        investeduTokens = investeduTokensOf[_investor].values();
+    function getDepositedUxTokensForUser(
+        address _depositor
+    ) public view returns (address[] memory depositeduxTokens) {
+        depositeduxTokens = depositedUxTokensOf[_depositor].values();
     }
 
     /**
-     * @dev Returns the addresses of all uTokens invested by a specific investor during a specific period.
+     * @dev Returns the addresses of all uxTokens deposited by a specific depositor during a specific period.
      *
-     * This function takes the address of an investor and a period, and returns an array of addresses
-     * representing all uTokens that the investor has invested in during the specified period.
+     * This function takes the address of an depositor and a period, and returns an array of addresses
+     * representing all uxTokens that the depositor has deposited in during the specified period.
      *
-     * @param _investor The address of the investor.
+     * @param _depositor The address of the depositor.
      * @param _period The period of investment.
      *
-     * @return investeduTokensForPeriod An array of uToken addresses in which the investor has invested during the specified period.
+     * @return depositeduxTokensForPeriod An array of uxToken addresses in which the depositor has deposited during the specified period.
      */
-    function getInvesteduTokens_OfUser_ForPeriod(
-        address _investor,
+    function getDepositedUxTokensOfUserForPeriodFor369hours(
+        address _depositor,
         uint256 _period
-    ) public view returns (address[] memory investeduTokensForPeriod) {
-        investeduTokensForPeriod = investeduTokens_OfUser_ForPeriod[_investor][
-            _period
-        ].values();
+    ) public view returns (address[] memory depositeduxTokensForPeriod) {
+        depositeduxTokensForPeriod = depositedUxTokensOfUserForPeriod[
+            _depositor
+        ][_period].values();
     }
 
     /**
-     * @dev Returns the amount invested by a specific investor in a specific uToken during a specific period.
+     * @dev Returns the amount deposited by a specific depositor in a specific uxToken during a specific period.
      *
-     * This function takes the address of an investor, a uToken, and a period, and returns the amount
-     * that the investor has invested in the specified uToken during the specified period.
+     * This function takes the address of an depositor, a uxToken, and a period, and returns the amount
+     * that the depositor has deposited in the specified uxToken during the specified period.
      *
-     * @param _investor The address of the investor.
-     * @param _uToken The address of the uToken.
-     * @param _period The period of investment.
+     * @param _depositor The address of the depositor.
+     * @param _uxToken The address of the uxToken.
+     * @param _period The period of deposit.
      *
-     * @return investedAmount The amount invested by the investor in the specified uToken during the specified period.
+     * @return depositedAmount The amount deposited by the depositor in the specified uxToken during the specified period.
      */
-    function getInvestedAmount_OfUser_AgainstuToken_ForPeriod(
-        address _investor,
-        address _uToken,
+    function getDepositedAmountOfUserAgainstUxTokenForPeriodFor369hours(
+        address _depositor,
+        address _uxToken,
         uint256 _period
-    ) public view returns (uint256 investedAmount) {
-        investedAmount = investedAmount_OfUser_AgainstuTokens_ForPeriod[
-            _investor
-        ][_uToken][_period];
+    ) public view returns (uint256 depositedAmount) {
+        depositedAmount = depositedAmountOfUserAgainstUxTokenForPeriod[
+            _depositor
+        ][_uxToken][_period];
     }
 
     /**
-     * @dev A struct that holds details about a user's investment for a specific period.
+     * @dev A struct that holds details about a user's deposit details for a specific period.
      *
-     * @param uTokenAddress The address of the uToken in which the investment was made.
-     * @param amount The amount invested in the uToken.
+     * @param uxTokenAddress The address of the uxToken in which the deposit was made.
+     * @param amount The amount deposited in the uxToken.
      */
-    struct InvestmentForPeriodOfUser {
-        address uTokenAddress;
+    struct DepositsForPeriodOfUser {
+        address uxTokenAddress;
         uint256 amount;
     }
 
     /**
-     * @dev Returns the details of investments made by a specific investor during a specific period.
+     * @dev Returns the details of deposits made by a specific depositor during a specific period.
      *
-     * This function takes the address of an investor and a period, and returns an array of `InvestmentForPeriodOfUser`
-     * structs that includes the uToken address and the amount invested for each uToken during the specified period.
+     * This function takes the address of an depositor and a period, and returns an array of `DepositsForPeriodOfUser`
+     * structs that includes the uxToken address and the amount deposited for each uxToken during the specified period.
      *
-     * @param _investor The address of the investor.
-     * @param _period The period of investment.
+     * @param _depositor The address of the depositor.
+     * @param _period The period of deposits.
      *
-     * @return investmentDetails An array of `InvestmentForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
+     * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
      */
-    function getInvestmentDetails_OfUser_ForPeriod(
-        address _investor,
+    function getDepositDetailsOfUserForPeriodFor369hours(
+        address _depositor,
         uint256 _period
-    )
-        public
-        view
-        returns (InvestmentForPeriodOfUser[] memory investmentDetails)
-    {
-        address[] memory totalTokens = investeduTokens_OfUser_ForPeriod[
-            _investor
+    ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
+        address[] memory totaluxTokens = depositedUxTokensOfUserForPeriod[
+            _depositor
         ][_period].values();
-        uint256 tokensCount = totalTokens.length;
+        uint256 tokensCount = totaluxTokens.length;
 
-        investmentDetails = new InvestmentForPeriodOfUser[](tokensCount);
+        depositDetails = new DepositsForPeriodOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint i; i < tokensCount; i++) {
-                investmentDetails[i] = InvestmentForPeriodOfUser({
-                    uTokenAddress: totalTokens[i],
-                    amount: investedAmount_OfUser_AgainstuTokens_ForPeriod[
-                        _investor
-                    ][totalTokens[i]][_period]
+                depositDetails[i] = DepositsForPeriodOfUser({
+                    uxTokenAddress: totaluxTokens[i],
+                    amount: depositedAmountOfUserAgainstUxTokenForPeriod[
+                        _depositor
+                    ][totaluxTokens[i]][_period]
                 });
             }
         }
     }
 
-    //  Retrieves the currency type associated with a uToken.
-    function get_CurrencyOfuToken(
-        address _uToken
+    //  Retrieves the currency type associated with a uxToken.
+    function getCurrencyOfUxToken(
+        address _uxToken
     ) public view returns (string memory currency) {
-        return currencyOf_uToken[_uToken];
+        return currencyOfUxToken[_uxToken];
     }
 
-    // Checks whether the entered password matches the one associated with the user address.
-    // The stored password is hashed for security reasons, so the entered password is hashed
-    // and compared with the stored hashed password.
-    function isPasswordCorrect(
+    // Checks whether the entered signKey matches the one associated with the user address.
+    // The stored signKey is hashed for security reasons, so the entered signKey is hashed
+    // and compared with the stored hashed signKey.
+    function isSignKeyCorrect(
         address _user,
-        string memory _password
+        string memory _signKey
     ) public view returns (bool) {
-        return (_passwordOf[_user] == keccak256(bytes(_password)));
+        return (_signKeyOf[_user] == keccak256(bytes(_signKey)));
     }
 
-    // Similar to the password check function, this function checks whether the entered recovery number
-    // matches the one associated with the user address.
-    function isRecoveryNumberCorrect(
+    // Similar to the signKey check function, this function checks whether the entered masterKey matches the one associated with the user address.
+    function isMasterKeyCorrect(
         address _user,
-        string memory _recoveryNumber
+        string memory _masterKey
     ) public view returns (bool) {
-        return (_recoveryNumberOf[_user] == keccak256(bytes(_recoveryNumber)));
+        return (_masterKeyOf[_user] == keccak256(bytes(_masterKey)));
     }
 
-    // Checks whether a password has been set for the user address.
-    function isPasswordSet(address _user) public view returns (bool) {
-        return _isPasswordSet[_user];
+    // Checks whether a signKey has been set for the user address.
+    function isSignKeySet(address _user) public view returns (bool) {
+        return _isSignKeySetOf[_user];
     }
 
-    // Checks whether a recovery number has been set for the user address.
-    // Returns a boolean value that is true if a recovery number is set, and false otherwise.
-    function isRecoveryNumberSet(address _user) public view returns (bool) {
-        return _isRecoveryNumberSet[_user];
+    // Checks whether a masterKey has been set for the user address.
+    // Returns a boolean value that is true if a masterKey is set, and false otherwise.
+    function isMasterKeySet(address _user) public view returns (bool) {
+        return _isMasterKeySetOf[_user];
     }
 
     // Checks whether a deposit has been made in a specific period.
@@ -2358,70 +2403,71 @@ contract uTokenFactory is Ownable {
 
     // Retrieves an array of tokens that were deposited within the given period.
     // The return is an array of addresses, where each address represents a token contract.
-    function get_TokensDepositedInPeriod(
+    function getTokensDepositedByPeriod(
         uint256 _period
     ) public view returns (address[] memory tokens) {
-        return tokensInPeriod[_period].values();
+        return tokensByPeriod[_period].values();
     }
 
     // Retrieves the count of unique tokens that were deposited within the given period.
     // The return is an integer representing the number of unique token contracts.
-    function get_TokensDepositedInPeriodCount(
+    function getTokensDepositedByPeriodCount(
         uint256 _period
     ) public view returns (uint256) {
-        return tokensInPeriod[_period].length();
+        return tokensByPeriod[_period].length();
     }
 
     // Retrieves an array of addresses that made a deposit within the given period.
     // The return is an array of addresses, where each address represents a unique depositor.
-    function get_DepositorsInPeriod(
+    function getDepositorsByPeriodFor369hours(
         uint256 _period
     ) public view returns (address[] memory depositors) {
-        return depositorsInPeriod[_period].values();
+        return depositorsByPeriod[_period].values();
     }
 
     // Retrieves the count of unique depositors that made a deposit within the given period.
     // The return is an integer representing the number of unique depositors.
-    function get_DepositorsInPeriodCount(
+    function getDepositorsByPeriodCountFor369hours(
         uint256 _period
     ) public view returns (uint) {
-        return depositorsInPeriod[_period].length();
+        return depositorsByPeriod[_period].length();
     }
 
     // Retrieves the total amount of Ether that was deposited within the given period.
     // The return is an integer representing the amount of Ether in wei.
-    function get_ETHInPeriod(uint256 _period) public view returns (uint256) {
-        return ethInPeriod[_period];
+    function getETHInPeriod(uint256 _period) public view returns (uint256) {
+        return ETHInPeriod[_period];
     }
 
     // Retrieves the reward amount associated with a specific token during a given period.
     // The function returns an integer representing the reward amount for the specific token in the provided period.
-    function get_rewardAmountOfTokenInPeriod(
+    function getRewardAmountOfTokenInPeriod(
         uint256 _period,
         address _token
     ) public view returns (uint256) {
-        return rewardAmountOfTokenForPeriod[_period][_token];
+        return totalRewardAmountForTokenInPeriod[_period][_token];
     }
 
     // Calculates and returns the current period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
-    // The function returns an integer representing the current period.
-    function get_CurrentPeriod() public view returns (uint) {
-        return ((block.timestamp - deployTime) / timeLimitForReward) + 1;
+    // The function returns an integer representing the current period for 369 hours.
+    function getCurrentPeriodFor369hours() public view returns (uint) {
+        return
+            ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours) + 1;
     }
 
-    function get_CurrentPeriod_for369days() public view returns (uint) {
-        return
-            ((block.timestamp - deployTime) / timeLimitForReward_369days) + 1;
+    // The function returns an integer representing the current period for 369 days.
+    function getCurrentPeriodFor369days() public view returns (uint) {
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days) + 1;
     }
 
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
-    // The function returns an integer representing the previous period.
-    function get_PreviousPeriod() public view returns (uint) {
-        return ((block.timestamp - deployTime) / timeLimitForReward);
+    // The function returns an integer representing the previous period for 369 hours.
+    function getPreviousPeriodFor369hours() public view returns (uint) {
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours);
     }
 
-    function get_PreviousPeriod_for369days() public view returns (uint) {
-        return ((block.timestamp - deployTime) / timeLimitForReward_369days);
+    function getPreviousPeriodFor369days() public view returns (uint) {
+        return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days);
     }
 
     // Calculates and returns the start and end times for the current period.
@@ -2431,57 +2477,63 @@ contract uTokenFactory is Ownable {
     // For all subsequent periods, the start time is calculated by adding the duration of the reward period multiplied by
     // (current period - 1) to the deployment time of the contract.
     // The end time is the duration of the reward period added to the start time.
-    function get_CurrentPeriod_StartAndEndTime()
+    function getCurrentPeriodStartAndEndTimeFor369hours()
         public
         view
         returns (uint startTime, uint endTime)
     {
-        uint currentTimePeriod = get_CurrentPeriod();
+        uint currentTimePeriod_for369hours = getCurrentPeriodFor369hours();
 
-        if (currentTimePeriod == 1) {
+        if (currentTimePeriod_for369hours == 1) {
             startTime = deployTime;
-            endTime = deployTime + timeLimitForReward;
+            endTime = deployTime + rewardTimeLimitFor369Hours;
         } else {
             startTime =
                 deployTime +
-                (timeLimitForReward * (currentTimePeriod - 1));
-            endTime = timeLimitForReward + startTime;
+                (rewardTimeLimitFor369Hours *
+                    (currentTimePeriod_for369hours - 1));
+            endTime = rewardTimeLimitFor369Hours + startTime;
         }
     }
 
-    function get_CurrentPeriod_StartAndEndTime_for369days()
+    function getCurrentPeriodStartAndEndTimeFor369days()
         public
         view
         returns (uint startTime, uint endTime)
     {
-        uint currentTimePeriod = get_CurrentPeriod_for369days();
+        uint currentTimePeriod_for369days = getCurrentPeriodFor369days();
 
-        if (currentTimePeriod == 1) {
+        if (currentTimePeriod_for369days == 1) {
             startTime = deployTime;
-            endTime = deployTime + timeLimitForReward_369days;
+            endTime = deployTime + rewardTimeLimitFor369Days;
         } else {
             startTime =
                 deployTime +
-                (timeLimitForReward_369days * (currentTimePeriod - 1));
-            endTime = timeLimitForReward_369days + startTime;
+                (rewardTimeLimitFor369Days *
+                    (currentTimePeriod_for369days - 1));
+            endTime = rewardTimeLimitFor369Days + startTime;
         }
     }
 
-    // Determines and returns the current winner.
+    // Determines and returns the current recipient candidate.
     // The function calculates the previous time period based on the block timestamp, contract deployment time, and the reward time limit.
     // It then retrieves the list of depositors for the previous time period and the count of these depositors.
     // If there are no depositors in the list, it returns the zero address.
     // Otherwise, it generates a random number using the keccak256 hash function with inputs as the previous time period and deployment time.
     // The modulus operator (%) is used to ensure the random number falls within the range of indices of the depositors array.
     // Finally, it returns the depositor at the index corresponding to the random number, hence determining the current winner.
-    function get_currentWinner() public view returns (address) {
+    function getCurrentRecipientCandidateFor369Hours()
+        public
+        view
+        returns (address)
+    {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
-            timeLimitForReward);
+            rewardTimeLimitFor369Hours);
 
-        address[] memory depositors = get_DepositorsInPeriod(
+        address[] memory depositors = getDepositorsByPeriodFor369hours(
             previousTimePeriod
         );
-        uint256 depositorsLength = get_DepositorsInPeriodCount(
+        uint256 depositorsLength = getDepositorsByPeriodCountFor369hours(
             previousTimePeriod
         );
 
@@ -2500,22 +2552,26 @@ contract uTokenFactory is Ownable {
     // This process continues for all previous periods until it reaches a period where the reward has been collected or period 0,
     // effectively summing up all uncollected Ether rewards.
     // The function returns the cumulative Ether reward history as a single integer value.
-    function rewardHistoryForEth() public view returns (uint256 ethHistory) {
-        uint256 period = get_PreviousPeriod();
-        while (!isRewardCollectedOfPeriod[period]) {
-            ethHistory += get_ETHInPeriod(period);
+    function rewardHistoryForETHFor369Hours()
+        public
+        view
+        returns (uint256 ethHistory)
+    {
+        uint256 period = getPreviousPeriodFor369hours();
+        while (!hasRewardBeenCollectedForPeriod[period]) {
+            ethHistory += getETHInPeriod(period);
             if (period == 0) break;
             period--;
         }
     }
 
     // Checks if the reward for a specified period has been collected.
-    // The function takes a period number as an input and checks the corresponding value in the `isRewardCollectedOfPeriod` mapping.
+    // The function takes a period number as an input and checks the corresponding value in the `hasRewardBeenCollectedForPeriod` mapping.
     // If the reward for that period has been collected, the function returns true; otherwise, it returns false.
-    function IsRewardCollectedOfPeriod(
+    function hasRewardBeenCollectedForPeriodFor369hours(
         uint256 _period
     ) public view returns (bool) {
-        return isRewardCollectedOfPeriod[_period];
+        return hasRewardBeenCollectedForPeriod[_period];
     }
 
     // Struct to represent reward against a specific token
@@ -2532,14 +2588,14 @@ contract uTokenFactory is Ownable {
     function rewardHistoryForTokensForPeriod(
         uint256 _period
     ) public view returns (RewardAgainstToken[] memory record) {
-        address[] memory _tokens = get_TokensDepositedInPeriod(_period);
+        address[] memory _tokens = getTokensDepositedByPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
         if (_tokensCount > 0) {
             for (uint i; i < _tokensCount; i++) {
                 record[i] = RewardAgainstToken({
                     token: _tokens[i],
-                    amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])
+                    amount: getRewardAmountOfTokenInPeriod(_period, _tokens[i])
                 });
             }
         }
@@ -2554,10 +2610,10 @@ contract uTokenFactory is Ownable {
         view
         returns (uint[] memory pendingPeriods)
     {
-        uint256 period = get_PreviousPeriod();
+        uint256 period = getPreviousPeriodFor369Hours();
         uint[] memory _pendingPeriods = new uint[](period);
         uint256 count;
-        while (!isRewardCollectedOfPeriod[period]) {
+        while (!hasRewardBeenCollectedForPeriod[period]) {
             if (!isDepositedInPeriod[period]) {
                 if (period == 0) break;
                 period--;
@@ -2582,7 +2638,7 @@ contract uTokenFactory is Ownable {
      * @notice Returns a list of all whitelisted addresses.
      * @return _whiteListAddresses An array of all addresses that are whitelisted.
      */
-    function get_allWhiteListAddresses()
+    function getAllWhiteListAddresses()
         public
         view
         returns (address[] memory _whiteListAddresses)
