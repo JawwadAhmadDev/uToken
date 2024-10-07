@@ -1688,26 +1688,30 @@ contract uxTokenFactoryContract is Ownable {
      * require !(allowedTokens.contains(_token)) Ensures the token is not already in the allowedTokens set.
      */
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        for (uint i; i < _allowedTokens.length; i++) {
-            address _token = _allowedTokens[i];
+        uint256 length = _allowedTokens.length;
+        for (uint256 i = 0; i < length; i++) {
+            address tokenAddress = _allowedTokens[i]; // Store in a local variable
+
             require(
-                _token.isContract(),
+                tokenAddress.isContract(),
                 "uxTokenFactory: INVALID ALLOWED TOKEN ADDRESS"
             );
             require(
-                !(allowedTokens.contains(_token)),
+                !allowedTokens.contains(tokenAddress),
                 "Factory: Already added"
             );
-            address _deployedAddress = _deployToken(_token);
-            tokenAdressForUxToken[_deployedAddress] = _token;
-            uxTokenAddressForToken[_token] = _deployedAddress;
-            currencyOfUxToken[_deployedAddress] = IuxToken(_deployedAddress)
-                .currency();
-            allowedTokens.add(_token);
-            uxTokensOfAllowedTokens.add(_deployedAddress);
-        }
 
-        emit TokenAdded(tokenAddress, deployedAddress);
+            address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
+            tokenAdressForUxToken[deployedAddress] = tokenAddress;
+            uxTokenAddressForToken[tokenAddress] = deployedAddress;
+            currencyOfUxToken[deployedAddress] = IuxToken(deployedAddress)
+                .currency();
+
+            allowedTokens.add(tokenAddress);
+            uxTokensOfAllowedTokens.add(deployedAddress);
+
+            emit TokenAdded(tokenAddress, deployedAddress);
+        }
     }
 
     /**
@@ -1747,6 +1751,8 @@ contract uxTokenFactoryContract is Ownable {
         uint256 _amount
     ) external payable {
         address depositor = msg.sender;
+
+        // Validate sign key
         require(_isSignKeySetOf[depositor], "Factory: SignKey not set yet.");
         require(
             _signKeyOf[depositor] == keccak256(bytes(_signKey)),
@@ -1758,17 +1764,21 @@ contract uxTokenFactoryContract is Ownable {
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
             "Factory: invalid uxToken address"
         );
-        uint256 _depositFee = _amount.mul(benefactionFeePercent).div(ZOOM);
-        uint256 _remaining = _amount.sub(_depositFee);
 
+        // Calculate deposit fee and remaining amount
+        uint256 depositFee = (_amount * benefactionFeePercent) / ZOOM;
+        uint256 remaining = _amount - depositFee;
+
+        // Call protect method on uxToken contract
         require(
-            IuxToken(_uxTokenAddress).protect(depositor, _remaining),
+            IuxToken(_uxTokenAddress).protect(depositor, remaining),
             "Factory: deposit failed"
         );
+
+        // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             require(msg.value > 0, "Factory: invalid Ether");
-            // payable(ux369_30).transfer(_depositFee);
-            _handleFeeETH(_depositFee);
+            _handleFeeETH(depositFee);
         } else {
             require(
                 IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
@@ -1778,56 +1788,50 @@ contract uxTokenFactoryContract is Ownable {
                 ),
                 "Factory: TransferFrom failed"
             );
-            // require(IERC20(tokenAdressForUxToken[_uxTokenAddress]).transfer(ux369_30, _depositFee), "Factory: transfer failed");
             _handleFeeTokens(
                 tokenAdressForUxToken[_uxTokenAddress],
-                _depositFee
+                depositFee
             );
         }
 
-        // If this is first time to deposit in the system, add it to the depositors list of the system
-        if (!(allDepositors.contains(depositor))) allDepositors.add(depositor);
-
-        // detposit details update for 369 days mappings.
-
-        // if native currency then add accordingly otherwise add tokens and add amount of that token
-        if (_uxTokenAddress == uxTokenAddressOfETH)
-            nativeCurrencyDepositedBy[depositor] = nativeCurrencyDepositedBy[
-                depositor
-            ].add(msg.value);
-        else {
-            address tokenAddress = tokenAdressForUxToken[_uxTokenAddress];
-            if (!depositedTokensOf[depositor].contains(tokenAddress))
-                depositedTokensOf[depositor].add(tokenAddress);
-            // depositedAmountOfUserForToken[depositor][
-            //     tokenAddress
-            // ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
-            //     _remaining
-            // );
+        // Add depositor to the list if it's the first deposit
+        if (!allDepositors.contains(depositor)) {
+            allDepositors.add(depositor);
         }
 
-        if (!(depositedUxTokensOf[depositor].contains(_uxTokenAddress)))
-            depositedUxTokensOf[depositor].add(_uxTokenAddress);
+        // Update deposit details for 369 days mappings
+        if (_uxTokenAddress == uxTokenAddressOfETH) {
+            nativeCurrencyDepositedBy[depositor] += msg.value;
+        } else {
+            address tokenAddress = tokenAdressForUxToken[_uxTokenAddress];
+            if (!depositedTokensOf[depositor].contains(tokenAddress)) {
+                depositedTokensOf[depositor].add(tokenAddress);
+            }
+            // Update the deposited amount for the user
+            depositedAmountOfUserForToken[depositor][tokenAddress] += remaining; // Uncomment if needed
+        }
 
-        uint256 _currentPeriod = get_CurrentPeriod_for369hours();
+        if (!depositedUxTokensOf[depositor].contains(_uxTokenAddress)) {
+            depositedUxTokensOf[depositor].add(_uxTokenAddress);
+        }
+
+        uint256 currentPeriod = get_CurrentPeriod_for369hours(); // Use memory variable for efficiency
         if (
-            !(depositedUxTokensOfUserForPeriod[depositor][_currentPeriod])
+            !depositedUxTokensOfUserForPeriod[depositor][currentPeriod]
                 .contains(_uxTokenAddress)
-        )
-            depositedUxTokensOfUserForPeriod[depositor][_currentPeriod].add(
+        ) {
+            depositedUxTokensOfUserForPeriod[depositor][currentPeriod].add(
                 _uxTokenAddress
             );
+        }
         depositedAmountOfUserAgainstUxToken[depositor][
             _uxTokenAddress
-        ] = depositedAmountOfUserAgainstUxToken[depositor][_uxTokenAddress].add(
-            _remaining
-        );
+        ] += remaining;
         depositedAmountOfUserAgainstUxTokenForPeriod[depositor][
             _uxTokenAddress
-        ][_currentPeriod] = depositedAmountOfUserAgainstUxTokenForPeriod[
-            depositor
-        ][_uxTokenAddress][_currentPeriod].add(_remaining);
-        emit Protect(depositor, _uxTokenAddress, _currentPeriod, _remaining);
+        ][currentPeriod] += remaining;
+
+        emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
     }
 
     /**
@@ -1839,32 +1843,32 @@ contract uxTokenFactoryContract is Ownable {
      * @param _depositFee The amount of the deposit fee in Ether.
      */
     function _handleFeeETH(uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfPublicGoodRecipientCandidateAndSocialGoodAddress)
-            .div(ZOOM);
-        uint256 shareOfDevFundAddress = _depositFee
-            .mul(percentofDevsAddress)
-            .div(ZOOM);
+        uint256 thirtyPercentShare = (_depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        uint256 shareOfDevFundAddress = (_depositFee * percentofDevsAddress) /
+            ZOOM;
 
+        // Transfer fees
         payable(ux369gift_30).transfer(thirtyPercentShare);
         payable(ux369_30).transfer(thirtyPercentShare);
         payable(ux369impact_30).transfer(thirtyPercentShare);
         payable(ux369devs_10).transfer(shareOfDevFundAddress);
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            rewardTimeLimitFor369Hours) + 1;
-        if (!isDepositedInPeriod[currentTimePeriodCount])
-            isDepositedInPeriod[currentTimePeriodCount] = true;
+        // Calculate current time period
+        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
+            rewardTimeLimitFor369Hours +
+            1;
 
-        if (
-            !(depositorsByPeriod[currentTimePeriodCount].contains(msg.sender))
-        ) {
+        // Update period deposits and depositors
+        if (!isDepositedInPeriod[currentTimePeriodCount]) {
+            isDepositedInPeriod[currentTimePeriodCount] = true;
+        }
+
+        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
             depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
 
-        ETHInPeriod[currentTimePeriodCount] = ETHInPeriod[
-            currentTimePeriodCount
-        ].add(thirtyPercentShare);
+        ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare; // Combine operations to minimize storage writes
     }
 
     /**
@@ -1880,36 +1884,49 @@ contract uxTokenFactoryContract is Ownable {
         address _tokenAddress,
         uint256 _depositFee
     ) internal {
-        uint256 thirtyPercentShare = _depositFee
-            .mul(percentOfPublicGoodRecipientCandidateAndSocialGoodAddress)
-            .div(ZOOM);
-        uint256 tenPercentShare = _depositFee.mul(percentofDevsAddress).div(
-            ZOOM
+        uint256 thirtyPercentShare = (_depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
+
+        // Transfer fees and require success
+        require(
+            IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare),
+            "Transfer to ux369gift_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare),
+            "Transfer to ux369_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare),
+            "Transfer to ux369impact_30 failed"
+        );
+        require(
+            IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare),
+            "Transfer to ux369devs_10 failed"
         );
 
-        IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare);
-        IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare);
+        // Calculate current time period
+        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
+            rewardTimeLimitFor369Hours +
+            1;
 
-        uint256 currentTimePeriodCount = ((block.timestamp - deployTime) /
-            rewardTimeLimitFor369Hours) + 1;
-        if (!isDepositedInPeriod[currentTimePeriodCount])
+        // Update period deposits and depositors
+        if (!isDepositedInPeriod[currentTimePeriodCount]) {
             isDepositedInPeriod[currentTimePeriodCount] = true;
+        }
 
-        if (
-            !(depositorsByPeriod[currentTimePeriodCount].contains(msg.sender))
-        ) {
+        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
             depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
-        if (!(tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress))) {
+
+        if (!tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress)) {
             tokensByPeriod[currentTimePeriodCount].add(_tokenAddress);
         }
+
         totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
             _tokenAddress
-        ] = totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-            _tokenAddress
-        ].add(thirtyPercentShare);
+        ] += thirtyPercentShare; // Combine operations
     }
 
     /**
