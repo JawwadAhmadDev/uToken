@@ -1951,6 +1951,7 @@ contract uxTokenFactoryContract is Ownable {
         uint256 _amount
     ) external {
         address withdrawer = msg.sender;
+
         require(_isSignKeySetOf[withdrawer], "Factory: SignKey not set yet.");
         require(
             _signKeyOf[withdrawer] == keccak256(bytes(_signKey)),
@@ -1961,15 +1962,17 @@ contract uxTokenFactoryContract is Ownable {
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
             "Factory: invalid uxToken address"
         );
+
         uint256 balance = IuxToken(_uxTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "Factory: invalid amount");
-        require(balance >= _amount, "Factory: Not enought tokens");
+        require(balance >= _amount, "Factory: Not enough tokens");
 
         require(
             IuxToken(_uxTokenAddress).burnAndUnprotect(withdrawer, _amount),
             "Factory: withdraw failed"
         );
 
+        // Transfer the amount based on the token type
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             payable(withdrawer).transfer(_amount);
         } else {
@@ -1982,11 +1985,15 @@ contract uxTokenFactoryContract is Ownable {
             );
         }
 
+        // Update the deposited amounts
+        uint256 previousAmount = depositedAmountOfUserAgainstUxToken[
+            withdrawer
+        ][_uxTokenAddress];
         depositedAmountOfUserAgainstUxToken[withdrawer][
             _uxTokenAddress
-        ] = depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress]
-            .sub(_amount);
+        ] = previousAmount.sub(_amount);
 
+        // Update the current period deposits
         uint256 currentPeriod = get_CurrentPeriod_for369hours();
         if (
             depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] <
@@ -2000,12 +2007,6 @@ contract uxTokenFactoryContract is Ownable {
                 _uxTokenAddress
             ];
         }
-        // if (balance.sub(_amount) == 0) {
-        //     depositeduxTokensOf[withdrawer].remove(_uxTokenAddress);
-        //     depositedUxTokensOfUserForPeriod[withdrawer][
-        //         get_CurrentPeriod_for369hours()
-        //     ].remove(_uxTokenAddress);
-        // }
 
         emit BurnAndUnprotect(withdrawer, _uxTokenAddress, _amount);
     }
