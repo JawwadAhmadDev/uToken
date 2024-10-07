@@ -2037,6 +2037,7 @@ contract uxTokenFactoryContract is Ownable {
         uint256 _amount
     ) external returns (bool) {
         address caller = msg.sender;
+
         require(_isSignKeySetOf[caller], "Factory: SignKey not set yet.");
         require(
             _signKeyOf[caller] == keccak256(bytes(_signKey)),
@@ -2049,11 +2050,12 @@ contract uxTokenFactoryContract is Ownable {
             "Factory: invalid uxToken address"
         );
 
+        // Transfer the tokens
         require(
             IuxToken(_uxTokenAddress).transfer(_to, _amount),
-            "Factory, transfer failed"
+            "Factory: transfer failed"
         );
-        // depositeduxTokensOf[_to].add(_uxTokenAddress);
+
         return true;
     }
 
