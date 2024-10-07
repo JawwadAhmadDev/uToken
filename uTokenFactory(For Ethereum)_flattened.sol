@@ -1463,7 +1463,7 @@ contract uxTokenFactoryContract is Ownable {
     EnumerableSet.AddressSet private allDepositors; // all investors of the system
 
     // overall investment of a depostitor
-    mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
+    // mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
     mapping(address => uint256) private nativeCurrencyDepositedBy; // mapping: depositor => amount of deposited native currency
     // mapping(address => mapping(address => uint256))
     //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
@@ -1802,20 +1802,13 @@ contract uxTokenFactoryContract is Ownable {
         // Update deposit details for 369 days mappings
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             nativeCurrencyDepositedBy[depositor] += msg.value;
-        } else {
-            address tokenAddress = tokenAdressForUxToken[_uxTokenAddress];
-            if (!depositedTokensOf[depositor].contains(tokenAddress)) {
-                depositedTokensOf[depositor].add(tokenAddress);
-            }
-            // Update the deposited amount for the user
-            depositedAmountOfUserForToken[depositor][tokenAddress] += remaining; // Uncomment if needed
         }
 
         if (!depositedUxTokensOf[depositor].contains(_uxTokenAddress)) {
             depositedUxTokensOf[depositor].add(_uxTokenAddress);
         }
 
-        uint256 currentPeriod = get_CurrentPeriod_for369hours(); // Use memory variable for efficiency
+        uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
         if (
             !depositedUxTokensOfUserForPeriod[depositor][currentPeriod]
                 .contains(_uxTokenAddress)
@@ -1994,7 +1987,7 @@ contract uxTokenFactoryContract is Ownable {
         ] = previousAmount.sub(_amount);
 
         // Update the current period deposits
-        uint256 currentPeriod = get_CurrentPeriod_for369hours();
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
         if (
             depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] <
             depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
@@ -2131,7 +2124,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return An array of addresses representing allowed tokens.
      */
-    function all_AllowedTokens() public view returns (address[] memory) {
+    function allAllowedTokens() public view returns (address[] memory) {
         return allowedTokens.values();
     }
 
@@ -2142,7 +2135,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return A number representing the count of allowed tokens.
      */
-    function all_AllowedTokensCount() public view returns (uint256) {
+    function allAllowedTokensCount() public view returns (uint256) {
         return allowedTokens.length();
     }
 
@@ -2153,7 +2146,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return An array of addresses representing uTokens of allowed tokens.
      */
-    function all_uxTokensOfAllowedTokens()
+    function allUxTokensOfAllowedTokens()
         public
         view
         returns (address[] memory)
@@ -2168,7 +2161,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return A number representing the count of uxTokens of allowed tokens.
      */
-    function all_uxTokensOfAllowedTokensCount() public view returns (uint256) {
+    function allUxTokensOfAllowedTokensCount() public view returns (uint256) {
         return uxTokensOfAllowedTokens.length();
     }
 
@@ -2181,7 +2174,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return The address of the token that corresponds to the given uxToken.
      */
-    function get_TokenAddressOfuxToken(
+    function getTokenAddressForUxToken(
         address _uxToken
     ) public view returns (address) {
         return tokenAdressForUxToken[_uxToken];
@@ -2196,14 +2189,14 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return The address of the uxToken that corresponds to the given token.
      */
-    function get_uxTokenAddressOfToken(
+    function getUxTokenAddressForToken(
         address _token
     ) public view returns (address) {
         return uxTokenAddressForToken[_token];
     }
 
     //-------------------- Deposit Details for 369 days -------------------------------//
-    function getAllDepositors_inSystem()
+    function getAllDepositorsInSystem()
         public
         view
         returns (address[] memory _allDepositors)
@@ -2222,7 +2215,7 @@ contract uxTokenFactoryContract is Ownable {
         uint256 amount;
     }
 
-    function getDepositDetails_OfUser(
+    function getDepositDetailsForUser(
         address _depositor
     ) public view returns (DepositsOfUser[] memory depositDetails) {
         address[] memory totaluxTokens = depositedUxTokensOf[_depositor]
@@ -2242,7 +2235,7 @@ contract uxTokenFactoryContract is Ownable {
         }
     }
 
-    function get_CurrentRecipientCandidate_for369Days()
+    function getCurrentRecipientCandidateFor369Days()
         public
         view
         returns (address)
@@ -2252,7 +2245,7 @@ contract uxTokenFactoryContract is Ownable {
 
         if (previousTimePeriod == 0) return address(0);
 
-        address[] memory depositors = getAllDepositors_inSystem();
+        address[] memory depositors = getAllDepositorsInSystem();
         uint256 depositorsLength = depositors.length;
 
         if (depositorsLength == 0) return address(0);
@@ -2274,7 +2267,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return depositeduxTokens An array of uxToken addresses in which the depositor has deposited.
      */
-    function get_DepositeduxTokensOfUser(
+    function getDepositedUxTokensForUser(
         address _depositor
     ) public view returns (address[] memory depositeduxTokens) {
         depositeduxTokens = depositedUxTokensOf[_depositor].values();
@@ -2291,7 +2284,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return depositeduxTokensForPeriod An array of uxToken addresses in which the depositor has deposited during the specified period.
      */
-    function getDepositeduxTokens_ofUser_forPeriod_for369hours(
+    function getDepositedUxTokensOfUserForPeriodFor369hours(
         address _depositor,
         uint256 _period
     ) public view returns (address[] memory depositeduxTokensForPeriod) {
@@ -2312,7 +2305,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return depositedAmount The amount deposited by the depositor in the specified uxToken during the specified period.
      */
-    function getDepositedAmount_ofUser_againstuxToken_forPeriod_for369hours(
+    function getDepositedAmountOfUserAgainstUxTokenForPeriodFor369hours(
         address _depositor,
         address _uxToken,
         uint256 _period
@@ -2344,7 +2337,7 @@ contract uxTokenFactoryContract is Ownable {
      *
      * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
      */
-    function getDepositDetails_ofUser_forPeriod_for369hours(
+    function getDepositDetailsOfUserForPeriodFor369hours(
         address _depositor,
         uint256 _period
     ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
@@ -2367,7 +2360,7 @@ contract uxTokenFactoryContract is Ownable {
     }
 
     //  Retrieves the currency type associated with a uxToken.
-    function get_CurrencyOfuxToken(
+    function getCurrencyOfUxToken(
         address _uxToken
     ) public view returns (string memory currency) {
         return currencyOfUxToken[_uxToken];
@@ -2410,7 +2403,7 @@ contract uxTokenFactoryContract is Ownable {
 
     // Retrieves an array of tokens that were deposited within the given period.
     // The return is an array of addresses, where each address represents a token contract.
-    function get_TokensDepositedInPeriod(
+    function getTokensDepositedByPeriod(
         uint256 _period
     ) public view returns (address[] memory tokens) {
         return tokensByPeriod[_period].values();
@@ -2418,7 +2411,7 @@ contract uxTokenFactoryContract is Ownable {
 
     // Retrieves the count of unique tokens that were deposited within the given period.
     // The return is an integer representing the number of unique token contracts.
-    function get_TokensDepositedInPeriodCount(
+    function getTokensDepositedByPeriodCount(
         uint256 _period
     ) public view returns (uint256) {
         return tokensByPeriod[_period].length();
@@ -2426,7 +2419,7 @@ contract uxTokenFactoryContract is Ownable {
 
     // Retrieves an array of addresses that made a deposit within the given period.
     // The return is an array of addresses, where each address represents a unique depositor.
-    function get_depositorsByPeriod_for369hours(
+    function getDepositorsByPeriodFor369hours(
         uint256 _period
     ) public view returns (address[] memory depositors) {
         return depositorsByPeriod[_period].values();
@@ -2434,7 +2427,7 @@ contract uxTokenFactoryContract is Ownable {
 
     // Retrieves the count of unique depositors that made a deposit within the given period.
     // The return is an integer representing the number of unique depositors.
-    function get_depositorsByPeriodCount_for369hours(
+    function getDepositorsByPeriodCountFor369hours(
         uint256 _period
     ) public view returns (uint) {
         return depositorsByPeriod[_period].length();
@@ -2442,13 +2435,13 @@ contract uxTokenFactoryContract is Ownable {
 
     // Retrieves the total amount of Ether that was deposited within the given period.
     // The return is an integer representing the amount of Ether in wei.
-    function get_ETHInPeriod(uint256 _period) public view returns (uint256) {
+    function getETHInPeriod(uint256 _period) public view returns (uint256) {
         return ETHInPeriod[_period];
     }
 
     // Retrieves the reward amount associated with a specific token during a given period.
     // The function returns an integer representing the reward amount for the specific token in the provided period.
-    function get_rewardAmountOfTokenInPeriod(
+    function getRewardAmountOfTokenInPeriod(
         uint256 _period,
         address _token
     ) public view returns (uint256) {
@@ -2457,23 +2450,23 @@ contract uxTokenFactoryContract is Ownable {
 
     // Calculates and returns the current period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the current period for 369 hours.
-    function get_CurrentPeriod_for369hours() public view returns (uint) {
+    function getCurrentPeriodFor369hours() public view returns (uint) {
         return
             ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours) + 1;
     }
 
     // The function returns an integer representing the current period for 369 days.
-    function get_CurrentPeriod_for369days() public view returns (uint) {
+    function getCurrentPeriodFor369days() public view returns (uint) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days) + 1;
     }
 
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the previous period for 369 hours.
-    function get_PreviousPeriod_for369hours() public view returns (uint) {
+    function getPreviousPeriodFor369hours() public view returns (uint) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours);
     }
 
-    function get_PreviousPeriod_for369days() public view returns (uint) {
+    function getPreviousPeriodFor369days() public view returns (uint) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days);
     }
 
@@ -2484,12 +2477,12 @@ contract uxTokenFactoryContract is Ownable {
     // For all subsequent periods, the start time is calculated by adding the duration of the reward period multiplied by
     // (current period - 1) to the deployment time of the contract.
     // The end time is the duration of the reward period added to the start time.
-    function get_CurrentPeriod_StartAndEndTime_for369hours()
+    function getCurrentPeriodStartAndEndTimeFor369hours()
         public
         view
         returns (uint startTime, uint endTime)
     {
-        uint currentTimePeriod_for369hours = get_CurrentPeriod_for369hours();
+        uint currentTimePeriod_for369hours = getCurrentPeriodFor369hours();
 
         if (currentTimePeriod_for369hours == 1) {
             startTime = deployTime;
@@ -2503,12 +2496,12 @@ contract uxTokenFactoryContract is Ownable {
         }
     }
 
-    function get_CurrentPeriod_StartAndEndTime_for369days()
+    function getCurrentPeriodStartAndEndTimeFor369days()
         public
         view
         returns (uint startTime, uint endTime)
     {
-        uint currentTimePeriod_for369days = get_CurrentPeriod_for369days();
+        uint currentTimePeriod_for369days = getCurrentPeriodFor369days();
 
         if (currentTimePeriod_for369days == 1) {
             startTime = deployTime;
@@ -2529,7 +2522,7 @@ contract uxTokenFactoryContract is Ownable {
     // Otherwise, it generates a random number using the keccak256 hash function with inputs as the previous time period and deployment time.
     // The modulus operator (%) is used to ensure the random number falls within the range of indices of the depositors array.
     // Finally, it returns the depositor at the index corresponding to the random number, hence determining the current winner.
-    function get_currentRecipientCandidate_for369Hours()
+    function getCurrentRecipientCandidateFor369Hours()
         public
         view
         returns (address)
@@ -2537,10 +2530,10 @@ contract uxTokenFactoryContract is Ownable {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
             rewardTimeLimitFor369Hours);
 
-        address[] memory depositors = get_depositorsByPeriod_for369hours(
+        address[] memory depositors = getDepositorsByPeriodFor369hours(
             previousTimePeriod
         );
-        uint256 depositorsLength = get_depositorsByPeriodCount_for369hours(
+        uint256 depositorsLength = getDepositorsByPeriodCountFor369hours(
             previousTimePeriod
         );
 
@@ -2559,14 +2552,14 @@ contract uxTokenFactoryContract is Ownable {
     // This process continues for all previous periods until it reaches a period where the reward has been collected or period 0,
     // effectively summing up all uncollected Ether rewards.
     // The function returns the cumulative Ether reward history as a single integer value.
-    function rewardHistoryForETH_for369hours()
+    function rewardHistoryForETHFor369Hours()
         public
         view
         returns (uint256 ethHistory)
     {
-        uint256 period = get_PreviousPeriod_for369hours();
+        uint256 period = getPreviousPeriodFor369hours();
         while (!hasRewardBeenCollectedForPeriod[period]) {
-            ethHistory += get_ETHInPeriod(period);
+            ethHistory += getETHInPeriod(period);
             if (period == 0) break;
             period--;
         }
@@ -2575,7 +2568,7 @@ contract uxTokenFactoryContract is Ownable {
     // Checks if the reward for a specified period has been collected.
     // The function takes a period number as an input and checks the corresponding value in the `hasRewardBeenCollectedForPeriod` mapping.
     // If the reward for that period has been collected, the function returns true; otherwise, it returns false.
-    function hasRewardBeenCollectedForPeriod_for369hours(
+    function hasRewardBeenCollectedForPeriodFor369hours(
         uint256 _period
     ) public view returns (bool) {
         return hasRewardBeenCollectedForPeriod[_period];
@@ -2595,14 +2588,14 @@ contract uxTokenFactoryContract is Ownable {
     function rewardHistoryForTokensForPeriod(
         uint256 _period
     ) public view returns (RewardAgainstToken[] memory record) {
-        address[] memory _tokens = get_TokensDepositedInPeriod(_period);
+        address[] memory _tokens = getTokensDepositedByPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
         if (_tokensCount > 0) {
             for (uint i; i < _tokensCount; i++) {
                 record[i] = RewardAgainstToken({
                     token: _tokens[i],
-                    amount: get_rewardAmountOfTokenInPeriod(_period, _tokens[i])
+                    amount: getRewardAmountOfTokenInPeriod(_period, _tokens[i])
                 });
             }
         }
@@ -2617,7 +2610,7 @@ contract uxTokenFactoryContract is Ownable {
         view
         returns (uint[] memory pendingPeriods)
     {
-        uint256 period = get_PreviousPeriod_for369hours();
+        uint256 period = getPreviousPeriodFor369Hours();
         uint[] memory _pendingPeriods = new uint[](period);
         uint256 count;
         while (!hasRewardBeenCollectedForPeriod[period]) {
@@ -2645,7 +2638,7 @@ contract uxTokenFactoryContract is Ownable {
      * @notice Returns a list of all whitelisted addresses.
      * @return _whiteListAddresses An array of all addresses that are whitelisted.
      */
-    function get_allWhiteListAddresses()
+    function getAllWhiteListAddresses()
         public
         view
         returns (address[] memory _whiteListAddresses)
