@@ -1465,8 +1465,8 @@ contract uxTokenFactory is Ownable {
     // overall investment of a depostitor
     mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
     mapping(address => uint256) private nativeCurrencyDepositedBy; // mapping: depositor => amount of deposited native currency
-    mapping(address => mapping(address => uint256))
-        private depositedAmountOfUserForToken; // mapping: depositor => token => amount
+    // mapping(address => mapping(address => uint256))
+    //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
 
     mapping(address => address) private tokenAdressOf_uxToken; // uxToken -> Token Address (against which contract is deployed)
     mapping(address => string) private currencyOf_uxToken;
@@ -1476,8 +1476,10 @@ contract uxTokenFactory is Ownable {
     mapping(address => EnumerableSet.AddressSet) private depositeduxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
         private depositeduxTokens_OfUser_ForPeriod; // depositorAddress -> period -> All uTokens addresses
+    mapping(address => mapping(address => uint256))
+        private depositedAmount_ofUser_againstuxToken; // depositor -> uxTokenAddress -> amount
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private depositedAmount_OfUser_AgainstuxTokens_ForPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
+        private depositedAmount_ofUser_againstuxToken_forPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
 
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsInPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private tokensInPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
@@ -1772,11 +1774,11 @@ contract uxTokenFactory is Ownable {
             address tokenAddress = tokenAdressOf_uxToken[_uxTokenAddress];
             if (!depositedTokensOf[depositor].contains(tokenAddress))
                 depositedTokensOf[depositor].add(tokenAddress);
-            depositedAmountOfUserForToken[depositor][
-                tokenAddress
-            ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
-                _remaining
-            );
+            // depositedAmountOfUserForToken[depositor][
+            //     tokenAddress
+            // ] = depositedAmountOfUserForToken[depositor][tokenAddress].add(
+            //     _remaining
+            // );
         }
 
         if (!(depositeduxTokensOf[depositor].contains(_uxTokenAddress)))
@@ -1790,9 +1792,13 @@ contract uxTokenFactory is Ownable {
             depositeduxTokens_OfUser_ForPeriod[depositor][_currentPeriod].add(
                 _uxTokenAddress
             );
-        depositedAmount_OfUser_AgainstuxTokens_ForPeriod[depositor][
+        depositedAmount_ofUser_againstuxToken[depositor][
             _uxTokenAddress
-        ][_currentPeriod] = depositedAmount_OfUser_AgainstuxTokens_ForPeriod[
+        ] = depositedAmount_ofUser_againstuxToken[depositor][_uxTokenAddress]
+            .add(_remaining);
+        depositedAmount_ofUser_againstuxToken_forPeriod[depositor][
+            _uxTokenAddress
+        ][_currentPeriod] = depositedAmount_ofUser_againstuxToken_forPeriod[
             depositor
         ][_uxTokenAddress][_currentPeriod].add(_remaining);
         emit Protect(depositor, _uxTokenAddress, _currentPeriod, _remaining);
@@ -1932,12 +1938,30 @@ contract uxTokenFactory is Ownable {
             );
         }
 
-        if (balance.sub(_amount) == 0) {
-            depositeduxTokensOf[withdrawer].remove(_uxTokenAddress);
-            depositeduxTokens_OfUser_ForPeriod[withdrawer][
-                get_CurrentPeriod_for369hours()
-            ].remove(_uxTokenAddress);
+        depositedAmount_ofUser_againstuxToken[withdrawer][
+            _uxTokenAddress
+        ] = depositedAmount_ofUser_againstuxToken[withdrawer][_uxTokenAddress]
+            .sub(_amount);
+
+        uint256 currentPeriod = get_CurrentPeriod_for369hours();
+        if (
+            depositedAmount_ofUser_againstuxToken[withdrawer][_uxTokenAddress] <
+            depositedAmount_ofUser_againstuxToken_forPeriod[withdrawer][
+                _uxTokenAddress
+            ][currentPeriod]
+        ) {
+            depositedAmount_ofUser_againstuxToken_forPeriod[withdrawer][
+                _uxTokenAddress
+            ][currentPeriod] = depositedAmount_ofUser_againstuxToken[
+                withdrawer
+            ][_uxTokenAddress];
         }
+        // if (balance.sub(_amount) == 0) {
+        //     depositeduxTokensOf[withdrawer].remove(_uxTokenAddress);
+        //     depositeduxTokens_OfUser_ForPeriod[withdrawer][
+        //         get_CurrentPeriod_for369hours()
+        //     ].remove(_uxTokenAddress);
+        // }
 
         emit BurnAndUnprotect(withdrawer, _uxTokenAddress, _amount);
     }
@@ -1984,7 +2008,7 @@ contract uxTokenFactory is Ownable {
             IuxToken(_uxTokenAddress).transfer(_to, _amount),
             "Factory, transfer failed"
         );
-        depositeduxTokensOf[_to].add(_uxTokenAddress);
+        // depositeduxTokensOf[_to].add(_uxTokenAddress);
         return true;
     }
 
@@ -2149,23 +2173,24 @@ contract uxTokenFactory is Ownable {
     }
 
     struct DepositsOfUser {
-        address tokenAddress;
+        address uxTokenAddress;
         uint256 amount;
     }
 
     function getDepositDetails_OfUser(
         address _depositor
     ) public view returns (DepositsOfUser[] memory depositDetails) {
-        address[] memory totalTokens = depositedTokensOf[_depositor].values();
-        uint256 tokensCount = totalTokens.length;
+        address[] memory totaluxTokens = depositeduxTokensOf[_depositor]
+            .values();
+        uint256 tokensCount = totaluxTokens.length;
 
         depositDetails = new DepositsOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
-                    tokenAddress: totalTokens[i],
-                    amount: depositedAmountOfUserForToken[_depositor][
-                        totalTokens[i]
+                    uxTokenAddress: totaluxTokens[i],
+                    amount: depositedAmount_ofUser_againstuxToken[_depositor][
+                        totaluxTokens[i]
                     ]
                 });
             }
@@ -2221,7 +2246,7 @@ contract uxTokenFactory is Ownable {
      *
      * @return depositeduxTokensForPeriod An array of uxToken addresses in which the depositor has deposited during the specified period.
      */
-    function getDepositeduxTokens_OfUser_ForPeriod(
+    function getDepositeduxTokens_ofUser_forPeriod_for369hours(
         address _depositor,
         uint256 _period
     ) public view returns (address[] memory depositeduxTokensForPeriod) {
@@ -2242,12 +2267,12 @@ contract uxTokenFactory is Ownable {
      *
      * @return depositedAmount The amount deposited by the depositor in the specified uxToken during the specified period.
      */
-    function getDepositedAmount_OfUser_AgainstuxToken_ForPeriod(
+    function getDepositedAmount_ofUser_againstuxToken_forPeriod_for369hours(
         address _depositor,
         address _uxToken,
         uint256 _period
     ) public view returns (uint256 depositedAmount) {
-        depositedAmount = depositedAmount_OfUser_AgainstuxTokens_ForPeriod[
+        depositedAmount = depositedAmount_ofUser_againstuxToken_forPeriod[
             _depositor
         ][_uxToken][_period];
     }
@@ -2274,23 +2299,23 @@ contract uxTokenFactory is Ownable {
      *
      * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
      */
-    function getDepositDetails_OfUser_ForPeriod(
+    function getDepositDetails_ofUser_forPeriod_for369hours(
         address _depositor,
         uint256 _period
     ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
-        address[] memory totalTokens = depositeduxTokens_OfUser_ForPeriod[
+        address[] memory totaluxTokens = depositeduxTokens_OfUser_ForPeriod[
             _depositor
         ][_period].values();
-        uint256 tokensCount = totalTokens.length;
+        uint256 tokensCount = totaluxTokens.length;
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
-                    uxTokenAddress: totalTokens[i],
-                    amount: depositedAmount_OfUser_AgainstuxTokens_ForPeriod[
+                    uxTokenAddress: totaluxTokens[i],
+                    amount: depositedAmount_ofUser_againstuxToken_forPeriod[
                         _depositor
-                    ][totalTokens[i]][_period]
+                    ][totaluxTokens[i]][_period]
                 });
             }
         }
