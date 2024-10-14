@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./IERC20.sol";
-import "./SafeMath.sol";
+// import "./SafeMath.sol";
 import "./uxTokenContract.sol";
 
 contract uxTokenFactoryContract is Ownable {
-    using SafeMath for uint256;
+    // using SafeMath for uint256;b
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -283,6 +283,23 @@ contract uxTokenFactoryContract is Ownable {
         _addAllowedTokens(_allowedTokens);
     }
 
+    function removeAllowedTokens(address[] memory _allowedTokens) external onlyOwner {
+        uint256 length = _allowedTokens.length;
+        for (uint256 i = 0; i < length; i++) {
+            address tokenAddress = _allowedTokens[i]; // Store in a local variable
+
+            
+            require(
+                allowedTokens.contains(tokenAddress),
+                "Factory: Not Added"
+            );
+
+            allowedTokens.remove(tokenAddress);
+            uxTokensOfAllowedTokens.remove(uxTokenAddressForToken[tokenAddress]);
+
+            emit TokenAdded(tokenAddress, deployedAddress);
+    }
+
     /**
      * @dev Handles the depositing of tokens.
      *
@@ -401,9 +418,7 @@ contract uxTokenFactoryContract is Ownable {
         payable(ux369devs_10).transfer(shareOfDevFundAddress);
 
         // Calculate current time period
-        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
-            rewardTimeLimitFor369Hours +
-            1;
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
 
         // Update period deposits and depositors
         if (!isDepositedInPeriod[currentTimePeriodCount]) {
@@ -453,9 +468,7 @@ contract uxTokenFactoryContract is Ownable {
         );
 
         // Calculate current time period
-        uint256 currentTimePeriodCount = (block.timestamp - deployTime) /
-            rewardTimeLimitFor369Hours +
-            1;
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
 
         // Update period deposits and depositors
         if (!isDepositedInPeriod[currentTimePeriodCount]) {
@@ -535,9 +548,9 @@ contract uxTokenFactoryContract is Ownable {
         uint256 previousAmount = depositedAmountOfUserAgainstUxToken[
             withdrawer
         ][_uxTokenAddress];
-        depositedAmountOfUserAgainstUxToken[withdrawer][
-            _uxTokenAddress
-        ] = previousAmount.sub(_amount);
+        depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] =
+            previousAmount -
+            _amount;
 
         // Update the current period deposits
         uint256 currentPeriod = getCurrentPeriodFor369hours();
