@@ -27,11 +27,9 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/access/Ownable.sol
 
-
 // OpenZeppelin Contracts (last updated v5.0.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.20;
-
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -58,7 +56,10 @@ abstract contract Ownable is Context {
      */
     error OwnableInvalidOwner(address owner);
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the address provided by the deployer as the initial owner.
@@ -129,7 +130,6 @@ abstract contract Ownable is Context {
 
 // File: @openzeppelin/contracts/utils/Address.sol
 
-
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/Address.sol)
 
 pragma solidity ^0.8.20;
@@ -198,7 +198,10 @@ library Address {
      * - `target` must be a contract.
      * - calling `target` with `data` must not revert.
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+    function functionCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
         return functionCallWithValue(target, data, 0);
     }
 
@@ -211,11 +214,17 @@ library Address {
      * - the calling contract must have an ETH balance of at least `value`.
      * - the called Solidity function must be `payable`.
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
         if (address(this).balance < value) {
             revert AddressInsufficientBalance(address(this));
         }
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        (bool success, bytes memory returndata) = target.call{value: value}(
+            data
+        );
         return verifyCallResultFromTarget(target, success, returndata);
     }
 
@@ -223,7 +232,10 @@ library Address {
      * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
      * but performing a static call.
      */
-    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+    function functionStaticCall(
+        address target,
+        bytes memory data
+    ) internal view returns (bytes memory) {
         (bool success, bytes memory returndata) = target.staticcall(data);
         return verifyCallResultFromTarget(target, success, returndata);
     }
@@ -232,7 +244,10 @@ library Address {
      * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
      * but performing a delegate call.
      */
-    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
+    function functionDelegateCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = target.delegatecall(data);
         return verifyCallResultFromTarget(target, success, returndata);
     }
@@ -263,7 +278,10 @@ library Address {
      * @dev Tool to verify that a low level call was successful, and reverts if it wasn't, either by bubbling the
      * revert reason or with a default {FailedInnerCall} error.
      */
-    function verifyCallResult(bool success, bytes memory returndata) internal pure returns (bytes memory) {
+    function verifyCallResult(
+        bool success,
+        bytes memory returndata
+    ) internal pure returns (bytes memory) {
         if (!success) {
             _revert(returndata);
         } else {
@@ -290,7 +308,6 @@ library Address {
 }
 
 // File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
-
 
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/structs/EnumerableSet.sol)
 // This file was procedurally generated from scripts/generate/templates/EnumerableSet.js.
@@ -410,7 +427,10 @@ library EnumerableSet {
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function _contains(Set storage set, bytes32 value) private view returns (bool) {
+    function _contains(
+        Set storage set,
+        bytes32 value
+    ) private view returns (bool) {
         return set._positions[value] != 0;
     }
 
@@ -431,7 +451,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function _at(Set storage set, uint256 index) private view returns (bytes32) {
+    function _at(
+        Set storage set,
+        uint256 index
+    ) private view returns (bytes32) {
         return set._values[index];
     }
 
@@ -459,7 +482,10 @@ library EnumerableSet {
      * Returns true if the value was added to the set, that is if it was not
      * already present.
      */
-    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+    function add(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal returns (bool) {
         return _add(set._inner, value);
     }
 
@@ -469,14 +495,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+    function remove(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal returns (bool) {
         return _remove(set._inner, value);
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
+    function contains(
+        Bytes32Set storage set,
+        bytes32 value
+    ) internal view returns (bool) {
         return _contains(set._inner, value);
     }
 
@@ -497,7 +529,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
+    function at(
+        Bytes32Set storage set,
+        uint256 index
+    ) internal view returns (bytes32) {
         return _at(set._inner, index);
     }
 
@@ -509,7 +544,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {
+    function values(
+        Bytes32Set storage set
+    ) internal view returns (bytes32[] memory) {
         bytes32[] memory store = _values(set._inner);
         bytes32[] memory result;
 
@@ -533,7 +570,10 @@ library EnumerableSet {
      * Returns true if the value was added to the set, that is if it was not
      * already present.
      */
-    function add(AddressSet storage set, address value) internal returns (bool) {
+    function add(
+        AddressSet storage set,
+        address value
+    ) internal returns (bool) {
         return _add(set._inner, bytes32(uint256(uint160(value))));
     }
 
@@ -543,14 +583,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(AddressSet storage set, address value) internal returns (bool) {
+    function remove(
+        AddressSet storage set,
+        address value
+    ) internal returns (bool) {
         return _remove(set._inner, bytes32(uint256(uint160(value))));
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(AddressSet storage set, address value) internal view returns (bool) {
+    function contains(
+        AddressSet storage set,
+        address value
+    ) internal view returns (bool) {
         return _contains(set._inner, bytes32(uint256(uint160(value))));
     }
 
@@ -571,7 +617,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(AddressSet storage set, uint256 index) internal view returns (address) {
+    function at(
+        AddressSet storage set,
+        uint256 index
+    ) internal view returns (address) {
         return address(uint160(uint256(_at(set._inner, index))));
     }
 
@@ -583,7 +632,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(AddressSet storage set) internal view returns (address[] memory) {
+    function values(
+        AddressSet storage set
+    ) internal view returns (address[] memory) {
         bytes32[] memory store = _values(set._inner);
         address[] memory result;
 
@@ -617,14 +668,20 @@ library EnumerableSet {
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
-    function remove(UintSet storage set, uint256 value) internal returns (bool) {
+    function remove(
+        UintSet storage set,
+        uint256 value
+    ) internal returns (bool) {
         return _remove(set._inner, bytes32(value));
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
-    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
+    function contains(
+        UintSet storage set,
+        uint256 value
+    ) internal view returns (bool) {
         return _contains(set._inner, bytes32(value));
     }
 
@@ -645,7 +702,10 @@ library EnumerableSet {
      *
      * - `index` must be strictly less than {length}.
      */
-    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
+    function at(
+        UintSet storage set,
+        uint256 index
+    ) internal view returns (uint256) {
         return uint256(_at(set._inner, index));
     }
 
@@ -657,7 +717,9 @@ library EnumerableSet {
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
      * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
      */
-    function values(UintSet storage set) internal view returns (uint256[] memory) {
+    function values(
+        UintSet storage set
+    ) internal view returns (uint256[] memory) {
         bytes32[] memory store = _values(set._inner);
         uint256[] memory result;
 
@@ -671,7 +733,6 @@ library EnumerableSet {
 }
 
 // File: contracts/IERC20.sol
-
 
 pragma solidity ^0.8.18;
 
@@ -707,9 +768,7 @@ interface IERC20 {
 
 // File: contracts/uxTokenContract.sol
 
-
 pragma solidity ^0.8.18;
-
 
 interface IuxToken {
     event Approval(address indexed owner, address indexed spender, uint value);
@@ -1040,11 +1099,7 @@ contract uxTokenContract is IuxToken {
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-
-
-
 // import "./SafeMath.sol";
-
 
 contract uxTokenFactoryContract is Ownable {
     // using SafeMath for uint256;b
@@ -1388,7 +1443,7 @@ contract uxTokenFactoryContract is Ownable {
         // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             require(msg.value > 0, "Factory: invalid Ether");
-            _handleFeeETH(depositFee);
+            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
             require(
                 IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
@@ -1398,11 +1453,23 @@ contract uxTokenFactoryContract is Ownable {
                 ),
                 "Factory: TransferFrom failed"
             );
-            _handleFeeTokens(
-                tokenAdressForUxToken[_uxTokenAddress],
-                depositFee
-            );
+
+            if (
+                !tokensByPeriod[currentTimePeriodCount].contains(
+                    tokenAdressForUxToken[_uxTokenAddress]
+                )
+            ) {
+                tokensByPeriod[currentTimePeriodCount].add(
+                    tokenAdressForUxToken[_uxTokenAddress]
+                );
+            }
+
+            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
+                tokenAdressForUxToken[_uxTokenAddress]
+            ] += thirtyPercentShare;
         }
+
+        _handleFee(_uxTokenAddress, depositFee);
 
         // Add depositor to the list if it's the first deposit
         if (!allDepositors.contains(depositor)) {
@@ -1437,73 +1504,26 @@ contract uxTokenFactoryContract is Ownable {
         emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
     }
 
-    /**
-     * @dev Handles the deposit fee for Ethereum deposits.
-     *
-     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
-     * It also checks and updates the depositors and deposited Ether amount for the current time period.
-     *
-     * @param _depositFee The amount of the deposit fee in Ether.
-     */
-    function _handleFeeETH(uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = (_depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        uint256 shareOfDevFundAddress = (_depositFee * percentofDevsAddress) /
-            ZOOM;
-
-        // Transfer fees
-        payable(ux369gift_30).transfer(thirtyPercentShare);
-        payable(ux369_30).transfer(thirtyPercentShare);
-        payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369devs_10).transfer(shareOfDevFundAddress);
-
-        // Calculate current time period
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
-        // Update period deposits and depositors
-        if (!isDepositedInPeriod[currentTimePeriodCount]) {
-            isDepositedInPeriod[currentTimePeriodCount] = true;
-        }
-
-        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
-        }
-
-        ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare; // Combine operations to minimize storage writes
-    }
-
-    /**
-     * @dev Handles the deposit fee for token deposits.
-     *
-     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
-     * It also checks and updates the depositors, deposited tokens, and reward amount for the current time period.
-     *
-     * @param _tokenAddress The address of the token being deposited.
-     * @param _depositFee The amount of the deposit fee in tokens.
-     */
-    function _handleFeeTokens(
-        address _tokenAddress,
-        uint256 _depositFee
-    ) internal {
+    function _handleFee(address _uxTokenAddress, uint256 _depositFee) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
 
         // Transfer fees and require success
         require(
-            IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare),
+            IERC20(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
             "Transfer to ux369gift_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare),
+            IERC20(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
             "Transfer to ux369_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare),
+            IERC20(_uxTokenAddress).protect(ux369impact_30, thirtyPercentShare),
             "Transfer to ux369impact_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare),
+            IERC20(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
             "Transfer to ux369devs_10 failed"
         );
 
@@ -1518,14 +1538,6 @@ contract uxTokenFactoryContract is Ownable {
         if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
             depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
         }
-
-        if (!tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress)) {
-            tokensByPeriod[currentTimePeriodCount].add(_tokenAddress);
-        }
-
-        totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-            _tokenAddress
-        ] += thirtyPercentShare; // Combine operations
     }
 
     /**
