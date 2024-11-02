@@ -5,14 +5,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract RewardDistributor is Ownable {
-    address public immutable u369Address_30 =
-        0x4B7C3C9b2D4aC50969f9A7c1b3BbA490F9088fE7; // 30%
     address public immutable u369gifthAddress_30 =
-        0x7B95e28d8B4Dd51663b221Cd911d38694F90D196; // 30%
+        0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1; // 30%
     address public immutable u369impactAddress_30 =
-        0x4A058b1848d01455daedA203aCFaA11D2B133206; // 30%
+        0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA; // 30%
+    address public immutable u369Address_30 =
+        0xcE14e3556FF59C83F849D0a4082258000FA23D30; // 30%
     address public immutable u369devsncomAddress_10 =
-        0xBeB63FCd4f767985eb535Cd5276103e538729E47; // 10%
+        0x29817e172E0d798dCc052f87a486fEd529c015C3; // 10%
 
     constructor() Ownable(msg.sender) {}
 

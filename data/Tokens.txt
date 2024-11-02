@@ -42,12 +42,14 @@ uTokenFactory: https://mumbai.polygonscan.com/address/0x0031776c5e2ac1e64b1cfb91
 
 
 
-Spolia Georli:
+Spolia :
 BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
-USDT: 0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA
+USDT: https://sepolia.etherscan.io/address/0x80366c8502326ede6b4dcb46fce7cc88378eda07#code
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
-uTokenFactory: https://sepolia.etherscan.io/address/0xc150cbe8982f11e550bece86381e1e5375431ab9#code
+uTokenFactory: https://sepolia.etherscan.io/address/0xb2c154d063d90fe09cf61023849c6e7a35aeb0f4#code
+Legacy: https://sepolia.etherscan.io/address/0x5fc2160edf99dc7618910dc1348ec807717f33c6#code
+Reward Distributor: https://sepolia.etherscan.io/address/0x088941f96c77405d946ac8452f56907520fd7df8#code
 
 DAI: 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357
 AAVE: 0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a
@@ -61,7 +63,10 @@ BUSD: 0xc4a5647c15a756f664b1F5fa3ffD18A1352E443B
 USDT: 0x82C9d1f83070aBBc609d6A58DB41b15Ca57C0F63
 
 Paramters: ["0xc4a5647c15a756f664b1F5fa3ffD18A1352E443B", "0x82C9d1f83070aBBc609d6A58DB41b15Ca57C0F63"]
-uTokenFactory: https://testnet.bscscan.com/address/0xc31b4ca4ddf97bff58cb72c898ddc5d7dbae4933#code
+// Legacy: https://testnet.bscscan.com/address/0xd2832367E1A2e9D00b4a88C3aAdf20309f6031cb#readContract
+Legacy: https://testnet.bscscan.com/address/0x91dde5f98ffa9c498f23c1cb9ba5864e29eb5f2c#writeContract
+Reward Distributor:https://testnet.bscscan.com/address/0x9d9348ed6150997bf6e0d3e9526395f0fc5511e2#code
+uxTokenFactory: https://testnet.bscscan.com/address/0x72169261a134e52e24d1b94c648cccdfc221c465#code
 
 
 
@@ -69,7 +74,7 @@ uTokenFactory: https://testnet.bscscan.com/address/0xc31b4ca4ddf97bff58cb72c898d
 
 
 Reward Distributor: 
-Sepolia: https://sepolia.etherscan.io/address/0xd5b504242b7ee737aa265339f4fbecb948d9406d#code
+Sepolia: https://sepolia.etherscan.io/address/0x088941f96c77405d946ac8452f56907520fd7df8#code
 BNB: https://testnet.bscscan.com/address/0x24d628db3b359176745d50ae89144b3c0f4787b3#code
 
 
@@ -79,12 +84,12 @@ BNB: https://testnet.bscscan.com/address/0x24d628db3b359176745d50ae89144b3c0f478
 
 
 U369gift.eth
-0xD6CAf4582Ef5CD4517398E91FeeaF1eA24d6BE1D
+0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1
 u369impact.eth
-0x0d4228ff01dbE7167C3a35640D362faAfd42406d
+0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA
 u369.eth
-0x23f7c530D41D437Cf82f2164084A009836c26080
+0xcE14e3556FF59C83F849D0a4082258000FA23D30
 u369community-dev.eth
-0xB0386144b5060F96Be35dCe8AD1BBdDf8ef37534
+0x29817e172E0d798dCc052f87a486fEd529c015C3
 u369stateless.eth
 0xfb34831b967FC1d8667bf49A81Fc7509529DE128
