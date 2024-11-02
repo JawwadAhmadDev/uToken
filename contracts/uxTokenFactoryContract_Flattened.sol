@@ -1440,9 +1440,14 @@ contract uxTokenFactoryContract is Ownable {
             "Factory: deposit failed"
         );
 
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
+
+            uint256 thirtyPercentShare = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             require(msg.value > 0, "Factory: invalid Ether");
+            
             ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
             require(
@@ -1469,7 +1474,7 @@ contract uxTokenFactoryContract is Ownable {
             ] += thirtyPercentShare;
         }
 
-        _handleFee(_uxTokenAddress, depositFee);
+        _handleFee(_uxTokenAddress, depositFee, currentTimePeriodCount);
 
         // Add depositor to the list if it's the first deposit
         if (!allDepositors.contains(depositor)) {
@@ -1504,39 +1509,36 @@ contract uxTokenFactoryContract is Ownable {
         emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
     }
 
-    function _handleFee(address _uxTokenAddress, uint256 _depositFee) internal {
+    function _handleFee(address _uxTokenAddress, uint256 _depositFee, uint256 _currentTimePeriodCount) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
 
         // Transfer fees and require success
         require(
-            IERC20(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
             "Transfer to ux369gift_30 failed"
         );
         require(
-            IERC20(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
             "Transfer to ux369_30 failed"
         );
         require(
-            IERC20(_uxTokenAddress).protect(ux369impact_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369impact_30, thirtyPercentShare),
             "Transfer to ux369impact_30 failed"
         );
         require(
-            IERC20(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
             "Transfer to ux369devs_10 failed"
         );
 
-        // Calculate current time period
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
         // Update period deposits and depositors
-        if (!isDepositedInPeriod[currentTimePeriodCount]) {
-            isDepositedInPeriod[currentTimePeriodCount] = true;
+        if (!isDepositedInPeriod[_currentTimePeriodCount]) {
+            isDepositedInPeriod[_currentTimePeriodCount] = true;
         }
 
-        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
+        if (!depositorsByPeriod[_currentTimePeriodCount].contains(msg.sender)) {
+            depositorsByPeriod[_currentTimePeriodCount].add(msg.sender);
         }
     }
 
