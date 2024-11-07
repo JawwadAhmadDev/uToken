@@ -48,7 +48,7 @@ USDT: https://sepolia.etherscan.io/address/0x80366c8502326ede6b4dcb46fce7cc88378
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
 uTokenFactory: https://sepolia.etherscan.io/address/0xb2c154d063d90fe09cf61023849c6e7a35aeb0f4#code
-Legacy: https://sepolia.etherscan.io/address/0x5fc2160edf99dc7618910dc1348ec807717f33c6#code
+Legacy: https://sepolia.etherscan.io/address/0x1D020Bb752581F0f117a5E51265F4A16a6B4C38A#code
 Reward Distributor: https://sepolia.etherscan.io/address/0x088941f96c77405d946ac8452f56907520fd7df8#code
 
 DAI: 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357
