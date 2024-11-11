@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./IERC20.sol";
-// import "./SafeMath.sol";
 import "./uxTokenContract.sol";
+import "./PasswordManager.sol";
 
-contract uxTokenFactoryContract is Ownable {
+contract uxTokenFactoryContract is Ownable, PasswordManager {
     // using SafeMath for uint256;b
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -43,7 +43,7 @@ contract uxTokenFactoryContract is Ownable {
     mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
 
     // mappings to store Sign Key and randomly generated Master key against user.
-    mapping(address => bytes32) private _signKeyOf;
+    mapping(address => bool) private _isQuantumProtected;
     mapping(address => bool) private _isSignKeySetOf;
     mapping(address => bytes32) private _masterKeyOf;
     mapping(address => bool) private _isMasterKeySetOf;
@@ -72,10 +72,10 @@ contract uxTokenFactoryContract is Ownable {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public ux369gift_30 = 0x4651Ea80a87c8E9C0F8495943Ad2490a02777281;
-    address public ux369impact_30 = 0xbEF1B7Fb208D6107B90D9C39C484B095c9Db6684;
-    address public ux369_30 = 0xEBAf9a2eBCcc903D09392C62482c72221bBb5DDE;
-    address public ux369devs_10 = 0x6bD8C72d0f3F5738d4Be740B19bdb406Ae42eb2F;
+    address public ux369gift_30 = 0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1;
+    address public ux369impact_30 = 0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA;
+    address public ux369_30 = 0xcE14e3556FF59C83F849D0a4082258000FA23D30;
+    address public ux369devs_10 = 0x29817e172E0d798dCc052f87a486fEd529c015C3;
 
     event Protect(
         address depositor,
@@ -101,6 +101,7 @@ contract uxTokenFactoryContract is Ownable {
         address indexed tokenAddress,
         address indexed deployedAddress
     );
+    event TokenRemoved(address indexed tokenAddress);
 
     constructor(
         address[] memory _allowedTokens,
@@ -283,21 +284,22 @@ contract uxTokenFactoryContract is Ownable {
         _addAllowedTokens(_allowedTokens);
     }
 
-    function removeAllowedTokens(address[] memory _allowedTokens) external onlyOwner {
+    function removeAllowedTokens(
+        address[] memory _allowedTokens
+    ) external onlyOwner {
         uint256 length = _allowedTokens.length;
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
-            
-            require(
-                allowedTokens.contains(tokenAddress),
-                "Factory: Not Added"
-            );
+            require(allowedTokens.contains(tokenAddress), "Factory: Not Added");
 
             allowedTokens.remove(tokenAddress);
-            uxTokensOfAllowedTokens.remove(uxTokenAddressForToken[tokenAddress]);
+            uxTokensOfAllowedTokens.remove(
+                uxTokenAddressForToken[tokenAddress]
+            );
 
-            emit TokenAdded(tokenAddress, deployedAddress);
+            emit TokenRemoved(tokenAddress);
+        }
     }
 
     /**
@@ -316,18 +318,32 @@ contract uxTokenFactoryContract is Ownable {
      * require: The token address must be valid.
      */
     function protect(
-        string memory _signKey,
         address _uxTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        bool _quantumVerified,
+        bytes32 _signKey,
+        bytes memory ethSignature
     ) external payable {
         address depositor = msg.sender;
 
         // Validate sign key
         require(_isSignKeySetOf[depositor], "Factory: SignKey not set yet.");
-        require(
-            _signKeyOf[depositor] == keccak256(bytes(_signKey)),
-            "Factory: SignKey incorrect"
-        );
+        if (_isQuantumProtected[depositor]) {
+            require(
+                verifyLogin_Quantum(
+                    depositor,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
+        } else {
+            require(
+                verifyLogin_KeccakHash(depositor, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
+        }
         require(_amount > 0, "Factory: invalid amount");
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
@@ -345,10 +361,15 @@ contract uxTokenFactoryContract is Ownable {
             "Factory: deposit failed"
         );
 
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
+
+        uint256 thirtyPercentShare = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
             require(msg.value > 0, "Factory: invalid Ether");
-            _handleFeeETH(depositFee);
+
+            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
             require(
                 IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
@@ -358,11 +379,23 @@ contract uxTokenFactoryContract is Ownable {
                 ),
                 "Factory: TransferFrom failed"
             );
-            _handleFeeTokens(
-                tokenAdressForUxToken[_uxTokenAddress],
-                depositFee
-            );
+
+            if (
+                !tokensByPeriod[currentTimePeriodCount].contains(
+                    tokenAdressForUxToken[_uxTokenAddress]
+                )
+            ) {
+                tokensByPeriod[currentTimePeriodCount].add(
+                    tokenAdressForUxToken[_uxTokenAddress]
+                );
+            }
+
+            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
+                tokenAdressForUxToken[_uxTokenAddress]
+            ] += thirtyPercentShare;
         }
+
+        _handleFee(_uxTokenAddress, depositFee, currentTimePeriodCount);
 
         // Add depositor to the list if it's the first deposit
         if (!allDepositors.contains(depositor)) {
@@ -397,53 +430,10 @@ contract uxTokenFactoryContract is Ownable {
         emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
     }
 
-    /**
-     * @dev Handles the deposit fee for Ethereum deposits.
-     *
-     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
-     * It also checks and updates the depositors and deposited Ether amount for the current time period.
-     *
-     * @param _depositFee The amount of the deposit fee in Ether.
-     */
-    function _handleFeeETH(uint256 _depositFee) internal {
-        uint256 thirtyPercentShare = (_depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        uint256 shareOfDevFundAddress = (_depositFee * percentofDevsAddress) /
-            ZOOM;
-
-        // Transfer fees
-        payable(ux369gift_30).transfer(thirtyPercentShare);
-        payable(ux369_30).transfer(thirtyPercentShare);
-        payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369devs_10).transfer(shareOfDevFundAddress);
-
-        // Calculate current time period
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
-        // Update period deposits and depositors
-        if (!isDepositedInPeriod[currentTimePeriodCount]) {
-            isDepositedInPeriod[currentTimePeriodCount] = true;
-        }
-
-        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
-        }
-
-        ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare; // Combine operations to minimize storage writes
-    }
-
-    /**
-     * @dev Handles the deposit fee for token deposits.
-     *
-     * This function divides the deposit fee into the respective shares for the publicGoodAndCommunity, RecipientCandidate, SocialGood and DevFund addresses.
-     * It also checks and updates the depositors, deposited tokens, and reward amount for the current time period.
-     *
-     * @param _tokenAddress The address of the token being deposited.
-     * @param _depositFee The amount of the deposit fee in tokens.
-     */
-    function _handleFeeTokens(
-        address _tokenAddress,
-        uint256 _depositFee
+    function _handleFee(
+        address _uxTokenAddress,
+        uint256 _depositFee,
+        uint256 _currentTimePeriodCount
     ) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
@@ -451,41 +441,33 @@ contract uxTokenFactoryContract is Ownable {
 
         // Transfer fees and require success
         require(
-            IERC20(_tokenAddress).transfer(ux369gift_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
             "Transfer to ux369gift_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
             "Transfer to ux369_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369impact_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(
+                ux369impact_30,
+                thirtyPercentShare
+            ),
             "Transfer to ux369impact_30 failed"
         );
         require(
-            IERC20(_tokenAddress).transfer(ux369devs_10, tenPercentShare),
+            IuxToken(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
             "Transfer to ux369devs_10 failed"
         );
 
-        // Calculate current time period
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
         // Update period deposits and depositors
-        if (!isDepositedInPeriod[currentTimePeriodCount]) {
-            isDepositedInPeriod[currentTimePeriodCount] = true;
+        if (!isDepositedInPeriod[_currentTimePeriodCount]) {
+            isDepositedInPeriod[_currentTimePeriodCount] = true;
         }
 
-        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
+        if (!depositorsByPeriod[_currentTimePeriodCount].contains(msg.sender)) {
+            depositorsByPeriod[_currentTimePeriodCount].add(msg.sender);
         }
-
-        if (!tokensByPeriod[currentTimePeriodCount].contains(_tokenAddress)) {
-            tokensByPeriod[currentTimePeriodCount].add(_tokenAddress);
-        }
-
-        totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-            _tokenAddress
-        ] += thirtyPercentShare; // Combine operations
     }
 
     /**
@@ -505,17 +487,31 @@ contract uxTokenFactoryContract is Ownable {
      * require: Caller's balance must be sufficient for the withdrawal.
      */
     function burnAndUnprotect(
-        string memory _signKey,
         address _uxTokenAddress,
-        uint256 _amount
+        uint256 _amount,
+        bool _quantumVerified,
+        bytes32 _signKey,
+        bytes memory ethSignature
     ) external {
         address withdrawer = msg.sender;
 
         require(_isSignKeySetOf[withdrawer], "Factory: SignKey not set yet.");
-        require(
-            _signKeyOf[withdrawer] == keccak256(bytes(_signKey)),
-            "Factory: SignKey incorrect"
-        );
+        if (_isQuantumProtected[withdrawer]) {
+            require(
+                verifyLogin_Quantum(
+                    withdrawer,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
+        } else {
+            require(
+                verifyLogin_KeccakHash(withdrawer, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
+        }
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
@@ -590,18 +586,32 @@ contract uxTokenFactoryContract is Ownable {
      * require: Transfer amount must be greater than 0.
      */
     function transfer(
-        string memory _signKey,
         address _uxTokenAddress,
         address _to,
-        uint256 _amount
+        uint256 _amount,
+        bool _quantumVerified,
+        bytes32 _signKey,
+        bytes memory ethSignature
     ) external returns (bool) {
         address caller = msg.sender;
 
         require(_isSignKeySetOf[caller], "Factory: SignKey not set yet.");
-        require(
-            _signKeyOf[caller] == keccak256(bytes(_signKey)),
-            "Factory: SignKey incorrect"
-        );
+        if (_isQuantumProtected[caller]) {
+            require(
+                verifyLogin_Quantum(
+                    caller,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
+        } else {
+            require(
+                verifyLogin_KeccakHash(caller, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
+        }
         require(_amount > 0, "Factory: Invalid amount");
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
@@ -631,18 +641,37 @@ contract uxTokenFactoryContract is Ownable {
      * require The SignKey and MasterKey for the caller should not have been set before.
      */
     function setMasterKeyAndSignKey(
-        string memory _signKey,
-        string memory _masterKey
+        string memory _masterKey,
+        bytes32 _signKey,
+        bool _quantumProtected,
+        bytes memory quantumSignature,
+        bytes memory quamtumPublicKey,
+        bytes memory ethSignature
     ) external {
         address caller = msg.sender;
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
             "Factory: SignKey already set"
         );
-        _signKeyOf[caller] = keccak256(bytes(_signKey));
+        // _signKeyOf[caller] = keccak256(bytes(_signKey));
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
-        _isSignKeySetOf[caller] = true;
+        // _isSignKeySetOf[caller] = true;
         _isMasterKeySetOf[caller] = true;
+
+        if (_quantumProtected) {
+            registerWithQuantumProtection(
+                caller,
+                _signKey,
+                quantumSignature,
+                quamtumPublicKey,
+                ethSignature
+            );
+            _isQuantumProtected[caller] = true;
+        } else {
+            registerWithKeccak(caller, _signKey, ethSignature);
+            _isQuantumProtected[caller] = false;
+        }
+        _isSignKeySetOf[caller] = true;
     }
 
     /**
@@ -659,14 +688,34 @@ contract uxTokenFactoryContract is Ownable {
      */
     function changeSignKey(
         string memory _masterKey,
-        string memory _signKey
+        bytes32 _signKey,
+        bool _quantumProtected,
+        bytes memory quantumSignature,
+        bytes memory quamtumPublicKey,
+        bytes memory ethSignature
     ) external {
         address caller = msg.sender;
+        require(
+            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
+            "Factory: SignKey already set"
+        );
         require(
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
             "Factory: incorrect recovery number"
         );
-        _signKeyOf[caller] = keccak256(bytes(_signKey));
+        if (_quantumProtected) {
+            registerWithQuantumProtection(
+                caller,
+                _signKey,
+                quantumSignature,
+                quamtumPublicKey,
+                ethSignature
+            );
+            _isQuantumProtected[caller] = true;
+        } else {
+            registerWithKeccak(caller, _signKey, ethSignature);
+            _isQuantumProtected[caller] = false;
+        }
     }
 
     // function to change time limit for reward of 369 hours. only onwer is authorized.
@@ -937,9 +986,19 @@ contract uxTokenFactoryContract is Ownable {
     // and compared with the stored hashed signKey.
     function isSignKeyCorrect(
         address _user,
-        string memory _signKey
+        bool _quantumVerified,
+        bytes32 _signKey,
+        bytes memory ethSignature
     ) public view returns (bool) {
-        return (_signKeyOf[_user] == keccak256(bytes(_signKey)));
+        if (_isQuantumProtected[_user])
+            return
+                verifyLogin_Quantum(
+                    _user,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                );
+        else return verifyLogin_KeccakHash(_user, _signKey, ethSignature);
     }
 
     // Similar to the signKey check function, this function checks whether the entered masterKey matches the one associated with the user address.
@@ -953,6 +1012,11 @@ contract uxTokenFactoryContract is Ownable {
     // Checks whether a signKey has been set for the user address.
     function isSignKeySet(address _user) public view returns (bool) {
         return _isSignKeySetOf[_user];
+    }
+
+    // check whether a user is quantum protected or not
+    function isQuantumProtected(address _user) public view returns (bool) {
+        return _isQuantumProtected[_user];
     }
 
     // Checks whether a masterKey has been set for the user address.
