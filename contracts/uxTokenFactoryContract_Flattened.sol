@@ -1094,7 +1094,6 @@ contract uxTokenContract is IuxToken {
     ) internal virtual {}
 }
 
-
 contract PasswordManager {
     struct PasswordData {
         bytes32 keccakHash; // Keccak256 hash of the password.
@@ -1108,7 +1107,11 @@ contract PasswordManager {
     event LoginAttempt(address indexed user, bool success);
 
     // Registration functions (same as previously defined)
-    function registerWithKeccak(address user, bytes32 keccakHash, bytes memory ethSignature) public {
+    function registerWithKeccak(
+        address user,
+        bytes32 keccakHash,
+        bytes memory ethSignature
+    ) public {
         require(
             passwordDataOf[user].keccakHash == 0 &&
                 passwordDataOf[user].quantumSignature.length == 0,
@@ -1162,7 +1165,6 @@ contract PasswordManager {
         bool success = passwordDataOf[user].keccakHash == keccakHash &&
             verifyEthSignature(user, keccakHash, ethSignature);
         return success;
-
     }
 
     function verifyLogin_Quantum(
@@ -1171,13 +1173,12 @@ contract PasswordManager {
         bytes32 keccakHash,
         bytes memory ethSignature
     ) public view returns (bool) {
-        bool success = quantumVerified && passwordDataOf[user].keccakHash == keccakHash &&
+        bool success = quantumVerified &&
+            passwordDataOf[user].keccakHash == keccakHash &&
             verifyEthSignature(user, keccakHash, ethSignature);
         return success;
-
     }
 
-    
     // Verify the Ethereum signature
     function verifyEthSignature(
         address user,
@@ -1219,7 +1220,17 @@ contract PasswordManager {
     }
 
     // get password details of the user
-    function getPasswordData(address user) public view returns (bytes32 keccakHash, bytes memory quantumSignature, bytes memory quantumPublicKey) {
+    function getPasswordData(
+        address user
+    )
+        public
+        view
+        returns (
+            bytes32 keccakHash,
+            bytes memory quantumSignature,
+            bytes memory quantumPublicKey
+        )
+    {
         PasswordData memory _userData = passwordDataOf[user];
         return (
             _userData.keccakHash,
@@ -1556,13 +1567,21 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         // Validate sign key
         require(_isSignKeySetOf[depositor], "Factory: SignKey not set yet.");
-        if(_isQuantumProtected[depositor]){
-            require(verifyLogin_Quantum(depositor, _quantumVerified, _signKey, ethSignature), "Factory: SignKey incorrect");
+        if (_isQuantumProtected[depositor]) {
+            require(
+                verifyLogin_Quantum(
+                    depositor,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
         } else {
-        require(
-            verifyLogin_KeccakHash(depositor, _signKey, ethSignature),
-            "Factory: SignKey incorrect"
-        );
+            require(
+                verifyLogin_KeccakHash(depositor, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
         }
         require(_amount > 0, "Factory: invalid amount");
         require(
@@ -1669,7 +1688,10 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             "Transfer to ux369_30 failed"
         );
         require(
-            IuxToken(_uxTokenAddress).protect(ux369impact_30, thirtyPercentShare),
+            IuxToken(_uxTokenAddress).protect(
+                ux369impact_30,
+                thirtyPercentShare
+            ),
             "Transfer to ux369impact_30 failed"
         );
         require(
@@ -1713,13 +1735,21 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address withdrawer = msg.sender;
 
         require(_isSignKeySetOf[withdrawer], "Factory: SignKey not set yet.");
-        if(_isQuantumProtected[withdrawer]){
-            require(verifyLogin_Quantum(withdrawer, _quantumVerified, _signKey, ethSignature), "Factory: SignKey incorrect");
+        if (_isQuantumProtected[withdrawer]) {
+            require(
+                verifyLogin_Quantum(
+                    withdrawer,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
         } else {
-        require(
-            verifyLogin_KeccakHash(withdrawer, _signKey, ethSignature),
-            "Factory: SignKey incorrect"
-        );
+            require(
+                verifyLogin_KeccakHash(withdrawer, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
         }
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
@@ -1805,13 +1835,21 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
 
         require(_isSignKeySetOf[caller], "Factory: SignKey not set yet.");
-        if(_isQuantumProtected[caller]){
-            require(verifyLogin_Quantum(caller, _quantumVerified, _signKey, ethSignature), "Factory: SignKey incorrect");
+        if (_isQuantumProtected[caller]) {
+            require(
+                verifyLogin_Quantum(
+                    caller,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                ),
+                "Factory: SignKey incorrect"
+            );
         } else {
-        require(
-            verifyLogin_KeccakHash(caller, _signKey, ethSignature),
-            "Factory: SignKey incorrect"
-        );
+            require(
+                verifyLogin_KeccakHash(caller, _signKey, ethSignature),
+                "Factory: SignKey incorrect"
+            );
         }
         require(_amount > 0, "Factory: Invalid amount");
         require(
@@ -1859,8 +1897,14 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         // _isSignKeySetOf[caller] = true;
         _isMasterKeySetOf[caller] = true;
 
-        if(_quantumProtected){
-            registerWithQuantumProtection(caller, _signKey, quantumSignature, quamtumPublicKey, ethSignature);
+        if (_quantumProtected) {
+            registerWithQuantumProtection(
+                caller,
+                _signKey,
+                quantumSignature,
+                quamtumPublicKey,
+                ethSignature
+            );
             _isQuantumProtected[caller] = true;
         } else {
             registerWithKeccak(caller, _signKey, ethSignature);
@@ -1891,15 +1935,17 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     ) external {
         address caller = msg.sender;
         require(
-            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "Factory: SignKey already set"
-        );
-        require(
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
             "Factory: incorrect recovery number"
         );
-        if(_quantumProtected){
-            registerWithQuantumProtection(caller, _signKey, quantumSignature, quamtumPublicKey, ethSignature);
+        if (_quantumProtected) {
+            registerWithQuantumProtection(
+                caller,
+                _signKey,
+                quantumSignature,
+                quamtumPublicKey,
+                ethSignature
+            );
             _isQuantumProtected[caller] = true;
         } else {
             registerWithKeccak(caller, _signKey, ethSignature);
@@ -2179,10 +2225,15 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         bytes32 _signKey,
         bytes memory ethSignature
     ) public view returns (bool) {
-        if(_isQuantumProtected[_user])
-            return verifyLogin_Quantum(_user, _quantumVerified, _signKey, ethSignature);
-        else 
-            return verifyLogin_KeccakHash(_user, _signKey, ethSignature);
+        if (_isQuantumProtected[_user])
+            return
+                verifyLogin_Quantum(
+                    _user,
+                    _quantumVerified,
+                    _signKey,
+                    ethSignature
+                );
+        else return verifyLogin_KeccakHash(_user, _signKey, ethSignature);
     }
 
     // Similar to the signKey check function, this function checks whether the entered masterKey matches the one associated with the user address.

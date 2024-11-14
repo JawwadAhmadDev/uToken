@@ -544,8 +544,8 @@ contract BUSD is ERC20 {
     }
 }
 
-contract USDT is ERC20 {
-    constructor() ERC20("USDT", "USDT") {
+contract AAVE is ERC20 {
+    constructor() ERC20("AAVE", "AAVE") {
         _mint(msg.sender, 100000 * 10 ** 18);
     }
 
