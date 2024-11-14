@@ -1128,6 +1128,22 @@ contract PasswordManager {
         emit UserRegistered(user, false);
     }
 
+    function registerWithKeccakForChangeSignKey(
+        address user,
+        bytes32 keccakHash,
+        bytes memory ethSignature
+    ) public {
+
+        require(
+            verifyEthSignature(user, keccakHash, ethSignature),
+            "Invalid Ethereum signature"
+        );
+
+        passwordDataOf[user] = PasswordData(keccakHash, "", "");
+
+        emit UserRegistered(user, false);
+    }
+
     function registerWithQuantumProtection(
         address user,
         bytes32 keccakHash,
@@ -1140,6 +1156,29 @@ contract PasswordManager {
                 passwordDataOf[user].quantumSignature.length == 0,
             "Already registered"
         );
+
+        // Verify that the Ethereum signature is correct
+        require(
+            verifyEthSignature(user, keccakHash, ethSignature),
+            "Invalid Ethereum signature"
+        );
+
+        passwordDataOf[user] = PasswordData(
+            keccakHash,
+            quantumSignature,
+            quantumPublicKey
+        );
+
+        emit UserRegistered(user, true);
+    }
+
+    function registerWithQuantumProtectionForChangeSignKey(
+        address user,
+        bytes32 keccakHash,
+        bytes memory quantumSignature,
+        bytes memory quantumPublicKey,
+        bytes memory ethSignature
+    ) internal {
 
         // Verify that the Ethereum signature is correct
         require(
@@ -1939,7 +1978,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             "Factory: incorrect recovery number"
         );
         if (_quantumProtected) {
-            registerWithQuantumProtection(
+            registerWithQuantumProtectionForChangeSignKey(
                 caller,
                 _signKey,
                 quantumSignature,
@@ -1948,7 +1987,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             );
             _isQuantumProtected[caller] = true;
         } else {
-            registerWithKeccak(caller, _signKey, ethSignature);
+            registerWithKeccakForChangeSignKey(caller, _signKey, ethSignature);
             _isQuantumProtected[caller] = false;
         }
     }
