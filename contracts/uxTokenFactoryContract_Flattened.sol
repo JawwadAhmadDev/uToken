@@ -1133,7 +1133,6 @@ contract PasswordManager {
         bytes32 keccakHash,
         bytes memory ethSignature
     ) public {
-
         require(
             verifyEthSignature(user, keccakHash, ethSignature),
             "Invalid Ethereum signature"
@@ -1179,7 +1178,6 @@ contract PasswordManager {
         bytes memory quantumPublicKey,
         bytes memory ethSignature
     ) internal {
-
         // Verify that the Ethereum signature is correct
         require(
             verifyEthSignature(user, keccakHash, ethSignature),
@@ -1921,6 +1919,23 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function setMasterKeyAndSignKey(
         string memory _masterKey,
         bytes32 _signKey,
+        bytes memory ethSignature
+    ) external {
+        address caller = msg.sender;
+        require(
+            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
+            "Factory: SignKey already set"
+        );
+        _masterKeyOf[caller] = keccak256(bytes(_masterKey));
+        _isMasterKeySetOf[caller] = true;
+        registerWithKeccak(caller, _signKey, ethSignature);
+        _isQuantumProtected[caller] = false;
+        _isSignKeySetOf[caller] = true;
+    }
+
+    function setMasterKeyAndQuantumResistantSignKey(
+        string memory _masterKey,
+        bytes32 _signKey,
         bool _quantumProtected,
         bytes memory quantumSignature,
         bytes memory quamtumPublicKey,
@@ -1931,24 +1946,16 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
             "Factory: SignKey already set"
         );
-        // _signKeyOf[caller] = keccak256(bytes(_signKey));
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
-        // _isSignKeySetOf[caller] = true;
         _isMasterKeySetOf[caller] = true;
-
-        if (_quantumProtected) {
-            registerWithQuantumProtection(
-                caller,
-                _signKey,
-                quantumSignature,
-                quamtumPublicKey,
-                ethSignature
-            );
-            _isQuantumProtected[caller] = true;
-        } else {
-            registerWithKeccak(caller, _signKey, ethSignature);
-            _isQuantumProtected[caller] = false;
-        }
+        registerWithQuantumProtection(
+            caller,
+            _signKey,
+            quantumSignature,
+            quamtumPublicKey,
+            ethSignature
+        );
+        _isQuantumProtected[caller] = true;
         _isSignKeySetOf[caller] = true;
     }
 
