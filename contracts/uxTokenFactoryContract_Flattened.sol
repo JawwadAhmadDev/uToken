@@ -817,6 +817,8 @@ interface IuxToken {
     function currency() external view returns (string memory);
 }
 
+
+
 contract uxTokenContract is IuxToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -1277,6 +1279,23 @@ contract PasswordManager {
     }
 }
 
+interface AggregatorV3Interface {
+  function decimals() external view returns (uint8);
+
+  function description() external view returns (string memory);
+
+  function version() external view returns (uint256);
+
+  function getRoundData(
+    uint80 _roundId
+  ) external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+
+  function latestRoundData()
+    external
+    view
+    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+}
+
 // File: contracts/uxTokenFactoryContract.sol
 
 // SPDX-License-Identifier: MIT
@@ -1385,7 +1404,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     constructor(
         address[] memory _allowedTokens,
         address[] memory _whiteListAddresses, // Fixed typo
-        address _priceFeedAddress,
+        address _priceFeedAddress
     ) Ownable(msg.sender) {
         require(_allowedTokens.length < 256, "Too many allowed tokens"); // Optional: limit on number of tokens
         require(
@@ -1948,14 +1967,14 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         uint fee = msg.value;
         uint requiredETHFee = calculateETHFee(quantumActivationFee);
-        require(msg.value >= requiredEthFee);
+        require(msg.value >= requiredETHFee);
         // transfer fee to the fee receivers addresses
-        uint256 thirtyPercentShare = (depositFee *
+        uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         payable(ux369gift_30).transfer(thirtyPercentShare);
         payable(ux369_30).transfer(thirtyPercentShare);
         payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
 
 
         require(
@@ -2005,14 +2024,14 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 
             uint fee = msg.value;
         uint requiredETHFee = calculateETHFee(quantumActivationFee);
-        require(msg.value >= requiredEthFee);
+        require(msg.value >= requiredETHFee);
         // transfer fee to the fee receivers addresses
-        uint256 thirtyPercentShare = (depositFee *
+        uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         payable(ux369gift_30).transfer(thirtyPercentShare);
         payable(ux369_30).transfer(thirtyPercentShare);
         payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
             }
             registerWithQuantumProtectionForChangeSignKey(
                 caller,
