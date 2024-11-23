@@ -47,7 +47,7 @@ BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
 USDT: https://sepolia.etherscan.io/address/0x80366c8502326ede6b4dcb46fce7cc88378eda07#code
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
-uTokenFactory: https://sepolia.etherscan.io/address/0xe65d4fdd8b3c7c966fc61f1c307a1b5dc057bcf1#code
+uTokenFactory: https://sepolia.etherscan.io/address/0x6af22218e6af9eb802d8cbd2db7ee8d33296142f#code
 Legacy: https://sepolia.etherscan.io/address/0xFAfD6C7E1b5017C46d09a2df39D0c7b0F6d83be8#code
 Reward Distributor: https://sepolia.etherscan.io/address/0x088941f96c77405d946ac8452f56907520fd7df8#code
 
