@@ -1324,6 +1324,8 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     mapping(address => bytes32) private _masterKeyOf;
     mapping(address => bool) private _isMasterKeySetOf;
 
+    AggregatorV3Interface public priceFeed; // Chainlink ETH/USD Price Feed
+
     // tokens addresses.
     address public uxTokenAddressOfETH;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
@@ -1334,6 +1336,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     uint256 private _salt;
 
     // fee detial
+    uint256 public quantumActivationFee = 3.69 * 1e18;
     uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
         30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
@@ -1381,14 +1384,15 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
     constructor(
         address[] memory _allowedTokens,
-        address[] memory _whiteListAddresses // Fixed typo
+        address[] memory _whiteListAddresses, // Fixed typo
+        address _priceFeedAddress,
     ) Ownable(msg.sender) {
         require(_allowedTokens.length < 256, "Too many allowed tokens"); // Optional: limit on number of tokens
         require(
             _whiteListAddresses.length < 256,
             "Too many whitelist addresses"
         ); // Optional: limit on number of addresses
-
+        priceFeed = AggregatorV3Interface(_priceFeedAddress); // Chainlink ETH/USD price feed
         deployTime = block.timestamp;
 
         // Set the whitelist addresses
@@ -1940,8 +1944,20 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         bytes memory quantumSignature,
         bytes memory quamtumPublicKey,
         bytes memory ethSignature
-    ) external {
+    ) external payable {
         address caller = msg.sender;
+        uint fee = msg.value;
+        uint requiredETHFee = calculateETHFee(quantumActivationFee);
+        require(msg.value >= requiredEthFee);
+        // transfer fee to the fee receivers addresses
+        uint256 thirtyPercentShare = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        payable(ux369gift_30).transfer(thirtyPercentShare);
+        payable(ux369_30).transfer(thirtyPercentShare);
+        payable(ux369impact_30).transfer(thirtyPercentShare);
+        payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
+
+
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
             "Factory: SignKey already set"
@@ -1978,13 +1994,26 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         bytes memory quantumSignature,
         bytes memory quamtumPublicKey,
         bytes memory ethSignature
-    ) external {
+    ) external payable{
         address caller = msg.sender;
         require(
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
             "Factory: incorrect recovery number"
         );
         if (_quantumProtected) {
+            if(!_isQuantumProtected[caller]){
+                
+            uint fee = msg.value;
+        uint requiredETHFee = calculateETHFee(quantumActivationFee);
+        require(msg.value >= requiredEthFee);
+        // transfer fee to the fee receivers addresses
+        uint256 thirtyPercentShare = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        payable(ux369gift_30).transfer(thirtyPercentShare);
+        payable(ux369_30).transfer(thirtyPercentShare);
+        payable(ux369impact_30).transfer(thirtyPercentShare);
+        payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
+            }
             registerWithQuantumProtectionForChangeSignKey(
                 caller,
                 _signKey,
@@ -2560,5 +2589,22 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         for (uint i; i < _length; i++) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
+    }
+
+    // functions related fetching live prices
+    function calculateETHFee(
+        uint256 _feeInStableCoin
+    ) public view returns (uint) {
+        int ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
+        require(ethPriceInUSD > 0, "Invalid price from oracle");
+
+        uint ethFee = (_feeInStableCoin * 1e8) / uint(ethPriceInUSD); // Conversion to ETH amount
+        return ethFee;
+    }
+
+    // Get the latest price of ETH in USD (used to calculate equivalent ETH for stablecoin fee)
+    function getLatestPrice() public view returns (int) {
+        (, int price, , , ) = priceFeed.latestRoundData();
+        return price;
     }
 }
