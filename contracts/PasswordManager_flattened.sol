@@ -20,10 +20,7 @@ library Math {
     /**
      * @dev Returns the addition of two unsigned integers, with an overflow flag.
      */
-    function tryAdd(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (bool, uint256) {
+    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             uint256 c = a + b;
             if (c < a) return (false, 0);
@@ -34,10 +31,7 @@ library Math {
     /**
      * @dev Returns the subtraction of two unsigned integers, with an overflow flag.
      */
-    function trySub(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (bool, uint256) {
+    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b > a) return (false, 0);
             return (true, a - b);
@@ -47,10 +41,7 @@ library Math {
     /**
      * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
      */
-    function tryMul(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (bool, uint256) {
+    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
             // benefit is lost if 'b' is also tested.
@@ -65,10 +56,7 @@ library Math {
     /**
      * @dev Returns the division of two unsigned integers, with a division by zero flag.
      */
-    function tryDiv(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (bool, uint256) {
+    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a / b);
@@ -78,10 +66,7 @@ library Math {
     /**
      * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.
      */
-    function tryMod(
-        uint256 a,
-        uint256 b
-    ) internal pure returns (bool, uint256) {
+    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a % b);
@@ -133,11 +118,7 @@ library Math {
      * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv) with further edits by
      * Uniswap Labs also under MIT license.
      */
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 denominator
-    ) internal pure returns (uint256 result) {
+    function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
         unchecked {
             // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
             // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
@@ -221,12 +202,7 @@ library Math {
     /**
      * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
      */
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 denominator,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
         uint256 result = mulDiv(x, y, denominator);
         if (unsignedRoundsUp(rounding) && mulmod(x, y, denominator) > 0) {
             result += 1;
@@ -276,15 +252,10 @@ library Math {
     /**
      * @notice Calculates sqrt(a), following the selected rounding direction.
      */
-    function sqrt(
-        uint256 a,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function sqrt(uint256 a, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = sqrt(a);
-            return
-                result +
-                (unsignedRoundsUp(rounding) && result * result < a ? 1 : 0);
+            return result + (unsignedRoundsUp(rounding) && result * result < a ? 1 : 0);
         }
     }
 
@@ -334,15 +305,10 @@ library Math {
      * @dev Return the log in base 2, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log2(
-        uint256 value,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function log2(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log2(value);
-            return
-                result +
-                (unsignedRoundsUp(rounding) && 1 << result < value ? 1 : 0);
+            return result + (unsignedRoundsUp(rounding) && 1 << result < value ? 1 : 0);
         }
     }
 
@@ -388,15 +354,10 @@ library Math {
      * @dev Return the log in base 10, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log10(
-        uint256 value,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function log10(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log10(value);
-            return
-                result +
-                (unsignedRoundsUp(rounding) && 10 ** result < value ? 1 : 0);
+            return result + (unsignedRoundsUp(rounding) && 10 ** result < value ? 1 : 0);
         }
     }
 
@@ -436,19 +397,10 @@ library Math {
      * @dev Return the log in base 256, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
-    function log256(
-        uint256 value,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function log256(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log256(value);
-            return
-                result +
-                (
-                    unsignedRoundsUp(rounding) && 1 << (result << 3) < value
-                        ? 1
-                        : 0
-                );
+            return result + (unsignedRoundsUp(rounding) && 1 << (result << 3) < value ? 1 : 0);
         }
     }
 
@@ -461,6 +413,7 @@ library Math {
 }
 
 // File: @openzeppelin/contracts/utils/math/SignedMath.sol
+
 
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/math/SignedMath.sol)
 
@@ -507,9 +460,12 @@ library SignedMath {
 
 // File: @openzeppelin/contracts/utils/Strings.sol
 
+
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/Strings.sol)
 
 pragma solidity ^0.8.20;
+
+
 
 /**
  * @dev String operations.
@@ -551,14 +507,8 @@ library Strings {
     /**
      * @dev Converts a `int256` to its ASCII `string` decimal representation.
      */
-    function toStringSigned(
-        int256 value
-    ) internal pure returns (string memory) {
-        return
-            string.concat(
-                value < 0 ? "-" : "",
-                toString(SignedMath.abs(value))
-            );
+    function toStringSigned(int256 value) internal pure returns (string memory) {
+        return string.concat(value < 0 ? "-" : "", toString(SignedMath.abs(value)));
     }
 
     /**
@@ -573,10 +523,7 @@ library Strings {
     /**
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
      */
-    function toHexString(
-        uint256 value,
-        uint256 length
-    ) internal pure returns (string memory) {
+    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
         uint256 localValue = value;
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
@@ -602,21 +549,18 @@ library Strings {
     /**
      * @dev Returns true if the two strings are equal.
      */
-    function equal(
-        string memory a,
-        string memory b
-    ) internal pure returns (bool) {
-        return
-            bytes(a).length == bytes(b).length &&
-            keccak256(bytes(a)) == keccak256(bytes(b));
+    function equal(string memory a, string memory b) internal pure returns (bool) {
+        return bytes(a).length == bytes(b).length && keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }
 
 // File: @openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol
 
+
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/MessageHashUtils.sol)
 
 pragma solidity ^0.8.20;
+
 
 /**
  * @dev Signature message hash utilities for producing digests to be consumed by {ECDSA} recovery or signing.
@@ -640,9 +584,7 @@ library MessageHashUtils {
      *
      * See {ECDSA-recover}.
      */
-    function toEthSignedMessageHash(
-        bytes32 messageHash
-    ) internal pure returns (bytes32 digest) {
+    function toEthSignedMessageHash(bytes32 messageHash) internal pure returns (bytes32 digest) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x00, "\x19Ethereum Signed Message:\n32") // 32 is the bytes-length of messageHash
@@ -661,17 +603,9 @@ library MessageHashUtils {
      *
      * See {ECDSA-recover}.
      */
-    function toEthSignedMessageHash(
-        bytes memory message
-    ) internal pure returns (bytes32) {
+    function toEthSignedMessageHash(bytes memory message) internal pure returns (bytes32) {
         return
-            keccak256(
-                bytes.concat(
-                    "\x19Ethereum Signed Message:\n",
-                    bytes(Strings.toString(message.length)),
-                    message
-                )
-            );
+            keccak256(bytes.concat("\x19Ethereum Signed Message:\n", bytes(Strings.toString(message.length)), message));
     }
 
     /**
@@ -683,10 +617,7 @@ library MessageHashUtils {
      *
      * See {ECDSA-recover}.
      */
-    function toDataWithIntendedValidatorHash(
-        address validator,
-        bytes memory data
-    ) internal pure returns (bytes32) {
+    function toDataWithIntendedValidatorHash(address validator, bytes memory data) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(hex"19_00", validator, data));
     }
 
@@ -699,10 +630,7 @@ library MessageHashUtils {
      *
      * See {ECDSA-recover}.
      */
-    function toTypedDataHash(
-        bytes32 domainSeparator,
-        bytes32 structHash
-    ) internal pure returns (bytes32 digest) {
+    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 digest) {
         /// @solidity memory-safe-assembly
         assembly {
             let ptr := mload(0x40)
@@ -715,6 +643,7 @@ library MessageHashUtils {
 }
 
 // File: @openzeppelin/contracts/utils/StorageSlot.sol
+
 
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/StorageSlot.sol)
 // This file was procedurally generated from scripts/generate/templates/StorageSlot.js.
@@ -773,9 +702,7 @@ library StorageSlot {
     /**
      * @dev Returns an `AddressSlot` with member `value` located at `slot`.
      */
-    function getAddressSlot(
-        bytes32 slot
-    ) internal pure returns (AddressSlot storage r) {
+    function getAddressSlot(bytes32 slot) internal pure returns (AddressSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -785,9 +712,7 @@ library StorageSlot {
     /**
      * @dev Returns an `BooleanSlot` with member `value` located at `slot`.
      */
-    function getBooleanSlot(
-        bytes32 slot
-    ) internal pure returns (BooleanSlot storage r) {
+    function getBooleanSlot(bytes32 slot) internal pure returns (BooleanSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -797,9 +722,7 @@ library StorageSlot {
     /**
      * @dev Returns an `Bytes32Slot` with member `value` located at `slot`.
      */
-    function getBytes32Slot(
-        bytes32 slot
-    ) internal pure returns (Bytes32Slot storage r) {
+    function getBytes32Slot(bytes32 slot) internal pure returns (Bytes32Slot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -809,9 +732,7 @@ library StorageSlot {
     /**
      * @dev Returns an `Uint256Slot` with member `value` located at `slot`.
      */
-    function getUint256Slot(
-        bytes32 slot
-    ) internal pure returns (Uint256Slot storage r) {
+    function getUint256Slot(bytes32 slot) internal pure returns (Uint256Slot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -821,9 +742,7 @@ library StorageSlot {
     /**
      * @dev Returns an `StringSlot` with member `value` located at `slot`.
      */
-    function getStringSlot(
-        bytes32 slot
-    ) internal pure returns (StringSlot storage r) {
+    function getStringSlot(bytes32 slot) internal pure returns (StringSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -833,9 +752,7 @@ library StorageSlot {
     /**
      * @dev Returns an `StringSlot` representation of the string storage pointer `store`.
      */
-    function getStringSlot(
-        string storage store
-    ) internal pure returns (StringSlot storage r) {
+    function getStringSlot(string storage store) internal pure returns (StringSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := store.slot
@@ -845,9 +762,7 @@ library StorageSlot {
     /**
      * @dev Returns an `BytesSlot` with member `value` located at `slot`.
      */
-    function getBytesSlot(
-        bytes32 slot
-    ) internal pure returns (BytesSlot storage r) {
+    function getBytesSlot(bytes32 slot) internal pure returns (BytesSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := slot
@@ -857,9 +772,7 @@ library StorageSlot {
     /**
      * @dev Returns an `BytesSlot` representation of the bytes storage pointer `store`.
      */
-    function getBytesSlot(
-        bytes storage store
-    ) internal pure returns (BytesSlot storage r) {
+    function getBytesSlot(bytes storage store) internal pure returns (BytesSlot storage r) {
         /// @solidity memory-safe-assembly
         assembly {
             r.slot := store.slot
@@ -869,9 +782,11 @@ library StorageSlot {
 
 // File: @openzeppelin/contracts/utils/ShortStrings.sol
 
+
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/ShortStrings.sol)
 
 pragma solidity ^0.8.20;
+
 
 // | string  | 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   |
 // | length  | 0x                                                              BB |
@@ -907,8 +822,7 @@ type ShortString is bytes32;
  */
 library ShortStrings {
     // Used as an identifier for strings longer than 31 bytes.
-    bytes32 private constant FALLBACK_SENTINEL =
-        0x00000000000000000000000000000000000000000000000000000000000000FF;
+    bytes32 private constant FALLBACK_SENTINEL = 0x00000000000000000000000000000000000000000000000000000000000000FF;
 
     error StringTooLong(string str);
     error InvalidShortString();
@@ -918,9 +832,7 @@ library ShortStrings {
      *
      * This will trigger a `StringTooLong` error is the input string is too long.
      */
-    function toShortString(
-        string memory str
-    ) internal pure returns (ShortString) {
+    function toShortString(string memory str) internal pure returns (ShortString) {
         bytes memory bstr = bytes(str);
         if (bstr.length > 31) {
             revert StringTooLong(str);
@@ -957,10 +869,7 @@ library ShortStrings {
     /**
      * @dev Encode a string into a `ShortString`, or write it to storage if it is too long.
      */
-    function toShortStringWithFallback(
-        string memory value,
-        string storage store
-    ) internal returns (ShortString) {
+    function toShortStringWithFallback(string memory value, string storage store) internal returns (ShortString) {
         if (bytes(value).length < 32) {
             return toShortString(value);
         } else {
@@ -972,10 +881,7 @@ library ShortStrings {
     /**
      * @dev Decode a string that was encoded to `ShortString` or written to storage using {setWithFallback}.
      */
-    function toStringWithFallback(
-        ShortString value,
-        string storage store
-    ) internal pure returns (string memory) {
+    function toStringWithFallback(ShortString value, string storage store) internal pure returns (string memory) {
         if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
             return toString(value);
         } else {
@@ -990,10 +896,7 @@ library ShortStrings {
      * WARNING: This will return the "byte length" of the string. This may not reflect the actual length in terms of
      * actual characters as the UTF-8 encoding of a single character can span over multiple bytes.
      */
-    function byteLengthWithFallback(
-        ShortString value,
-        string storage store
-    ) internal view returns (uint256) {
+    function byteLengthWithFallback(ShortString value, string storage store) internal view returns (uint256) {
         if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
             return byteLength(value);
         } else {
@@ -1003,6 +906,7 @@ library ShortStrings {
 }
 
 // File: @openzeppelin/contracts/interfaces/IERC5267.sol
+
 
 // OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC5267.sol)
 
@@ -1034,9 +938,13 @@ interface IERC5267 {
 
 // File: @openzeppelin/contracts/utils/cryptography/EIP712.sol
 
+
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/EIP712.sol)
 
 pragma solidity ^0.8.20;
+
+
+
 
 /**
  * @dev https://eips.ethereum.org/EIPS/eip-712[EIP 712] is a standard for hashing and signing of typed structured data.
@@ -1066,9 +974,7 @@ abstract contract EIP712 is IERC5267 {
     using ShortStrings for *;
 
     bytes32 private constant TYPE_HASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
     // invalidate the cached domain separator if the chain id changes.
@@ -1119,16 +1025,7 @@ abstract contract EIP712 is IERC5267 {
     }
 
     function _buildDomainSeparator() private view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    TYPE_HASH,
-                    _hashedName,
-                    _hashedVersion,
-                    block.chainid,
-                    address(this)
-                )
-            );
+        return keccak256(abi.encode(TYPE_HASH, _hashedName, _hashedVersion, block.chainid, address(this)));
     }
 
     /**
@@ -1146,11 +1043,8 @@ abstract contract EIP712 is IERC5267 {
      * address signer = ECDSA.recover(digest, signature);
      * ```
      */
-    function _hashTypedDataV4(
-        bytes32 structHash
-    ) internal view virtual returns (bytes32) {
-        return
-            MessageHashUtils.toTypedDataHash(_domainSeparatorV4(), structHash);
+    function _hashTypedDataV4(bytes32 structHash) internal view virtual returns (bytes32) {
+        return MessageHashUtils.toTypedDataHash(_domainSeparatorV4(), structHash);
     }
 
     /**
@@ -1206,6 +1100,7 @@ abstract contract EIP712 is IERC5267 {
 
 // File: @openzeppelin/contracts/utils/cryptography/ECDSA.sol
 
+
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/ECDSA.sol)
 
 pragma solidity ^0.8.20;
@@ -1260,10 +1155,7 @@ library ECDSA {
      * - with https://web3js.readthedocs.io/en/v1.3.4/web3-eth-accounts.html#sign[Web3.js]
      * - with https://docs.ethers.io/v5/api/signer/#Signer-signMessage[ethers]
      */
-    function tryRecover(
-        bytes32 hash,
-        bytes memory signature
-    ) internal pure returns (address, RecoverError, bytes32) {
+    function tryRecover(bytes32 hash, bytes memory signature) internal pure returns (address, RecoverError, bytes32) {
         if (signature.length == 65) {
             bytes32 r;
             bytes32 s;
@@ -1278,11 +1170,7 @@ library ECDSA {
             }
             return tryRecover(hash, v, r, s);
         } else {
-            return (
-                address(0),
-                RecoverError.InvalidSignatureLength,
-                bytes32(signature.length)
-            );
+            return (address(0), RecoverError.InvalidSignatureLength, bytes32(signature.length));
         }
     }
 
@@ -1300,14 +1188,8 @@ library ECDSA {
      * this is by receiving a hash of the original message (which may otherwise
      * be too long), and then calling {MessageHashUtils-toEthSignedMessageHash} on it.
      */
-    function recover(
-        bytes32 hash,
-        bytes memory signature
-    ) internal pure returns (address) {
-        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
-            hash,
-            signature
-        );
+    function recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, signature);
         _throwError(error, errorArg);
         return recovered;
     }
@@ -1317,16 +1199,9 @@ library ECDSA {
      *
      * See https://eips.ethereum.org/EIPS/eip-2098[EIP-2098 short signatures]
      */
-    function tryRecover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address, RecoverError, bytes32) {
+    function tryRecover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address, RecoverError, bytes32) {
         unchecked {
-            bytes32 s = vs &
-                bytes32(
-                    0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                );
+            bytes32 s = vs & bytes32(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
             // We do not check for an overflow here since the shift operation results in 0 or 1.
             uint8 v = uint8((uint256(vs) >> 255) + 27);
             return tryRecover(hash, v, r, s);
@@ -1336,16 +1211,8 @@ library ECDSA {
     /**
      * @dev Overload of {ECDSA-recover} that receives the `r and `vs` short-signature fields separately.
      */
-    function recover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address) {
-        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
-            hash,
-            r,
-            vs
-        );
+    function recover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, r, vs);
         _throwError(error, errorArg);
         return recovered;
     }
@@ -1369,10 +1236,7 @@ library ECDSA {
         // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
-        if (
-            uint256(s) >
-            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
-        ) {
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             return (address(0), RecoverError.InvalidSignatureS, s);
         }
 
@@ -1389,18 +1253,8 @@ library ECDSA {
      * @dev Overload of {ECDSA-recover} that receives the `v`,
      * `r` and `s` signature fields separately.
      */
-    function recover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address) {
-        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
-            hash,
-            v,
-            r,
-            s
-        );
+    function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, v, r, s);
         _throwError(error, errorArg);
         return recovered;
     }
@@ -1423,7 +1277,10 @@ library ECDSA {
 
 // File: contracts/PasswordManager.sol
 
+
 pragma solidity ^0.8.24;
+
+
 
 contract PasswordManager is EIP712 {
     struct PasswordData {
@@ -1432,9 +1289,7 @@ contract PasswordManager is EIP712 {
         bytes quantumPublicKey; // Public key for quantum verification.
     }
     bytes32 public constant PASSWORD_HASH_TYPEHASH =
-        keccak256(
-            "PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)"
-        );
+        keccak256("PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)");
 
     mapping(address => PasswordData) public passwordDataOf;
 
@@ -1461,23 +1316,16 @@ contract PasswordManager is EIP712 {
 
         // Verify that the Ethereum signature is correct
         require(
-            verifySignature(
-                user,
-                customMessage,
-                password,
-                keccakHash,
-                deadline,
-                ethSignature
-            ),
+            verifySignature(user, customMessage, password, keccakHash, deadline, ethSignature),
             "Invalid Ethereum signature"
         );
-        if (isQuantumProtected) {
-            passwordDataOf[user] = PasswordData(
-                keccakHash,
-                quantumSignature,
-                quantumPublicKey
-            );
-            emit UserRegistered(user, true);
+        if(isQuantumProtected){
+        passwordDataOf[user] = PasswordData(
+            keccakHash,
+            quantumSignature,
+            quantumPublicKey
+        );  
+        emit UserRegistered(user, true);
         } else {
             passwordDataOf[user] = PasswordData(keccakHash, "", "");
             emit UserRegistered(user, false);
@@ -1492,15 +1340,7 @@ contract PasswordManager is EIP712 {
         uint256 deadline,
         bytes memory ethSignature
     ) public view returns (bool) {
-        bool success = passwordDataOf[user].keccakHash == keccakHash &&
-            verifySignature(
-                user,
-                customMessage,
-                password,
-                keccakHash,
-                deadline,
-                ethSignature
-            );
+        bool success = passwordDataOf[user].keccakHash == keccakHash && verifySignature(user, customMessage, password, keccakHash, deadline, ethSignature);
         return success;
     }
 
