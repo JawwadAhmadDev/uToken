@@ -72,7 +72,7 @@ contract uxTokenContract is IuxToken {
     // Re-entracy attack
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "uxWTokenForETH: LOCKED");
+        require(unlocked == 1, "LOCKED");
         unlocked = 0;
         _;
         unlocked = 1;
@@ -80,7 +80,7 @@ contract uxTokenContract is IuxToken {
     // modifier: will be applied on the functions which can only be called from factory.
     // such as deposit and withdraw.
     modifier onlyFactory() {
-        require(msg.sender == factory, "uxWTokenForETH: NOT AUTHORIZED");
+        require(msg.sender == factory, "NOT AUTHORIZED");
         _;
     }
 
@@ -157,7 +157,7 @@ contract uxTokenContract is IuxToken {
             owner = msg.sender;
         } else {
             // caller is EOA
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
+            require(msg.sender == factory, "NOT AUTHORIZED");
             owner = tx.origin;
         }
         _transfer(owner, to, amount);
@@ -191,7 +191,7 @@ contract uxTokenContract is IuxToken {
             spender = msg.sender;
         } else {
             // caller is EOA
-            require(msg.sender == factory, "uWTokenForEth: NOT AUTHORIZED");
+            require(msg.sender == factory, "NOT AUTHORIZED");
             spender = tx.origin;
         }
         _spendAllowance(from, spender, amount);
@@ -214,10 +214,7 @@ contract uxTokenContract is IuxToken {
     ) public virtual onlyFactory returns (bool) {
         address owner = tx.origin;
         uint256 currentAllowance = allowance(owner, spender);
-        require(
-            currentAllowance >= subtractedValue,
-            "ERC20: decreased allowance below zero"
-        );
+        require(currentAllowance >= subtractedValue, "BELOW ZERO");
         unchecked {
             _approve(owner, spender, currentAllowance - subtractedValue);
         }
@@ -230,16 +227,13 @@ contract uxTokenContract is IuxToken {
         address to,
         uint256 amount
     ) internal virtual {
-        require(from != address(0), "ERC20: transfer from the zero address");
-        require(to != address(0), "ERC20: transfer to the zero address");
+        require(from != address(0), "FROM ZERO");
+        require(to != address(0), "TO ZERO");
 
         _beforeTokenTransfer(from, to, amount);
 
         uint256 fromBalance = _balances[from];
-        require(
-            fromBalance >= amount,
-            "ERC20: transfer amount exceeds balance"
-        );
+        require(fromBalance >= amount, "AMOUNT EXCEEDED");
         unchecked {
             _balances[from] = fromBalance - amount;
             // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
@@ -253,7 +247,7 @@ contract uxTokenContract is IuxToken {
     }
 
     function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(account != address(0), "MINT TO ZERO");
 
         _beforeTokenTransfer(address(0), account, amount);
 
@@ -268,12 +262,12 @@ contract uxTokenContract is IuxToken {
     }
 
     function _burn(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: burn from the zero address");
+        require(account != address(0), "BURN FROM ZERO");
 
         _beforeTokenTransfer(account, address(0), amount);
 
         uint256 accountBalance = _balances[account];
-        require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
+        require(accountBalance >= amount, "EXCEEDED BALANCE");
         unchecked {
             _balances[account] = accountBalance - amount;
             // Overflow not possible: amount <= accountBalance <= totalSupply.
@@ -290,8 +284,8 @@ contract uxTokenContract is IuxToken {
         address spender,
         uint256 amount
     ) internal virtual {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
+        require(owner != address(0), "FROM ZERO");
+        require(spender != address(0), "TO ZERO");
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -304,10 +298,7 @@ contract uxTokenContract is IuxToken {
     ) internal virtual {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
-            require(
-                currentAllowance >= amount,
-                "ERC20: insufficient allowance"
-            );
+            require(currentAllowance >= amount, "insufficient");
             unchecked {
                 _approve(owner, spender, currentAllowance - amount);
             }
