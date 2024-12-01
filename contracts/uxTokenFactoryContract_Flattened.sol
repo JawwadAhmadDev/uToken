@@ -363,7 +363,7 @@ library EnumerableSet {
         bytes32[] _values;
         // Position is the index of the value in the `values` array plus 1.
         // Position 0 is used to mean a value is not in the set.
-        mapping(bytes32 value => uint256) _positions;
+        mapping(bytes32 => uint256) _positions;
     }
 
     /**
@@ -737,8 +737,12 @@ library EnumerableSet {
 pragma solidity ^0.8.18;
 
 interface IERC20 {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     function name() external view returns (string memory);
 
@@ -746,23 +750,23 @@ interface IERC20 {
 
     function decimals() external view returns (uint8);
 
-    function totalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint256);
 
-    function balanceOf(address owner) external view returns (uint);
+    function balanceOf(address owner) external view returns (uint256);
 
     function allowance(
         address owner,
         address spender
-    ) external view returns (uint);
+    ) external view returns (uint256);
 
-    function approve(address spender, uint value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
 
-    function transfer(address to, uint value) external returns (bool);
+    function transfer(address to, uint256 value) external returns (bool);
 
     function transferFrom(
         address from,
         address to,
-        uint value
+        uint256 value
     ) external returns (bool);
 }
 
@@ -771,8 +775,12 @@ interface IERC20 {
 pragma solidity ^0.8.18;
 
 interface IuxToken {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     function name() external view returns (string memory);
 
@@ -780,23 +788,23 @@ interface IuxToken {
 
     function decimals() external view returns (uint8);
 
-    function totalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint256);
 
-    function balanceOf(address owner) external view returns (uint);
+    function balanceOf(address owner) external view returns (uint256);
 
     function allowance(
         address owner,
         address spender
-    ) external view returns (uint);
+    ) external view returns (uint256);
 
-    function approve(address spender, uint value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
 
-    function transfer(address to, uint value) external returns (bool);
+    function transfer(address to, uint256 value) external returns (bool);
 
     function transferFrom(
         address from,
         address to,
-        uint value
+        uint256 value
     ) external returns (bool);
 
     function initialize(
@@ -837,7 +845,7 @@ contract uxTokenContract is IuxToken {
     address public immutable factory = msg.sender;
 
     // Re-entracy attack
-    uint private unlocked = 1;
+    uint256 private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, "uxWTokenForETH: LOCKED");
         unlocked = 0;
@@ -865,7 +873,7 @@ contract uxTokenContract is IuxToken {
         _decimals = decimals_;
 
         // setting whitelist addresses
-        for (uint i; i < _whiteListAddressess.length; i++) {
+        for (uint256 i; i < _whiteListAddressess.length; i++) {
             whiteList.add(_whiteListAddressess[i]);
         }
     }
@@ -1094,61 +1102,1461 @@ contract uxTokenContract is IuxToken {
     ) internal virtual {}
 }
 
-contract PasswordManager {
+pragma solidity ^0.8.24;
+
+/**
+ * @dev Standard math utilities missing in the Solidity language.
+ */
+library Math {
+    /**
+     * @dev Muldiv operation overflow.
+     */
+    error MathOverflowedMulDiv();
+
+    enum Rounding {
+        Floor, // Toward negative infinity
+        Ceil, // Toward positive infinity
+        Trunc, // Toward zero
+        Expand // Away from zero
+    }
+
+    /**
+     * @dev Returns the addition of two unsigned integers, with an overflow flag.
+     */
+    function tryAdd(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
+        unchecked {
+            uint256 c = a + b;
+            if (c < a) return (false, 0);
+            return (true, c);
+        }
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, with an overflow flag.
+     */
+    function trySub(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b > a) return (false, 0);
+            return (true, a - b);
+        }
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
+     */
+    function tryMul(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
+        unchecked {
+            // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+            // benefit is lost if 'b' is also tested.
+            // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+            if (a == 0) return (true, 0);
+            uint256 c = a * b;
+            if (c / a != b) return (false, 0);
+            return (true, c);
+        }
+    }
+
+    /**
+     * @dev Returns the division of two unsigned integers, with a division by zero flag.
+     */
+    function tryDiv(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b == 0) return (false, 0);
+            return (true, a / b);
+        }
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.
+     */
+    function tryMod(
+        uint256 a,
+        uint256 b
+    ) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b == 0) return (false, 0);
+            return (true, a % b);
+        }
+    }
+
+    /**
+     * @dev Returns the largest of two numbers.
+     */
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
+    }
+
+    /**
+     * @dev Returns the smallest of two numbers.
+     */
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
+    /**
+     * @dev Returns the average of two numbers. The result is rounded towards
+     * zero.
+     */
+    function average(uint256 a, uint256 b) internal pure returns (uint256) {
+        // (a + b) / 2 can overflow.
+        return (a & b) + (a ^ b) / 2;
+    }
+
+    /**
+     * @dev Returns the ceiling of the division of two numbers.
+     *
+     * This differs from standard division with `/` in that it rounds towards infinity instead
+     * of rounding towards zero.
+     */
+    function ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (b == 0) {
+            // Guarantee the same behavior as in a regular Solidity division.
+            return a / b;
+        }
+
+        // (a + b - 1) / b can overflow on addition, so we distribute.
+        return a == 0 ? 0 : (a - 1) / b + 1;
+    }
+
+    /**
+     * @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or
+     * denominator == 0.
+     * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv) with further edits by
+     * Uniswap Labs also under MIT license.
+     */
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        unchecked {
+            // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
+            // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
+            // variables such that product = prod1 * 2^256 + prod0.
+            uint256 prod0 = x * y; // Least significant 256 bits of the product
+            uint256 prod1; // Most significant 256 bits of the product
+            assembly {
+                let mm := mulmod(x, y, not(0))
+                prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+            }
+
+            // Handle non-overflow cases, 256 by 256 division.
+            if (prod1 == 0) {
+                // Solidity will revert if denominator == 0, unlike the div opcode on its own.
+                // The surrounding unchecked block does not change this fact.
+                // See https://docs.soliditylang.org/en/latest/control-structures.html#checked-or-unchecked-arithmetic.
+                return prod0 / denominator;
+            }
+
+            // Make sure the result is less than 2^256. Also prevents denominator == 0.
+            if (denominator <= prod1) {
+                revert MathOverflowedMulDiv();
+            }
+
+            ///////////////////////////////////////////////
+            // 512 by 256 division.
+            ///////////////////////////////////////////////
+
+            // Make division exact by subtracting the remainder from [prod1 prod0].
+            uint256 remainder;
+            assembly {
+                // Compute remainder using mulmod.
+                remainder := mulmod(x, y, denominator)
+
+                // Subtract 256 bit number from 512 bit number.
+                prod1 := sub(prod1, gt(remainder, prod0))
+                prod0 := sub(prod0, remainder)
+            }
+
+            // Factor powers of two out of denominator and compute largest power of two divisor of denominator.
+            // Always >= 1. See https://cs.stackexchange.com/q/138556/92363.
+
+            uint256 twos = denominator & (0 - denominator);
+            assembly {
+                // Divide denominator by twos.
+                denominator := div(denominator, twos)
+
+                // Divide [prod1 prod0] by twos.
+                prod0 := div(prod0, twos)
+
+                // Flip twos such that it is 2^256 / twos. If twos is zero, then it becomes one.
+                twos := add(div(sub(0, twos), twos), 1)
+            }
+
+            // Shift in bits from prod1 into prod0.
+            prod0 |= prod1 * twos;
+
+            // Invert denominator mod 2^256. Now that denominator is an odd number, it has an inverse modulo 2^256 such
+            // that denominator * inv = 1 mod 2^256. Compute the inverse by starting with a seed that is correct for
+            // four bits. That is, denominator * inv = 1 mod 2^4.
+            uint256 inverse = (3 * denominator) ^ 2;
+
+            // Use the Newton-Raphson iteration to improve the precision. Thanks to Hensel's lifting lemma, this also
+            // works in modular arithmetic, doubling the correct bits in each step.
+            inverse *= 2 - denominator * inverse; // inverse mod 2^8
+            inverse *= 2 - denominator * inverse; // inverse mod 2^16
+            inverse *= 2 - denominator * inverse; // inverse mod 2^32
+            inverse *= 2 - denominator * inverse; // inverse mod 2^64
+            inverse *= 2 - denominator * inverse; // inverse mod 2^128
+            inverse *= 2 - denominator * inverse; // inverse mod 2^256
+
+            // Because the division is now exact we can divide by multiplying with the modular inverse of denominator.
+            // This will give us the correct result modulo 2^256. Since the preconditions guarantee that the outcome is
+            // less than 2^256, this is the final result. We don't need to compute the high bits of the result and prod1
+            // is no longer required.
+            result = prod0 * inverse;
+            return result;
+        }
+    }
+
+    /**
+     * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
+     */
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 denominator,
+        Rounding rounding
+    ) internal pure returns (uint256) {
+        uint256 result = mulDiv(x, y, denominator);
+        if (unsignedRoundsUp(rounding) && mulmod(x, y, denominator) > 0) {
+            result += 1;
+        }
+        return result;
+    }
+
+    /**
+     * @dev Returns the square root of a number. If the number is not a perfect square, the value is rounded
+     * towards zero.
+     *
+     * Inspired by Henry S. Warren, Jr.'s "Hacker's Delight" (Chapter 11).
+     */
+    function sqrt(uint256 a) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+
+        // For our first guess, we get the biggest power of 2 which is smaller than the square root of the target.
+        //
+        // We know that the "msb" (most significant bit) of our target number `a` is a power of 2 such that we have
+        // `msb(a) <= a < 2*msb(a)`. This value can be written `msb(a)=2**k` with `k=log2(a)`.
+        //
+        // This can be rewritten `2**log2(a) <= a < 2**(log2(a) + 1)`
+        // → `sqrt(2**k) <= sqrt(a) < sqrt(2**(k+1))`
+        // → `2**(k/2) <= sqrt(a) < 2**((k+1)/2) <= 2**(k/2 + 1)`
+        //
+        // Consequently, `2**(log2(a) / 2)` is a good first approximation of `sqrt(a)` with at least 1 correct bit.
+        uint256 result = 1 << (log2(a) >> 1);
+
+        // At this point `result` is an estimation with one bit of precision. We know the true value is a uint128,
+        // since it is the square root of a uint256. Newton's method converges quadratically (precision doubles at
+        // every iteration). We thus need at most 7 iteration to turn our partial result with one bit of precision
+        // into the expected uint128 result.
+        unchecked {
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            result = (result + a / result) >> 1;
+            return min(result, a / result);
+        }
+    }
+
+    /**
+     * @notice Calculates sqrt(a), following the selected rounding direction.
+     */
+    function sqrt(
+        uint256 a,
+        Rounding rounding
+    ) internal pure returns (uint256) {
+        unchecked {
+            uint256 result = sqrt(a);
+            return
+                result +
+                (unsignedRoundsUp(rounding) && result * result < a ? 1 : 0);
+        }
+    }
+
+    /**
+     * @dev Return the log in base 2 of a positive value rounded towards zero.
+     * Returns 0 if given 0.
+     */
+    function log2(uint256 value) internal pure returns (uint256) {
+        uint256 result = 0;
+        unchecked {
+            if (value >> 128 > 0) {
+                value >>= 128;
+                result += 128;
+            }
+            if (value >> 64 > 0) {
+                value >>= 64;
+                result += 64;
+            }
+            if (value >> 32 > 0) {
+                value >>= 32;
+                result += 32;
+            }
+            if (value >> 16 > 0) {
+                value >>= 16;
+                result += 16;
+            }
+            if (value >> 8 > 0) {
+                value >>= 8;
+                result += 8;
+            }
+            if (value >> 4 > 0) {
+                value >>= 4;
+                result += 4;
+            }
+            if (value >> 2 > 0) {
+                value >>= 2;
+                result += 2;
+            }
+            if (value >> 1 > 0) {
+                result += 1;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @dev Return the log in base 2, following the selected rounding direction, of a positive value.
+     * Returns 0 if given 0.
+     */
+    function log2(
+        uint256 value,
+        Rounding rounding
+    ) internal pure returns (uint256) {
+        unchecked {
+            uint256 result = log2(value);
+            return
+                result +
+                (unsignedRoundsUp(rounding) && 1 << result < value ? 1 : 0);
+        }
+    }
+
+    /**
+     * @dev Return the log in base 10 of a positive value rounded towards zero.
+     * Returns 0 if given 0.
+     */
+    function log10(uint256 value) internal pure returns (uint256) {
+        uint256 result = 0;
+        unchecked {
+            if (value >= 10 ** 64) {
+                value /= 10 ** 64;
+                result += 64;
+            }
+            if (value >= 10 ** 32) {
+                value /= 10 ** 32;
+                result += 32;
+            }
+            if (value >= 10 ** 16) {
+                value /= 10 ** 16;
+                result += 16;
+            }
+            if (value >= 10 ** 8) {
+                value /= 10 ** 8;
+                result += 8;
+            }
+            if (value >= 10 ** 4) {
+                value /= 10 ** 4;
+                result += 4;
+            }
+            if (value >= 10 ** 2) {
+                value /= 10 ** 2;
+                result += 2;
+            }
+            if (value >= 10 ** 1) {
+                result += 1;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @dev Return the log in base 10, following the selected rounding direction, of a positive value.
+     * Returns 0 if given 0.
+     */
+    function log10(
+        uint256 value,
+        Rounding rounding
+    ) internal pure returns (uint256) {
+        unchecked {
+            uint256 result = log10(value);
+            return
+                result +
+                (unsignedRoundsUp(rounding) && 10 ** result < value ? 1 : 0);
+        }
+    }
+
+    /**
+     * @dev Return the log in base 256 of a positive value rounded towards zero.
+     * Returns 0 if given 0.
+     *
+     * Adding one to the result gives the number of pairs of hex symbols needed to represent `value` as a hex string.
+     */
+    function log256(uint256 value) internal pure returns (uint256) {
+        uint256 result = 0;
+        unchecked {
+            if (value >> 128 > 0) {
+                value >>= 128;
+                result += 16;
+            }
+            if (value >> 64 > 0) {
+                value >>= 64;
+                result += 8;
+            }
+            if (value >> 32 > 0) {
+                value >>= 32;
+                result += 4;
+            }
+            if (value >> 16 > 0) {
+                value >>= 16;
+                result += 2;
+            }
+            if (value >> 8 > 0) {
+                result += 1;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @dev Return the log in base 256, following the selected rounding direction, of a positive value.
+     * Returns 0 if given 0.
+     */
+    function log256(
+        uint256 value,
+        Rounding rounding
+    ) internal pure returns (uint256) {
+        unchecked {
+            uint256 result = log256(value);
+            return
+                result +
+                (
+                    unsignedRoundsUp(rounding) && 1 << (result << 3) < value
+                        ? 1
+                        : 0
+                );
+        }
+    }
+
+    /**
+     * @dev Returns whether a provided rounding mode is considered rounding up for unsigned integers.
+     */
+    function unsignedRoundsUp(Rounding rounding) internal pure returns (bool) {
+        return uint8(rounding) % 2 == 1;
+    }
+}
+
+// File: @openzeppelin/contracts/utils/math/SignedMath.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/math/SignedMath.sol)
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev Standard signed math utilities missing in the Solidity language.
+ */
+library SignedMath {
+    /**
+     * @dev Returns the largest of two signed numbers.
+     */
+    function max(int256 a, int256 b) internal pure returns (int256) {
+        return a > b ? a : b;
+    }
+
+    /**
+     * @dev Returns the smallest of two signed numbers.
+     */
+    function min(int256 a, int256 b) internal pure returns (int256) {
+        return a < b ? a : b;
+    }
+
+    /**
+     * @dev Returns the average of two signed numbers without overflow.
+     * The result is rounded towards zero.
+     */
+    function average(int256 a, int256 b) internal pure returns (int256) {
+        // Formula from the book "Hacker's Delight"
+        int256 x = (a & b) + ((a ^ b) >> 1);
+        return x + (int256(uint256(x) >> 255) & (a ^ b));
+    }
+
+    /**
+     * @dev Returns the absolute unsigned value of a signed value.
+     */
+    function abs(int256 n) internal pure returns (uint256) {
+        unchecked {
+            // must be unchecked in order to support `n = type(int256).min`
+            return uint256(n >= 0 ? n : -n);
+        }
+    }
+}
+
+// File: @openzeppelin/contracts/utils/Strings.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/Strings.sol)
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev String operations.
+ */
+library Strings {
+    bytes16 private constant HEX_DIGITS = "0123456789abcdef";
+    uint8 private constant ADDRESS_LENGTH = 20;
+
+    /**
+     * @dev The `value` string doesn't fit in the specified `length`.
+     */
+    error StringsInsufficientHexLength(uint256 value, uint256 length);
+
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
+     */
+    function toString(uint256 value) internal pure returns (string memory) {
+        unchecked {
+            uint256 length = Math.log10(value) + 1;
+            string memory buffer = new string(length);
+            uint256 ptr;
+            /// @solidity memory-safe-assembly
+            assembly {
+                ptr := add(buffer, add(32, length))
+            }
+            while (true) {
+                ptr--;
+                /// @solidity memory-safe-assembly
+                assembly {
+                    mstore8(ptr, byte(mod(value, 10), HEX_DIGITS))
+                }
+                value /= 10;
+                if (value == 0) break;
+            }
+            return buffer;
+        }
+    }
+
+    /**
+     * @dev Converts a `int256` to its ASCII `string` decimal representation.
+     */
+    function toStringSigned(
+        int256 value
+    ) internal pure returns (string memory) {
+        return
+            string.concat(
+                value < 0 ? "-" : "",
+                toString(SignedMath.abs(value))
+            );
+    }
+
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
+     */
+    function toHexString(uint256 value) internal pure returns (string memory) {
+        unchecked {
+            return toHexString(value, Math.log256(value) + 1);
+        }
+    }
+
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
+     */
+    function toHexString(
+        uint256 value,
+        uint256 length
+    ) internal pure returns (string memory) {
+        uint256 localValue = value;
+        bytes memory buffer = new bytes(2 * length + 2);
+        buffer[0] = "0";
+        buffer[1] = "x";
+        for (uint256 i = 2 * length + 1; i > 1; --i) {
+            buffer[i] = HEX_DIGITS[localValue & 0xf];
+            localValue >>= 4;
+        }
+        if (localValue != 0) {
+            revert StringsInsufficientHexLength(value, length);
+        }
+        return string(buffer);
+    }
+
+    /**
+     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal
+     * representation.
+     */
+    function toHexString(address addr) internal pure returns (string memory) {
+        return toHexString(uint256(uint160(addr)), ADDRESS_LENGTH);
+    }
+
+    /**
+     * @dev Returns true if the two strings are equal.
+     */
+    function equal(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        return
+            bytes(a).length == bytes(b).length &&
+            keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+}
+
+// File: @openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/MessageHashUtils.sol)
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev Signature message hash utilities for producing digests to be consumed by {ECDSA} recovery or signing.
+ *
+ * The library provides methods for generating a hash of a message that conforms to the
+ * https://eips.ethereum.org/EIPS/eip-191[EIP 191] and https://eips.ethereum.org/EIPS/eip-712[EIP 712]
+ * specifications.
+ */
+library MessageHashUtils {
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x45` (`personal_sign` messages).
+     *
+     * The digest is calculated by prefixing a bytes32 `messageHash` with
+     * `"\x19Ethereum Signed Message:\n32"` and hashing the result. It corresponds with the
+     * hash signed when using the https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`] JSON-RPC method.
+     *
+     * NOTE: The `messageHash` parameter is intended to be the result of hashing a raw message with
+     * keccak256, although any bytes32 value can be safely used because the final digest will
+     * be re-hashed.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toEthSignedMessageHash(
+        bytes32 messageHash
+    ) internal pure returns (bytes32 digest) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(0x00, "\x19Ethereum Signed Message:\n32") // 32 is the bytes-length of messageHash
+            mstore(0x1c, messageHash) // 0x1c (28) is the length of the prefix
+            digest := keccak256(0x00, 0x3c) // 0x3c is the length of the prefix (0x1c) + messageHash (0x20)
+        }
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x45` (`personal_sign` messages).
+     *
+     * The digest is calculated by prefixing an arbitrary `message` with
+     * `"\x19Ethereum Signed Message:\n" + len(message)` and hashing the result. It corresponds with the
+     * hash signed when using the https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`] JSON-RPC method.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toEthSignedMessageHash(
+        bytes memory message
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                bytes.concat(
+                    "\x19Ethereum Signed Message:\n",
+                    bytes(Strings.toString(message.length)),
+                    message
+                )
+            );
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x00` (data with intended validator).
+     *
+     * The digest is calculated by prefixing an arbitrary `data` with `"\x19\x00"` and the intended
+     * `validator` address. Then hashing the result.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toDataWithIntendedValidatorHash(
+        address validator,
+        bytes memory data
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(hex"19_00", validator, data));
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-712 typed data (EIP-191 version `0x01`).
+     *
+     * The digest is calculated from a `domainSeparator` and a `structHash`, by prefixing them with
+     * `\x19\x01` and hashing the result. It corresponds to the hash signed by the
+     * https://eips.ethereum.org/EIPS/eip-712[`eth_signTypedData`] JSON-RPC method as part of EIP-712.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toTypedDataHash(
+        bytes32 domainSeparator,
+        bytes32 structHash
+    ) internal pure returns (bytes32 digest) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, hex"19_01")
+            mstore(add(ptr, 0x02), domainSeparator)
+            mstore(add(ptr, 0x22), structHash)
+            digest := keccak256(ptr, 0x42)
+        }
+    }
+}
+
+// File: @openzeppelin/contracts/utils/StorageSlot.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/StorageSlot.sol)
+// This file was procedurally generated from scripts/generate/templates/StorageSlot.js.
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev Library for reading and writing primitive types to specific storage slots.
+ *
+ * Storage slots are often used to avoid storage conflict when dealing with upgradeable contracts.
+ * This library helps with reading and writing to such slots without the need for inline assembly.
+ *
+ * The functions in this library return Slot structs that contain a `value` member that can be used to read or write.
+ *
+ * Example usage to set ERC1967 implementation slot:
+ * ```solidity
+ * contract ERC1967 {
+ *     bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+ *
+ *     function _getImplementation() internal view returns (address) {
+ *         return StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value;
+ *     }
+ *
+ *     function _setImplementation(address newImplementation) internal {
+ *         require(newImplementation.code.length > 0);
+ *         StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value = newImplementation;
+ *     }
+ * }
+ * ```
+ */
+library StorageSlot {
+    struct AddressSlot {
+        address value;
+    }
+
+    struct BooleanSlot {
+        bool value;
+    }
+
+    struct Bytes32Slot {
+        bytes32 value;
+    }
+
+    struct Uint256Slot {
+        uint256 value;
+    }
+
+    struct StringSlot {
+        string value;
+    }
+
+    struct BytesSlot {
+        bytes value;
+    }
+
+    /**
+     * @dev Returns an `AddressSlot` with member `value` located at `slot`.
+     */
+    function getAddressSlot(
+        bytes32 slot
+    ) internal pure returns (AddressSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `BooleanSlot` with member `value` located at `slot`.
+     */
+    function getBooleanSlot(
+        bytes32 slot
+    ) internal pure returns (BooleanSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `Bytes32Slot` with member `value` located at `slot`.
+     */
+    function getBytes32Slot(
+        bytes32 slot
+    ) internal pure returns (Bytes32Slot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `Uint256Slot` with member `value` located at `slot`.
+     */
+    function getUint256Slot(
+        bytes32 slot
+    ) internal pure returns (Uint256Slot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `StringSlot` with member `value` located at `slot`.
+     */
+    function getStringSlot(
+        bytes32 slot
+    ) internal pure returns (StringSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `StringSlot` representation of the string storage pointer `store`.
+     */
+    function getStringSlot(
+        string storage store
+    ) internal pure returns (StringSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := store.slot
+        }
+    }
+
+    /**
+     * @dev Returns an `BytesSlot` with member `value` located at `slot`.
+     */
+    function getBytesSlot(
+        bytes32 slot
+    ) internal pure returns (BytesSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := slot
+        }
+    }
+
+    /**
+     * @dev Returns an `BytesSlot` representation of the bytes storage pointer `store`.
+     */
+    function getBytesSlot(
+        bytes storage store
+    ) internal pure returns (BytesSlot storage r) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            r.slot := store.slot
+        }
+    }
+}
+
+// File: @openzeppelin/contracts/utils/ShortStrings.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/ShortStrings.sol)
+
+pragma solidity ^0.8.20;
+
+// | string  | 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   |
+// | length  | 0x                                                              BB |
+type ShortString is bytes32;
+
+/**
+ * @dev This library provides functions to convert short memory strings
+ * into a `ShortString` type that can be used as an immutable variable.
+ *
+ * Strings of arbitrary length can be optimized using this library if
+ * they are short enough (up to 31 bytes) by packing them with their
+ * length (1 byte) in a single EVM word (32 bytes). Additionally, a
+ * fallback mechanism can be used for every other case.
+ *
+ * Usage example:
+ *
+ * ```solidity
+ * contract Named {
+ *     using ShortStrings for *;
+ *
+ *     ShortString private immutable _name;
+ *     string private _nameFallback;
+ *
+ *     constructor(string memory contractName) {
+ *         _name = contractName.toShortStringWithFallback(_nameFallback);
+ *     }
+ *
+ *     function name() external view returns (string memory) {
+ *         return _name.toStringWithFallback(_nameFallback);
+ *     }
+ * }
+ * ```
+ */
+library ShortStrings {
+    // Used as an identifier for strings longer than 31 bytes.
+    bytes32 private constant FALLBACK_SENTINEL =
+        0x00000000000000000000000000000000000000000000000000000000000000FF;
+
+    error StringTooLong(string str);
+    error InvalidShortString();
+
+    /**
+     * @dev Encode a string of at most 31 chars into a `ShortString`.
+     *
+     * This will trigger a `StringTooLong` error is the input string is too long.
+     */
+    function toShortString(
+        string memory str
+    ) internal pure returns (ShortString) {
+        bytes memory bstr = bytes(str);
+        if (bstr.length > 31) {
+            revert StringTooLong(str);
+        }
+        return ShortString.wrap(bytes32(uint256(bytes32(bstr)) | bstr.length));
+    }
+
+    /**
+     * @dev Decode a `ShortString` back to a "normal" string.
+     */
+    function toString(ShortString sstr) internal pure returns (string memory) {
+        uint256 len = byteLength(sstr);
+        // using `new string(len)` would work locally but is not memory safe.
+        string memory str = new string(32);
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(str, len)
+            mstore(add(str, 0x20), sstr)
+        }
+        return str;
+    }
+
+    /**
+     * @dev Return the length of a `ShortString`.
+     */
+    function byteLength(ShortString sstr) internal pure returns (uint256) {
+        uint256 result = uint256(ShortString.unwrap(sstr)) & 0xFF;
+        if (result > 31) {
+            revert InvalidShortString();
+        }
+        return result;
+    }
+
+    /**
+     * @dev Encode a string into a `ShortString`, or write it to storage if it is too long.
+     */
+    function toShortStringWithFallback(
+        string memory value,
+        string storage store
+    ) internal returns (ShortString) {
+        if (bytes(value).length < 32) {
+            return toShortString(value);
+        } else {
+            StorageSlot.getStringSlot(store).value = value;
+            return ShortString.wrap(FALLBACK_SENTINEL);
+        }
+    }
+
+    /**
+     * @dev Decode a string that was encoded to `ShortString` or written to storage using {setWithFallback}.
+     */
+    function toStringWithFallback(
+        ShortString value,
+        string storage store
+    ) internal pure returns (string memory) {
+        if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
+            return toString(value);
+        } else {
+            return store;
+        }
+    }
+
+    /**
+     * @dev Return the length of a string that was encoded to `ShortString` or written to storage using
+     * {setWithFallback}.
+     *
+     * WARNING: This will return the "byte length" of the string. This may not reflect the actual length in terms of
+     * actual characters as the UTF-8 encoding of a single character can span over multiple bytes.
+     */
+    function byteLengthWithFallback(
+        ShortString value,
+        string storage store
+    ) internal view returns (uint256) {
+        if (ShortString.unwrap(value) != FALLBACK_SENTINEL) {
+            return byteLength(value);
+        } else {
+            return bytes(store).length;
+        }
+    }
+}
+
+// File: @openzeppelin/contracts/interfaces/IERC5267.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC5267.sol)
+
+pragma solidity ^0.8.20;
+
+interface IERC5267 {
+    /**
+     * @dev MAY be emitted to signal that the domain could have changed.
+     */
+    event EIP712DomainChanged();
+
+    /**
+     * @dev returns the fields and values that describe the domain separator used by this contract for EIP-712
+     * signature.
+     */
+    function eip712Domain()
+        external
+        view
+        returns (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        );
+}
+
+// File: @openzeppelin/contracts/utils/cryptography/EIP712.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/EIP712.sol)
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev https://eips.ethereum.org/EIPS/eip-712[EIP 712] is a standard for hashing and signing of typed structured data.
+ *
+ * The encoding scheme specified in the EIP requires a domain separator and a hash of the typed structured data, whose
+ * encoding is very generic and therefore its implementation in Solidity is not feasible, thus this contract
+ * does not implement the encoding itself. Protocols need to implement the type-specific encoding they need in order to
+ * produce the hash of their typed data using a combination of `abi.encode` and `keccak256`.
+ *
+ * This contract implements the EIP 712 domain separator ({_domainSeparatorV4}) that is used as part of the encoding
+ * scheme, and the final step of the encoding to obtain the message digest that is then signed via ECDSA
+ * ({_hashTypedDataV4}).
+ *
+ * The implementation of the domain separator was designed to be as efficient as possible while still properly updating
+ * the chain id to protect against replay attacks on an eventual fork of the chain.
+ *
+ * NOTE: This contract implements the version of the encoding known as "v4", as implemented by the JSON RPC method
+ * https://docs.metamask.io/guide/signing-data.html[`eth_signTypedDataV4` in MetaMask].
+ *
+ * NOTE: In the upgradeable version of this contract, the cached values will correspond to the address, and the domain
+ * separator of the implementation contract. This will cause the {_domainSeparatorV4} function to always rebuild the
+ * separator from the immutable values, which is cheaper than accessing a cached version in cold storage.
+ *
+ * @custom:oz-upgrades-unsafe-allow state-variable-immutable
+ */
+abstract contract EIP712 is IERC5267 {
+    using ShortStrings for *;
+
+    bytes32 private constant TYPE_HASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+
+    // Cache the domain separator as an immutable value, but also store the chain id that it corresponds to, in order to
+    // invalidate the cached domain separator if the chain id changes.
+    bytes32 private immutable _cachedDomainSeparator;
+    uint256 private immutable _cachedChainId;
+    address private immutable _cachedThis;
+
+    bytes32 private immutable _hashedName;
+    bytes32 private immutable _hashedVersion;
+
+    ShortString private immutable _name;
+    ShortString private immutable _version;
+    string private _nameFallback;
+    string private _versionFallback;
+
+    /**
+     * @dev Initializes the domain separator and parameter caches.
+     *
+     * The meaning of `name` and `version` is specified in
+     * https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator[EIP 712]:
+     *
+     * - `name`: the user readable name of the signing domain, i.e. the name of the DApp or the protocol.
+     * - `version`: the current major version of the signing domain.
+     *
+     * NOTE: These parameters cannot be changed except through a xref:learn::upgrading-smart-contracts.adoc[smart
+     * contract upgrade].
+     */
+    constructor(string memory name, string memory version) {
+        _name = name.toShortStringWithFallback(_nameFallback);
+        _version = version.toShortStringWithFallback(_versionFallback);
+        _hashedName = keccak256(bytes(name));
+        _hashedVersion = keccak256(bytes(version));
+
+        _cachedChainId = block.chainid;
+        _cachedDomainSeparator = _buildDomainSeparator();
+        _cachedThis = address(this);
+    }
+
+    /**
+     * @dev Returns the domain separator for the current chain.
+     */
+    function _domainSeparatorV4() internal view returns (bytes32) {
+        if (address(this) == _cachedThis && block.chainid == _cachedChainId) {
+            return _cachedDomainSeparator;
+        } else {
+            return _buildDomainSeparator();
+        }
+    }
+
+    function _buildDomainSeparator() private view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    TYPE_HASH,
+                    _hashedName,
+                    _hashedVersion,
+                    block.chainid,
+                    address(this)
+                )
+            );
+    }
+
+    /**
+     * @dev Given an already https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct[hashed struct], this
+     * function returns the hash of the fully encoded EIP712 message for this domain.
+     *
+     * This hash can be used together with {ECDSA-recover} to obtain the signer of a message. For example:
+     *
+     * ```solidity
+     * bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
+     *     keccak256("Mail(address to,string contents)"),
+     *     mailTo,
+     *     keccak256(bytes(mailContents))
+     * )));
+     * address signer = ECDSA.recover(digest, signature);
+     * ```
+     */
+    function _hashTypedDataV4(
+        bytes32 structHash
+    ) internal view virtual returns (bytes32) {
+        return
+            MessageHashUtils.toTypedDataHash(_domainSeparatorV4(), structHash);
+    }
+
+    /**
+     * @dev See {IERC-5267}.
+     */
+    function eip712Domain()
+        public
+        view
+        virtual
+        returns (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        )
+    {
+        return (
+            hex"0f", // 01111
+            _EIP712Name(),
+            _EIP712Version(),
+            block.chainid,
+            address(this),
+            bytes32(0),
+            new uint256[](0)
+        );
+    }
+
+    /**
+     * @dev The name parameter for the EIP712 domain.
+     *
+     * NOTE: By default this function reads _name which is an immutable value.
+     * It only reads from storage if necessary (in case the value is too large to fit in a ShortString).
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function _EIP712Name() internal view returns (string memory) {
+        return _name.toStringWithFallback(_nameFallback);
+    }
+
+    /**
+     * @dev The version parameter for the EIP712 domain.
+     *
+     * NOTE: By default this function reads _version which is an immutable value.
+     * It only reads from storage if necessary (in case the value is too large to fit in a ShortString).
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function _EIP712Version() internal view returns (string memory) {
+        return _version.toStringWithFallback(_versionFallback);
+    }
+}
+
+// File: @openzeppelin/contracts/utils/cryptography/ECDSA.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/ECDSA.sol)
+
+pragma solidity ^0.8.20;
+
+/**
+ * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
+ *
+ * These functions can be used to verify that a message was signed by the holder
+ * of the private keys of a given address.
+ */
+library ECDSA {
+    enum RecoverError {
+        NoError,
+        InvalidSignature,
+        InvalidSignatureLength,
+        InvalidSignatureS
+    }
+
+    /**
+     * @dev The signature derives the `address(0)`.
+     */
+    error ECDSAInvalidSignature();
+
+    /**
+     * @dev The signature has an invalid length.
+     */
+    error ECDSAInvalidSignatureLength(uint256 length);
+
+    /**
+     * @dev The signature has an S value that is in the upper half order.
+     */
+    error ECDSAInvalidSignatureS(bytes32 s);
+
+    /**
+     * @dev Returns the address that signed a hashed message (`hash`) with `signature` or an error. This will not
+     * return address(0) without also returning an error description. Errors are documented using an enum (error type)
+     * and a bytes32 providing additional information about the error.
+     *
+     * If no error is returned, then the address can be used for verification purposes.
+     *
+     * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+     * this function rejects them by requiring the `s` value to be in the lower
+     * half order, and the `v` value to be either 27 or 28.
+     *
+     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
+     * verification to be secure: it is possible to craft signatures that
+     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
+     * this is by receiving a hash of the original message (which may otherwise
+     * be too long), and then calling {MessageHashUtils-toEthSignedMessageHash} on it.
+     *
+     * Documentation for signature generation:
+     * - with https://web3js.readthedocs.io/en/v1.3.4/web3-eth-accounts.html#sign[Web3.js]
+     * - with https://docs.ethers.io/v5/api/signer/#Signer-signMessage[ethers]
+     */
+    function tryRecover(
+        bytes32 hash,
+        bytes memory signature
+    ) internal pure returns (address, RecoverError, bytes32) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            // ecrecover takes the signature parameters, and the only way to get them
+            // currently is to use assembly.
+            /// @solidity memory-safe-assembly
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            return tryRecover(hash, v, r, s);
+        } else {
+            return (
+                address(0),
+                RecoverError.InvalidSignatureLength,
+                bytes32(signature.length)
+            );
+        }
+    }
+
+    /**
+     * @dev Returns the address that signed a hashed message (`hash`) with
+     * `signature`. This address can then be used for verification purposes.
+     *
+     * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+     * this function rejects them by requiring the `s` value to be in the lower
+     * half order, and the `v` value to be either 27 or 28.
+     *
+     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
+     * verification to be secure: it is possible to craft signatures that
+     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
+     * this is by receiving a hash of the original message (which may otherwise
+     * be too long), and then calling {MessageHashUtils-toEthSignedMessageHash} on it.
+     */
+    function recover(
+        bytes32 hash,
+        bytes memory signature
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            signature
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Overload of {ECDSA-tryRecover} that receives the `r` and `vs` short-signature fields separately.
+     *
+     * See https://eips.ethereum.org/EIPS/eip-2098[EIP-2098 short signatures]
+     */
+    function tryRecover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address, RecoverError, bytes32) {
+        unchecked {
+            bytes32 s = vs &
+                bytes32(
+                    0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+                );
+            // We do not check for an overflow here since the shift operation results in 0 or 1.
+            uint8 v = uint8((uint256(vs) >> 255) + 27);
+            return tryRecover(hash, v, r, s);
+        }
+    }
+
+    /**
+     * @dev Overload of {ECDSA-recover} that receives the `r and `vs` short-signature fields separately.
+     */
+    function recover(
+        bytes32 hash,
+        bytes32 r,
+        bytes32 vs
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            r,
+            vs
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Overload of {ECDSA-tryRecover} that receives the `v`,
+     * `r` and `s` signature fields separately.
+     */
+    function tryRecover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address, RecoverError, bytes32) {
+        // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
+        // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
+        // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
+        // signatures from current libraries generate a unique signature with an s-value in the lower half order.
+        //
+        // If your library generates malleable signatures, such as s-values in the upper range, calculate a new s-value
+        // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
+        // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
+        // these malleable signatures as well.
+        if (
+            uint256(s) >
+            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+        ) {
+            return (address(0), RecoverError.InvalidSignatureS, s);
+        }
+
+        // If the signature is valid (and not malleable), return the signer address
+        address signer = ecrecover(hash, v, r, s);
+        if (signer == address(0)) {
+            return (address(0), RecoverError.InvalidSignature, bytes32(0));
+        }
+
+        return (signer, RecoverError.NoError, bytes32(0));
+    }
+
+    /**
+     * @dev Overload of {ECDSA-recover} that receives the `v`,
+     * `r` and `s` signature fields separately.
+     */
+    function recover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(
+            hash,
+            v,
+            r,
+            s
+        );
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Optionally reverts with the corresponding custom error according to the `error` argument provided.
+     */
+    function _throwError(RecoverError error, bytes32 errorArg) private pure {
+        if (error == RecoverError.NoError) {
+            return; // no error: do nothing
+        } else if (error == RecoverError.InvalidSignature) {
+            revert ECDSAInvalidSignature();
+        } else if (error == RecoverError.InvalidSignatureLength) {
+            revert ECDSAInvalidSignatureLength(uint256(errorArg));
+        } else if (error == RecoverError.InvalidSignatureS) {
+            revert ECDSAInvalidSignatureS(errorArg);
+        }
+    }
+}
+
+// File: contracts/PasswordManager.sol
+
+pragma solidity ^0.8.24;
+
+contract PasswordManager is EIP712 {
     struct PasswordData {
         bytes32 keccakHash; // Keccak256 hash of the password.
         bytes quantumSignature; // Quantum-resistant signature.
         bytes quantumPublicKey; // Public key for quantum verification.
     }
+    bytes32 public constant PASSWORD_HASH_TYPEHASH =
+        keccak256(
+            "PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)"
+        );
 
     mapping(address => PasswordData) public passwordDataOf;
 
     event UserRegistered(address indexed user, bool isQuamtumProtected);
-    event LoginAttempt(address indexed user, bool success);
 
-    // Registration functions (same as previously defined)
-    function registerWithKeccak(
+    error ERC2612ExpiredSignature(uint256 deadline);
+
+    constructor(string memory appName) EIP712(appName, "1") {}
+
+    function register(
         address user,
+        bool isQuantumProtected,
+        string memory customMessage,
+        string memory password,
         bytes32 keccakHash,
-        bytes memory ethSignature
-    ) public {
-        require(
-            passwordDataOf[user].keccakHash == 0 &&
-                passwordDataOf[user].quantumSignature.length == 0,
-            "Already registered"
-        );
-
-        require(
-            verifyEthSignature(user, keccakHash, ethSignature),
-            "Invalid Ethereum signature"
-        );
-
-        passwordDataOf[user] = PasswordData(keccakHash, "", "");
-
-        emit UserRegistered(user, false);
-    }
-
-    function registerWithKeccakForChangeSignKey(
-        address user,
-        bytes32 keccakHash,
-        bytes memory ethSignature
-    ) public {
-        require(
-            verifyEthSignature(user, keccakHash, ethSignature),
-            "Invalid Ethereum signature"
-        );
-
-        passwordDataOf[user] = PasswordData(keccakHash, "", "");
-
-        emit UserRegistered(user, false);
-    }
-
-    function registerWithQuantumProtection(
-        address user,
-        bytes32 keccakHash,
+        uint256 deadline,
+        bytes memory ethSignature,
         bytes memory quantumSignature,
-        bytes memory quantumPublicKey,
-        bytes memory ethSignature
+        bytes memory quantumPublicKey
     ) internal {
         require(
             passwordDataOf[user].keccakHash == 0 &&
@@ -1158,102 +2566,77 @@ contract PasswordManager {
 
         // Verify that the Ethereum signature is correct
         require(
-            verifyEthSignature(user, keccakHash, ethSignature),
+            verifySignature(
+                user,
+                customMessage,
+                password,
+                keccakHash,
+                deadline,
+                ethSignature
+            ),
             "Invalid Ethereum signature"
         );
-
-        passwordDataOf[user] = PasswordData(
-            keccakHash,
-            quantumSignature,
-            quantumPublicKey
-        );
-
-        emit UserRegistered(user, true);
+        if (isQuantumProtected) {
+            passwordDataOf[user] = PasswordData(
+                keccakHash,
+                quantumSignature,
+                quantumPublicKey
+            );
+            emit UserRegistered(user, true);
+        } else {
+            passwordDataOf[user] = PasswordData(keccakHash, "", "");
+            emit UserRegistered(user, false);
+        }
     }
 
-    function registerWithQuantumProtectionForChangeSignKey(
+    function verifyLogin(
         address user,
+        string memory customMessage,
+        string memory password,
         bytes32 keccakHash,
-        bytes memory quantumSignature,
-        bytes memory quantumPublicKey,
-        bytes memory ethSignature
-    ) internal {
-        // Verify that the Ethereum signature is correct
-        require(
-            verifyEthSignature(user, keccakHash, ethSignature),
-            "Invalid Ethereum signature"
-        );
-
-        passwordDataOf[user] = PasswordData(
-            keccakHash,
-            quantumSignature,
-            quantumPublicKey
-        );
-
-        emit UserRegistered(user, true);
-    }
-
-    // Verify login attempt
-    function verifyLogin_KeccakHash(
-        address user,
-        bytes32 keccakHash,
+        uint256 deadline,
         bytes memory ethSignature
     ) public view returns (bool) {
         bool success = passwordDataOf[user].keccakHash == keccakHash &&
-            verifyEthSignature(user, keccakHash, ethSignature);
+            verifySignature(
+                user,
+                customMessage,
+                password,
+                keccakHash,
+                deadline,
+                ethSignature
+            );
         return success;
     }
 
-    function verifyLogin_Quantum(
-        address user,
-        bool quantumVerified,
-        bytes32 keccakHash,
+    function verifySignature(
+        address signer,
+        string memory customMessage,
+        string memory password,
+        bytes32 passwordHash,
+        uint256 deadline,
         bytes memory ethSignature
     ) public view returns (bool) {
-        bool success = quantumVerified &&
-            passwordDataOf[user].keccakHash == keccakHash &&
-            verifyEthSignature(user, keccakHash, ethSignature);
-        return success;
-    }
-
-    // Verify the Ethereum signature
-    function verifyEthSignature(
-        address user,
-        bytes32 hashedPassword,
-        bytes memory ethSignature
-    ) internal pure returns (bool) {
-        // Prefix the hashed password with "\x19Ethereum Signed Message:\n32" to mimic web3.eth.sign behavior
-        bytes32 messageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", hashedPassword)
+        if (block.timestamp > deadline) {
+            revert ERC2612ExpiredSignature(deadline);
+        }
+        bytes32 typeHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)"
+                ),
+                signer,
+                keccak256(bytes(customMessage)),
+                keccak256(bytes(password)),
+                passwordHash,
+                deadline
+            )
         );
 
-        // Recover the signer's address from the Ethereum signature
-        address signer = recoverSigner(messageHash, ethSignature);
+        bytes32 digest = _hashTypedDataV4(typeHash);
+        address _signer = ECDSA.recover(digest, ethSignature);
 
-        // Return true if the recovered address matches the user
-        return signer == user;
-    }
-
-    // Recover the signer's address using ecrecover
-    function recoverSigner(
-        bytes32 messageHash,
-        bytes memory signature
-    ) internal pure returns (address) {
-        require(signature.length == 65, "Invalid signature length");
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // Extract r, s, and v from the signature
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-        }
-
-        // Perform ecrecover operation
-        return ecrecover(messageHash, v, r, s);
+        return (_signer != signer) ? false : true;
     }
 
     // get password details of the user
@@ -1278,20 +2661,35 @@ contract PasswordManager {
 }
 
 interface AggregatorV3Interface {
-  function decimals() external view returns (uint8);
+    function decimals() external view returns (uint8);
 
-  function description() external view returns (string memory);
+    function description() external view returns (string memory);
 
-  function version() external view returns (uint256);
+    function version() external view returns (uint256);
 
-  function getRoundData(
-    uint80 _roundId
-  ) external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+    function getRoundData(
+        uint80 _roundId
+    )
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
 
-  function latestRoundData()
-    external
-    view
-    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
 }
 
 // File: contracts/uxTokenFactoryContract.sol
@@ -1330,7 +2728,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
     mapping(uint256 => uint256) private ETHInPeriod; // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
-    mapping(uint256 => mapping(address => uint))
+    mapping(uint256 => mapping(address => uint256))
         private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
     mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
     mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
@@ -1398,17 +2796,18 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address indexed deployedAddress
     );
     event TokenRemoved(address indexed tokenAddress);
+    event SignKeyChanged(
+        address indexed userAddress,
+        uint256 timestamp,
+        bool isQuantumProtected
+    );
 
     constructor(
+        string memory _appName,
         address[] memory _allowedTokens,
         address[] memory _whiteListAddresses, // Fixed typo
-        address _priceFeedAddress,
-    ) Ownable(msg.sender) {
-        require(_allowedTokens.length < 256, "Too many allowed tokens"); // Optional: limit on number of tokens
-        require(
-            _whiteListAddresses.length < 256,
-            "Too many whitelist addresses"
-        ); // Optional: limit on number of addresses
+        address _priceFeedAddress
+    ) Ownable(msg.sender) PasswordManager(_appName) {
         priceFeed = AggregatorV3Interface(_priceFeedAddress); // Chainlink ETH/USD price feed
         deployTime = block.timestamp;
 
@@ -1545,12 +2944,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
             require(
                 tokenAddress.code.length > 0,
-                "uxTokenFactory: INVALID ALLOWED TOKEN ADDRESS"
+                "INVALID ALLOWED TOKEN ADDRESS"
             );
-            require(
-                !allowedTokens.contains(tokenAddress),
-                "Factory: Already added"
-            );
+            require(!allowedTokens.contains(tokenAddress), "Already added");
 
             address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
             tokenAdressForUxToken[deployedAddress] = tokenAddress;
@@ -1588,7 +2984,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
-            require(allowedTokens.contains(tokenAddress), "Factory: Not Added");
+            require(allowedTokens.contains(tokenAddress), "Not Added");
 
             allowedTokens.remove(tokenAddress);
             uxTokensOfAllowedTokens.remove(
@@ -1618,34 +3014,34 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address _uxTokenAddress,
         uint256 _amount,
         bool _quantumVerified,
-        bytes32 _signKey,
-        bytes memory ethSignature
+        string memory _customMessage,
+        string memory _signKey,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature
     ) external payable {
         address depositor = msg.sender;
 
-        // Validate sign key
-        require(_isSignKeySetOf[depositor], "Factory: SignKey not set yet.");
-        if (_isQuantumProtected[depositor]) {
-            require(
-                verifyLogin_Quantum(
-                    depositor,
-                    _quantumVerified,
-                    _signKey,
-                    ethSignature
-                ),
-                "Factory: SignKey incorrect"
-            );
-        } else {
-            require(
-                verifyLogin_KeccakHash(depositor, _signKey, ethSignature),
-                "Factory: SignKey incorrect"
-            );
+        require(_isSignKeySetOf[depositor], "SignKey not set.");
+        if (_quantumVerified) {
+            require(_isQuantumProtected[depositor], "Quantum not set.");
         }
-        require(_amount > 0, "Factory: invalid amount");
+        require(
+            verifyLogin(
+                depositor,
+                _customMessage,
+                _signKey,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
+            ),
+            "SignKey incorrect"
+        );
+        require(_amount > 0, "invalid amount");
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "Factory: invalid uxToken address"
+            "invalid uxToken address"
         );
 
         // Calculate deposit fee and remaining amount
@@ -1655,7 +3051,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         // Call protect method on uxToken contract
         require(
             IuxToken(_uxTokenAddress).protect(depositor, remaining),
-            "Factory: deposit failed"
+            "deposit failed"
         );
 
         uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
@@ -1664,7 +3060,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
-            require(msg.value > 0, "Factory: invalid Ether");
+            require(msg.value > 0, "invalid Ether");
 
             ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
@@ -1674,7 +3070,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                     address(this),
                     _amount
                 ),
-                "Factory: TransferFrom failed"
+                "TransferFrom failed"
             );
 
             if (
@@ -1787,41 +3183,42 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address _uxTokenAddress,
         uint256 _amount,
         bool _quantumVerified,
-        bytes32 _signKey,
-        bytes memory ethSignature
+        string memory _customMessage,
+        string memory _signKey,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature
     ) external {
         address withdrawer = msg.sender;
 
-        require(_isSignKeySetOf[withdrawer], "Factory: SignKey not set yet.");
-        if (_isQuantumProtected[withdrawer]) {
-            require(
-                verifyLogin_Quantum(
-                    withdrawer,
-                    _quantumVerified,
-                    _signKey,
-                    ethSignature
-                ),
-                "Factory: SignKey incorrect"
-            );
-        } else {
-            require(
-                verifyLogin_KeccakHash(withdrawer, _signKey, ethSignature),
-                "Factory: SignKey incorrect"
-            );
+        require(_isSignKeySetOf[withdrawer], "SignKey not set.");
+        if (_quantumVerified) {
+            require(_isQuantumProtected[withdrawer], "Quantum not set.");
         }
+        require(
+            verifyLogin(
+                withdrawer,
+                _customMessage,
+                _signKey,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
+            ),
+            "SignKey incorrect"
+        );
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "Factory: invalid uxToken address"
+            "invalid uxToken"
         );
 
         uint256 balance = IuxToken(_uxTokenAddress).balanceOf(withdrawer);
-        require(_amount > 0, "Factory: invalid amount");
-        require(balance >= _amount, "Factory: Not enough tokens");
+        require(_amount > 0, "invalid amount");
+        require(balance >= _amount, "Not enough tokens");
 
         require(
             IuxToken(_uxTokenAddress).burnAndUnprotect(withdrawer, _amount),
-            "Factory: withdraw failed"
+            "withdraw failed"
         );
 
         // Transfer the amount based on the token type
@@ -1833,7 +3230,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                     withdrawer,
                     _amount
                 ),
-                "Factory: transfer failed"
+                "transfer failed"
             );
         }
 
@@ -1887,39 +3284,40 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address _to,
         uint256 _amount,
         bool _quantumVerified,
-        bytes32 _signKey,
-        bytes memory ethSignature
+        string memory _customMessage,
+        string memory _signKey,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature
     ) external returns (bool) {
         address caller = msg.sender;
 
-        require(_isSignKeySetOf[caller], "Factory: SignKey not set yet.");
-        if (_isQuantumProtected[caller]) {
-            require(
-                verifyLogin_Quantum(
-                    caller,
-                    _quantumVerified,
-                    _signKey,
-                    ethSignature
-                ),
-                "Factory: SignKey incorrect"
-            );
-        } else {
-            require(
-                verifyLogin_KeccakHash(caller, _signKey, ethSignature),
-                "Factory: SignKey incorrect"
-            );
+        require(_isSignKeySetOf[caller], "SignKey not set yet.");
+        if (_quantumVerified) {
+            require(_isQuantumProtected[caller], "Quantum not set yet.");
         }
+        require(
+            verifyLogin(
+                caller,
+                _customMessage,
+                _signKey,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
+            ),
+            "SignKey incorrect"
+        );
         require(_amount > 0, "Factory: Invalid amount");
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "Factory: invalid uxToken address"
+            "invalid uxToken"
         );
 
         // Transfer the tokens
         require(
             IuxToken(_uxTokenAddress).transfer(_to, _amount),
-            "Factory: transfer failed"
+            "transfer failed"
         );
 
         return true;
@@ -1939,108 +3337,189 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
      */
     function setMasterKeyAndSignKey(
         string memory _masterKey,
-        bytes32 _signKey,
-        bytes memory ethSignature
+        string memory _customMessage,
+        string memory _signKey,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature
     ) external {
         address caller = msg.sender;
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "Factory: SignKey already set"
+            "SignKey already set"
         );
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
-        registerWithKeccak(caller, _signKey, ethSignature);
+        register(
+            caller,
+            false,
+            _customMessage,
+            _signKey,
+            _signKeyHash,
+            _deadline,
+            _ethSignature,
+            "",
+            ""
+        );
         _isQuantumProtected[caller] = false;
         _isSignKeySetOf[caller] = true;
     }
 
     function setMasterKeyAndQuantumResistantSignKey(
         string memory _masterKey,
-        bytes32 _signKey,
-        bool _quantumProtected,
-        bytes memory quantumSignature,
-        bytes memory quamtumPublicKey,
-        bytes memory ethSignature
+        string memory _customMessage,
+        string memory _signKey,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature,
+        bytes memory _quantumSignature,
+        bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        uint fee = msg.value;
-        uint requiredETHFee = calculateETHFee(quantumActivationFee);
-        require(msg.value >= requiredEthFee);
+        uint256 fee = msg.value;
+        uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
+        require(msg.value >= requiredETHFee);
         // transfer fee to the fee receivers addresses
-        uint256 thirtyPercentShare = (depositFee *
+        uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         payable(ux369gift_30).transfer(thirtyPercentShare);
         payable(ux369_30).transfer(thirtyPercentShare);
         payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
-
+        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
 
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "Factory: SignKey already set"
+            "SignKey already set"
         );
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
-        registerWithQuantumProtection(
+        register(
             caller,
+            true,
+            _customMessage,
             _signKey,
-            quantumSignature,
-            quamtumPublicKey,
-            ethSignature
+            _signKeyHash,
+            _deadline,
+            _ethSignature,
+            _quantumSignature,
+            _quamtumPublicKey
         );
         _isQuantumProtected[caller] = true;
         _isSignKeySetOf[caller] = true;
     }
 
-    /**
-     * @dev Allows a user to change their SignKey using their MaskterKey.
-     *
-     * This function changes the SignKey of the caller (msg.sender) after verifying their MaskterKey.
-     * The new SignKey is hashed for secure storage. This function can only be called if the user's recovery
-     * number matches the one provided in the function argument.
-     *
-     * @param _masterKey The MaskterKey provided by the user.
-     * @param _signKey The new SignKey provided by the user.
-     *
-     * require The MaskterKey provided should match the MaskterKey stored for the caller.
-     */
     function changeSignKey(
         string memory _masterKey,
-        bytes32 _signKey,
-        bool _quantumProtected,
-        bytes memory quantumSignature,
-        bytes memory quamtumPublicKey,
-        bytes memory ethSignature
-    ) external payable{
+        string memory _customMessage,
+        string memory _newSignKey,
+        bytes32 _newSignKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature,
+        bytes memory _quantumSignature,
+        bytes memory _quamtumPublicKey
+    ) external payable {
         address caller = msg.sender;
         require(
-            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
-            "Factory: incorrect recovery number"
+            ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
+            "User not registered yet."
         );
-        if (_quantumProtected) {
-            if(!_isQuantumProtected[caller]){
-                uint fee = msg.value;
-                uint requiredETHFee = calculateETHFee(quantumActivationFee);
-                require(msg.value >= requiredEthFee);
-                // transfer fee to the fee receivers addresses
-                uint256 thirtyPercentShare = (depositFee *
-                    percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-                payable(ux369gift_30).transfer(thirtyPercentShare);
-                payable(ux369_30).transfer(thirtyPercentShare);
-                payable(ux369impact_30).transfer(thirtyPercentShare);
-                payable(ux369impact_10).transfer(fee - (thirtyPercentShare * 3));
-            }
-            registerWithQuantumProtectionForChangeSignKey(
+        require(
+            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
+            "incorrect master key"
+        );
+
+        if (_isQuantumProtected[caller]) {
+            register(
                 caller,
-                _signKey,
-                quantumSignature,
-                quamtumPublicKey,
-                ethSignature
+                true,
+                _customMessage,
+                _newSignKey,
+                _newSignKeyHash,
+                _deadline,
+                _ethSignature,
+                _quantumSignature,
+                _quamtumPublicKey
             );
-            _isQuantumProtected[caller] = true;
+            emit SignKeyChanged(caller, block.timestamp, true);
         } else {
-            registerWithKeccakForChangeSignKey(caller, _signKey, ethSignature);
+            register(
+                caller,
+                false,
+                _customMessage,
+                _newSignKey,
+                _newSignKeyHash,
+                _deadline,
+                _ethSignature,
+                "",
+                ""
+            );
+            emit SignKeyChanged(caller, block.timestamp, false);
+        }
+    }
+
+    // function to change sign key type from simple to quantum or from quantum to simple
+    function changeSignKeyType(
+        string memory _masterKey,
+        bool _isAlreadyQuantumProtected,
+        string memory _customMessage,
+        string memory _newSignKey,
+        bytes32 _newSignKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature,
+        bytes memory _quantumSignature,
+        bytes memory _quamtumPublicKey
+    ) external payable {
+        address caller = msg.sender;
+        require(
+            ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
+            "User not registered yet."
+        );
+        require(
+            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
+            "incorrect master key"
+        );
+
+        if (_isAlreadyQuantumProtected && _isQuantumProtected[caller]) {
+            // change from quantum to simple
+            register(
+                caller,
+                false,
+                _customMessage,
+                _newSignKey,
+                _newSignKeyHash,
+                _deadline,
+                _ethSignature,
+                "",
+                ""
+            );
             _isQuantumProtected[caller] = false;
+            emit SignKeyChanged(caller, block.timestamp, false);
+        } else {
+            // change from simple to quantum
+            uint256 fee = msg.value;
+            uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
+            require(msg.value >= requiredETHFee);
+            // transfer fee to the fee receivers addresses
+            uint256 thirtyPercentShare = (fee *
+                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                ZOOM;
+            payable(ux369gift_30).transfer(thirtyPercentShare);
+            payable(ux369_30).transfer(thirtyPercentShare);
+            payable(ux369impact_30).transfer(thirtyPercentShare);
+            payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
+            register(
+                caller,
+                true,
+                _customMessage,
+                _newSignKey,
+                _newSignKeyHash,
+                _deadline,
+                _ethSignature,
+                _quantumSignature,
+                _quamtumPublicKey
+            );
+            emit SignKeyChanged(caller, block.timestamp, true);
+            _isQuantumProtected[caller] = true;
         }
     }
 
@@ -2165,7 +3644,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         depositDetails = new DepositsOfUser[](tokensCount);
         if (tokensCount > 0) {
-            for (uint i; i < tokensCount; i++) {
+            for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
                     uxTokenAddress: totaluxTokens[i],
                     amount: depositedAmountOfUserAgainstUxToken[_depositor][
@@ -2191,7 +3670,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         if (depositorsLength == 0) return address(0);
 
-        uint randomNumber = uint(
+        uint256 randomNumber = uint256(
             keccak256(abi.encodePacked(previousTimePeriod, deployTime))
         ) % depositorsLength;
 
@@ -2289,7 +3768,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
         if (tokensCount > 0) {
-            for (uint i; i < tokensCount; i++) {
+            for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
                     uxTokenAddress: totaluxTokens[i],
                     amount: depositedAmountOfUserAgainstUxTokenForPeriod[
@@ -2310,21 +3789,12 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // Checks whether the entered signKey matches the one associated with the user address.
     // The stored signKey is hashed for security reasons, so the entered signKey is hashed
     // and compared with the stored hashed signKey.
+
     function isSignKeyCorrect(
         address _user,
-        bool _quantumVerified,
-        bytes32 _signKey,
-        bytes memory ethSignature
+        bytes32 _signkeyHash
     ) public view returns (bool) {
-        if (_isQuantumProtected[_user])
-            return
-                verifyLogin_Quantum(
-                    _user,
-                    _quantumVerified,
-                    _signKey,
-                    ethSignature
-                );
-        else return verifyLogin_KeccakHash(_user, _signKey, ethSignature);
+        return passwordDataOf[_user].keccakHash == _signkeyHash;
     }
 
     // Similar to the signKey check function, this function checks whether the entered masterKey matches the one associated with the user address.
@@ -2385,7 +3855,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // The return is an integer representing the number of unique depositors.
     function getDepositorsByPeriodCountFor369hours(
         uint256 _period
-    ) public view returns (uint) {
+    ) public view returns (uint256) {
         return depositorsByPeriod[_period].length();
     }
 
@@ -2406,23 +3876,23 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
     // Calculates and returns the current period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the current period for 369 hours.
-    function getCurrentPeriodFor369hours() public view returns (uint) {
+    function getCurrentPeriodFor369hours() public view returns (uint256) {
         return
             ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours) + 1;
     }
 
     // The function returns an integer representing the current period for 369 days.
-    function getCurrentPeriodFor369days() public view returns (uint) {
+    function getCurrentPeriodFor369days() public view returns (uint256) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days) + 1;
     }
 
     // Calculates and returns the previous period based on the timestamp of the block, the deploy time of the contract, and the time limit for a reward.
     // The function returns an integer representing the previous period for 369 hours.
-    function getPreviousPeriodFor369Hours() public view returns (uint) {
+    function getPreviousPeriodFor369Hours() public view returns (uint256) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours);
     }
 
-    function getPreviousPeriodFor369days() public view returns (uint) {
+    function getPreviousPeriodFor369days() public view returns (uint256) {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days);
     }
 
@@ -2436,9 +3906,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function getCurrentPeriodStartAndEndTimeFor369hours()
         public
         view
-        returns (uint startTime, uint endTime)
+        returns (uint256 startTime, uint256 endTime)
     {
-        uint currentTimePeriod_for369hours = getCurrentPeriodFor369hours();
+        uint256 currentTimePeriod_for369hours = getCurrentPeriodFor369hours();
 
         if (currentTimePeriod_for369hours == 1) {
             startTime = deployTime;
@@ -2455,9 +3925,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function getCurrentPeriodStartAndEndTimeFor369days()
         public
         view
-        returns (uint startTime, uint endTime)
+        returns (uint256 startTime, uint256 endTime)
     {
-        uint currentTimePeriod_for369days = getCurrentPeriodFor369days();
+        uint256 currentTimePeriod_for369days = getCurrentPeriodFor369days();
 
         if (currentTimePeriod_for369days == 1) {
             startTime = deployTime;
@@ -2495,7 +3965,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         if (depositorsLength == 0) return address(0);
 
-        uint randomNumber = uint(
+        uint256 randomNumber = uint256(
             keccak256(abi.encodePacked(previousTimePeriod, deployTime))
         ) % depositorsLength;
 
@@ -2533,7 +4003,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // Struct to represent reward against a specific token
     struct RewardAgainstToken {
         address token;
-        uint amount;
+        uint256 amount;
     }
 
     /**
@@ -2548,7 +4018,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
         if (_tokensCount > 0) {
-            for (uint i; i < _tokensCount; i++) {
+            for (uint256 i; i < _tokensCount; i++) {
                 record[i] = RewardAgainstToken({
                     token: _tokens[i],
                     amount: getRewardAmountOfTokenInPeriod(_period, _tokens[i])
@@ -2564,10 +4034,10 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function pendingPeriodsForReward()
         public
         view
-        returns (uint[] memory pendingPeriods)
+        returns (uint256[] memory pendingPeriods)
     {
         uint256 period = getPreviousPeriodFor369Hours();
-        uint[] memory _pendingPeriods = new uint[](period);
+        uint256[] memory _pendingPeriods = new uint256[](period);
         uint256 count;
         while (!hasRewardBeenCollectedForPeriod[period]) {
             if (!isDepositedInPeriod[period]) {
@@ -2580,9 +4050,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             period--;
         }
 
-        pendingPeriods = new uint[](count);
-        uint _count;
-        for (uint i; i < _pendingPeriods.length; i++) {
+        pendingPeriods = new uint256[](count);
+        uint256 _count;
+        for (uint256 i; i < _pendingPeriods.length; i++) {
             if (_pendingPeriods[i] > 0) {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
@@ -2599,10 +4069,10 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         view
         returns (address[] memory _whiteListAddresses)
     {
-        uint _length = whiteListAddresses.length;
+        uint256 _length = whiteListAddresses.length;
         _whiteListAddresses = new address[](_length);
 
-        for (uint i; i < _length; i++) {
+        for (uint256 i; i < _length; i++) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
     }
@@ -2610,17 +4080,17 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // functions related fetching live prices
     function calculateETHFee(
         uint256 _feeInStableCoin
-    ) public view returns (uint) {
-        int ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
+    ) public view returns (uint256) {
+        int256 ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
         require(ethPriceInUSD > 0, "Invalid price from oracle");
 
-        uint ethFee = (_feeInStableCoin * 1e8) / uint(ethPriceInUSD); // Conversion to ETH amount
+        uint256 ethFee = (_feeInStableCoin * 1e8) / uint256(ethPriceInUSD); // Conversion to ETH amount
         return ethFee;
     }
 
     // Get the latest price of ETH in USD (used to calculate equivalent ETH for stablecoin fee)
-    function getLatestPrice() public view returns (int) {
-        (, int price, , , ) = priceFeed.latestRoundData();
+    function getLatestPrice() public view returns (int256) {
+        (, int256 price, , , ) = priceFeed.latestRoundData();
         return price;
     }
 }
