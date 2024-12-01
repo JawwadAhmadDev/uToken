@@ -70,7 +70,7 @@ contract uxTokenContract is IuxToken {
     address public immutable factory = msg.sender;
 
     // Re-entracy attack
-    uint private unlocked = 1;
+    uint256 private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, "uxWTokenForETH: LOCKED");
         unlocked = 0;
@@ -98,7 +98,7 @@ contract uxTokenContract is IuxToken {
         _decimals = decimals_;
 
         // setting whitelist addresses
-        for (uint i; i < _whiteListAddressess.length; i++) {
+        for (uint256 i; i < _whiteListAddressess.length; i++) {
             whiteList.add(_whiteListAddressess[i]);
         }
     }
