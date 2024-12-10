@@ -187,11 +187,8 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
-            require(
-                tokenAddress.code.length > 0,
-                "INVALID ALLOWED TOKEN ADDRESS"
-            );
-            require(!allowedTokens.contains(tokenAddress), "Already added");
+            require(tokenAddress.code.length > 0, "INVALID ALLOWED");
+            require(!allowedTokens.contains(tokenAddress), "added");
 
             address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
             tokenAdressForUxToken[deployedAddress] = tokenAddress;
@@ -242,9 +239,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     ) external payable {
         address depositor = msg.sender;
 
-        require(_isSignKeySetOf[msg.sender], "SignKey not set yet.");
+        require(_isSignKeySetOf[msg.sender], "SignKey not set");
         if (_quantumVerified) {
-            require(_isQuantumProtected[msg.sender], "Quantum not set yet.");
+            require(_isQuantumProtected[msg.sender], "Quantum not set");
         }
         require(
             verifyLogin(
@@ -261,7 +258,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken address"
+            "invalid uxToken"
         );
 
         // Calculate deposit fee and remaining amount
@@ -280,7 +277,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         // Handle fees and deposits
         if (_uxTokenAddress == uxTokenAddressOfETH) {
-            require(msg.value > 0, "Factory: invalid Ether");
+            require(msg.value > 0, "invalid Ether");
 
             ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
@@ -352,22 +349,22 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         // Transfer fees and require success
         require(
             IuxToken(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
-            "Transfer to ux369gift_30 failed"
+            "gift failed"
         );
         require(
             IuxToken(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
-            "Transfer to ux369_30 failed"
+            "369 failed"
         );
         require(
             IuxToken(_uxTokenAddress).protect(
                 ux369impact_30,
                 thirtyPercentShare
             ),
-            "Transfer to ux369impact_30 failed"
+            "369 failed"
         );
         require(
             IuxToken(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
-            "Transfer to ux369devs_10 failed"
+            "369Dev failed"
         );
 
         // Update period deposits and depositors
@@ -392,9 +389,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     ) external {
         address withdrawer = msg.sender;
 
-        require(_isSignKeySetOf[withdrawer], "SignKey not set yet.");
+        require(_isSignKeySetOf[withdrawer], "SignKey not set");
         if (_quantumVerified) {
-            require(_isQuantumProtected[withdrawer], "Quantum not set yet.");
+            require(_isQuantumProtected[withdrawer], "Quantum not set");
         }
         require(
             verifyLogin(
@@ -410,12 +407,12 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken address"
+            "invalid uxToken"
         );
 
         uint256 balance = IuxToken(_uxTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "invalid amount");
-        require(balance >= _amount, "Not enough tokens");
+        require(balance >= _amount, "Not enough");
 
         require(
             IuxToken(_uxTokenAddress).burnAndUnprotect(withdrawer, _amount),
@@ -471,9 +468,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     ) external returns (bool) {
         address caller = msg.sender;
 
-        require(_isSignKeySetOf[caller], "SignKey not set yet.");
+        require(_isSignKeySetOf[caller], "SignKey not set");
         if (_quantumVerified) {
-            require(_isQuantumProtected[caller], "Quantum not set yet.");
+            require(_isQuantumProtected[caller], "Quantum not set");
         }
         require(
             verifyLogin(
@@ -490,7 +487,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         require(
             _uxTokenAddress == uxTokenAddressOfETH ||
                 uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken address"
+            "invalid uxToken"
         );
 
         // Transfer the tokens
@@ -510,7 +507,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "SignKey already set"
+            "SignKey set"
         );
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
@@ -554,7 +551,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "SignKey already set"
+            "SignKey set"
         );
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
@@ -587,11 +584,11 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         require(
             ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
-            "User not registered yet."
+            "User not registered"
         );
         require(
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
-            "incorrect master key"
+            "incorrect masterkey"
         );
 
         if (_isQuantumProtected[caller]) {
@@ -640,11 +637,11 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         require(
             ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
-            "User not registered yet."
+            "not reg"
         );
         require(
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
-            "incorrect master key"
+            "wrong masterkey"
         );
 
         if (_isAlreadyQuantumProtected && _isQuantumProtected[caller]) {
@@ -1252,7 +1249,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 _feeInStableCoin
     ) public view returns (uint256) {
         int256 ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
-        require(ethPriceInUSD > 0, "Invalid price from oracle");
+        require(ethPriceInUSD > 0, "wrong from oracle");
 
         uint256 ethFee = (_feeInStableCoin * 1e8) / uint256(ethPriceInUSD); // Conversion to ETH amount
         return ethFee;

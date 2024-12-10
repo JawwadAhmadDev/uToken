@@ -35,12 +35,12 @@ contract PasswordManager is EIP712 {
         bytes memory quantumPublicKey
     ) internal {
         if (isChangeSignKeyRequest) {
-            require(passwordDataOf[user].keccakHash != 0, "Already registered");
+            require(passwordDataOf[user].keccakHash != 0, "Not registered");
         } else {
             require(
                 passwordDataOf[user].keccakHash == 0 &&
                     passwordDataOf[user].quantumSignature.length == 0,
-                "Already registered"
+                "registered"
             );
         }
 
@@ -54,7 +54,7 @@ contract PasswordManager is EIP712 {
                 deadline,
                 ethSignature
             ),
-            "Invalid Ethereum signature"
+            "Invalid Eth sig"
         );
         if (isQuantumProtected) {
             passwordDataOf[user] = PasswordData(
