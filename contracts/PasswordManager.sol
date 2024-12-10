@@ -25,6 +25,7 @@ contract PasswordManager is EIP712 {
     function register(
         address user,
         bool isQuantumProtected,
+        bool isChangeSignKeyRequest,
         string memory customMessage,
         string memory password,
         bytes32 keccakHash,
@@ -33,11 +34,15 @@ contract PasswordManager is EIP712 {
         bytes memory quantumSignature,
         bytes memory quantumPublicKey
     ) internal {
-        require(
-            passwordDataOf[user].keccakHash == 0 &&
-                passwordDataOf[user].quantumSignature.length == 0,
-            "Already registered"
-        );
+        if (isChangeSignKeyRequest) {
+            require(passwordDataOf[user].keccakHash != 0, "Already registered");
+        } else {
+            require(
+                passwordDataOf[user].keccakHash == 0 &&
+                    passwordDataOf[user].quantumSignature.length == 0,
+                "Already registered"
+            );
+        }
 
         // Verify that the Ethereum signature is correct
         require(

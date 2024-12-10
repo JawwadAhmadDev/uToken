@@ -517,6 +517,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         register(
             caller,
             false,
+            false,
             _customMessage,
             _signKey,
             _signKeyHash,
@@ -560,6 +561,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         register(
             caller,
             true,
+            false,
             _customMessage,
             _signKey,
             _signKeyHash,
@@ -596,6 +598,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             register(
                 caller,
                 true,
+                false,
                 _customMessage,
                 _newSignKey,
                 _newSignKeyHash,
@@ -608,6 +611,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         } else {
             register(
                 caller,
+                false,
                 false,
                 _customMessage,
                 _newSignKey,
@@ -648,6 +652,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             register(
                 caller,
                 false,
+                true,
                 _customMessage,
                 _newSignKey,
                 _newSignKeyHash,
@@ -673,6 +678,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
             register(
                 caller,
+                true,
                 true,
                 _customMessage,
                 _newSignKey,
