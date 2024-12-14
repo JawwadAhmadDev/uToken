@@ -232,7 +232,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 _amount,
         bool _quantumVerified,
         string memory _customMessage,
-        string memory _signKey,
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
@@ -247,7 +246,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             verifyLogin(
                 msg.sender,
                 _customMessage,
-                _signKey,
                 _signKeyHash,
                 _deadline,
                 _ethSignature
@@ -382,7 +380,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 _amount,
         bool _quantumVerified,
         string memory _customMessage,
-        string memory _signKey,
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
@@ -397,7 +394,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             verifyLogin(
                 withdrawer,
                 _customMessage,
-                _signKey,
                 _signKeyHash,
                 _deadline,
                 _ethSignature
@@ -461,7 +457,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 _amount,
         bool _quantumVerified,
         string memory _customMessage,
-        string memory _signKey,
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
@@ -476,7 +471,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             verifyLogin(
                 caller,
                 _customMessage,
-                _signKey,
                 _signKeyHash,
                 _deadline,
                 _ethSignature
@@ -499,7 +493,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function setMasterKeyAndSignKey(
         string memory _masterKey,
         string memory _customMessage,
-        string memory _signKey,
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
@@ -516,7 +509,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             false,
             false,
             _customMessage,
-            _signKey,
             _signKeyHash,
             _deadline,
             _ethSignature,
@@ -530,7 +522,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function setMasterKeyAndQuantumResistantSignKey(
         string memory _masterKey,
         string memory _customMessage,
-        string memory _signKey,
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature,
@@ -560,7 +551,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             true,
             false,
             _customMessage,
-            _signKey,
             _signKeyHash,
             _deadline,
             _ethSignature,
@@ -574,7 +564,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     function changeSignKey(
         string memory _masterKey,
         string memory _customMessage,
-        string memory _newSignKey,
         bytes32 _newSignKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature,
@@ -597,7 +586,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 true,
                 false,
                 _customMessage,
-                _newSignKey,
                 _newSignKeyHash,
                 _deadline,
                 _ethSignature,
@@ -611,7 +599,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 false,
                 false,
                 _customMessage,
-                _newSignKey,
                 _newSignKeyHash,
                 _deadline,
                 _ethSignature,
@@ -627,7 +614,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         string memory _masterKey,
         bool _isAlreadyQuantumProtected,
         string memory _customMessage,
-        string memory _newSignKey,
         bytes32 _newSignKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature,
@@ -651,7 +637,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 false,
                 true,
                 _customMessage,
-                _newSignKey,
                 _newSignKeyHash,
                 _deadline,
                 _ethSignature,
@@ -678,7 +663,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 true,
                 true,
                 _customMessage,
-                _newSignKey,
                 _newSignKeyHash,
                 _deadline,
                 _ethSignature,

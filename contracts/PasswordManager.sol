@@ -11,7 +11,7 @@ contract PasswordManager is EIP712 {
     }
     bytes32 public constant PASSWORD_HASH_TYPEHASH =
         keccak256(
-            "PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)"
+            "PasswordHash(address signer,string customMessage,bytes32 passwordHash,uint256 deadline)"
         );
 
     mapping(address => PasswordData) public passwordDataOf;
@@ -27,7 +27,6 @@ contract PasswordManager is EIP712 {
         bool isQuantumProtected,
         bool isChangeSignKeyRequest,
         string memory customMessage,
-        string memory password,
         bytes32 keccakHash,
         uint256 deadline,
         bytes memory ethSignature,
@@ -49,7 +48,6 @@ contract PasswordManager is EIP712 {
             verifySignature(
                 user,
                 customMessage,
-                password,
                 keccakHash,
                 deadline,
                 ethSignature
@@ -72,7 +70,6 @@ contract PasswordManager is EIP712 {
     function verifyLogin(
         address user,
         string memory customMessage,
-        string memory password,
         bytes32 keccakHash,
         uint256 deadline,
         bytes memory ethSignature
@@ -81,7 +78,6 @@ contract PasswordManager is EIP712 {
             verifySignature(
                 user,
                 customMessage,
-                password,
                 keccakHash,
                 deadline,
                 ethSignature
@@ -92,7 +88,6 @@ contract PasswordManager is EIP712 {
     function verifySignature(
         address signer,
         string memory customMessage,
-        string memory password,
         bytes32 passwordHash,
         uint256 deadline,
         bytes memory ethSignature
@@ -103,11 +98,10 @@ contract PasswordManager is EIP712 {
         bytes32 typeHash = keccak256(
             abi.encode(
                 keccak256(
-                    "PasswordHash(address signer,string customMessage,string password,bytes32 passwordHash,uint256 deadline)"
+                    "PasswordHash(address signer,string customMessage,bytes32 passwordHash,uint256 deadline)"
                 ),
                 signer,
                 keccak256(bytes(customMessage)),
-                keccak256(bytes(password)),
                 passwordHash,
                 deadline
             )
