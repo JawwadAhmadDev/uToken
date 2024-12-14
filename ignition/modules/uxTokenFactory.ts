@@ -21,12 +21,13 @@ const uxTokenFactoryModule = buildModule("uxTokenFactoryModule", (m) => {
   ); // Replace with actual price feed address
 
   // Deploy the contract with constructor arguments
-  const yourContract = m.contract("uxTokenFactoryContract", [
-    appName,
-    allowedTokens,
-    whiteListAddresses,
-    priceFeedAddress,
-  ]);
+  const yourContract = m.contract(
+    "uxTokenFactoryContract",
+    [appName, allowedTokens, whiteListAddresses, priceFeedAddress],
+    {
+      gasLimit: 500000000, // Adjust based on estimation
+    }
+  );
 
   return { yourContract };
 });
