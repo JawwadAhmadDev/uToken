@@ -612,7 +612,6 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // function to change sign key type from simple to quantum or from quantum to simple
     function changeSignKeyType(
         string memory _masterKey,
-        bool _isAlreadyQuantumProtected,
         string memory _customMessage,
         bytes32 _newSignKeyHash,
         uint256 _deadline,
@@ -621,6 +620,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
+        require(_isQuantumProtected[caller], "Already Quantum protected");
         require(
             ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
             "not reg"
@@ -629,49 +629,30 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
             "wrong masterkey"
         );
-
-        if (_isAlreadyQuantumProtected && _isQuantumProtected[caller]) {
-            // change from quantum to simple
-            register(
-                caller,
-                false,
-                true,
-                _customMessage,
-                _newSignKeyHash,
-                _deadline,
-                _ethSignature,
-                "",
-                ""
-            );
-            _isQuantumProtected[caller] = false;
-            emit SignKeyChanged(caller, block.timestamp, false);
-        } else {
-            // change from simple to quantum
-            uint256 fee = msg.value;
-            uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-            require(msg.value >= requiredETHFee);
-            // transfer fee to the fee receivers addresses
-            uint256 thirtyPercentShare = (fee *
-                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-                ZOOM;
-            payable(ux369gift_30).transfer(thirtyPercentShare);
-            payable(ux369_30).transfer(thirtyPercentShare);
-            payable(ux369impact_30).transfer(thirtyPercentShare);
-            payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
-            register(
-                caller,
-                true,
-                true,
-                _customMessage,
-                _newSignKeyHash,
-                _deadline,
-                _ethSignature,
-                _quantumSignature,
-                _quamtumPublicKey
-            );
-            emit SignKeyChanged(caller, block.timestamp, true);
-            _isQuantumProtected[caller] = true;
-        }
+        // change from simple to quantum
+        uint256 fee = msg.value;
+        uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
+        require(msg.value >= requiredETHFee);
+        // transfer fee to the fee receivers addresses
+        uint256 thirtyPercentShare = (fee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        payable(ux369gift_30).transfer(thirtyPercentShare);
+        payable(ux369_30).transfer(thirtyPercentShare);
+        payable(ux369impact_30).transfer(thirtyPercentShare);
+        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
+        register(
+            caller,
+            true,
+            true,
+            _customMessage,
+            _newSignKeyHash,
+            _deadline,
+            _ethSignature,
+            _quantumSignature,
+            _quamtumPublicKey
+        );
+        emit SignKeyChanged(caller, block.timestamp, true);
+        _isQuantumProtected[caller] = true;
     }
 
     // function to change time limit for reward of 369 hours. only onwer is authorized.
