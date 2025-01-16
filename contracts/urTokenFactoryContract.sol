@@ -76,10 +76,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public ux369gift_30 = 0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1;
-    address public ux369impact_30 = 0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA;
-    address public ux369_30 = 0xcE14e3556FF59C83F849D0a4082258000FA23D30;
-    address public ux369devs_10 = 0x29817e172E0d798dCc052f87a486fEd529c015C3;
+    address public ur369gift_30 = 0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1;
+    address public ur369impact_30 = 0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA;
+    address public ur369_30 = 0xcE14e3556FF59C83F849D0a4082258000FA23D30;
+    address public ur369devs_10 = 0x29817e172E0d798dCc052f87a486fEd529c015C3;
 
     event Protect(
         address depositor,
@@ -138,14 +138,14 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IurToken(deployedEth).initialize(
-            "uxETH",
-            "uxETH",
+            "urETH",
+            "urETH",
             "ETHER",
             18,
             whiteListAddresses
         );
 
-        emit TokenDeployed(deployedEth, "uxETH");
+        emit TokenDeployed(deployedEth, "urETH");
     }
 
     function _deployToken(
@@ -153,10 +153,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) internal returns (address deployedToken) {
         IERC20 tokenContract = IERC20(_token);
         string memory name = string(
-            abi.encodePacked("ux", tokenContract.name())
+            abi.encodePacked("ur", tokenContract.name())
         );
         string memory symbol = string(
-            abi.encodePacked("ux", tokenContract.symbol())
+            abi.encodePacked("ur", tokenContract.symbol())
         );
         string memory currency = tokenContract.symbol();
         uint8 decimals = tokenContract.decimals();
@@ -346,22 +346,22 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
 
         // Transfer fees and require success
         require(
-            IurToken(_urTokenAddress).protect(ux369gift_30, thirtyPercentShare),
+            IurToken(_urTokenAddress).protect(ur369gift_30, thirtyPercentShare),
             "gift failed"
         );
         require(
-            IurToken(_urTokenAddress).protect(ux369_30, thirtyPercentShare),
+            IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare),
             "369 failed"
         );
         require(
             IurToken(_urTokenAddress).protect(
-                ux369impact_30,
+                ur369impact_30,
                 thirtyPercentShare
             ),
             "369 failed"
         );
         require(
-            IurToken(_urTokenAddress).protect(ux369devs_10, tenPercentShare),
+            IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare),
             "369Dev failed"
         );
 
@@ -535,10 +535,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        payable(ux369gift_30).transfer(thirtyPercentShare);
-        payable(ux369_30).transfer(thirtyPercentShare);
-        payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(ur369gift_30).transfer(thirtyPercentShare);
+        payable(ur369_30).transfer(thirtyPercentShare);
+        payable(ur369impact_30).transfer(thirtyPercentShare);
+        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
 
         require(
             (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
@@ -636,10 +636,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        payable(ux369gift_30).transfer(thirtyPercentShare);
-        payable(ux369_30).transfer(thirtyPercentShare);
-        payable(ux369impact_30).transfer(thirtyPercentShare);
-        payable(ux369devs_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(ur369gift_30).transfer(thirtyPercentShare);
+        payable(ur369_30).transfer(thirtyPercentShare);
+        payable(ur369impact_30).transfer(thirtyPercentShare);
+        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
         register(
             caller,
             true,
