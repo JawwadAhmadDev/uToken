@@ -47,14 +47,15 @@ BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
 USDT: https://sepolia.etherscan.io/address/0x80366c8502326ede6b4dcb46fce7cc88378eda07#code
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
-uTokenFactory: https://sepolia.etherscan.io/address/0x322CCb13F2e2Aa20CCd2Ff24C3122ED1D59e17F5#code
-Legacy: https://sepolia.etherscan.io/address/0x319f731efAfab1F5bD5dBb146Bc19836998b3436#code
-Reward Distributor: https://sepolia.etherscan.io/address/0xFbfAC19d7d789238787509aE0af392cdf8FD4427#code
+urTokenFactory: https://sepolia.etherscan.io/address/0x8e6188b6fb0854caBC450B20E69c54BDDAC1FcF2#code
+urLegacy: https://sepolia.etherscan.io/address/0x506ae3560Fc3797E94b307bb9143D2360Cdf8c81#code
+Reward Distributor: https://sepolia.etherscan.io/address/0x0ad26d5cc37964e6620e090e3293506cf848f41e#code
 
 DAI: 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357
 AAVE: 0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a
 Link: 0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5
 GHO: 0xc4bF5CbDaBE595361438F8c6a187bDc330539c60
+USDC: https://sepolia.etherscan.io/address/0x182272cf384b4bf46efffde61c75101664cdee8a#code
 Parameters: ["0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357", "0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a", "0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5"]
 
 
