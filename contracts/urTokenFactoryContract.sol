@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import "./IERC20.sol";
-import "./uxTokenContract.sol";
+import "./urTokenContract.sol";
 import "./PasswordManager.sol";
 
-contract uxTokenFactoryContract is Ownable, PasswordManager {
+contract urTokenFactoryContract is Ownable, PasswordManager {
     // using SafeMath for uint256;b
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -22,18 +22,18 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     // mapping(address => mapping(address => uint256))
     //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
 
-    mapping(address => address) private tokenAdressForUxToken; // uxToken -> Token Address (against which contract is deployed)
-    mapping(address => string) private currencyOfUxToken;
-    mapping(address => address) private uxTokenAddressForToken; // token -> uxToken
+    mapping(address => address) private tokenAdressForurToken; // urToken -> Token Address (against which contract is deployed)
+    mapping(address => string) private currencyOfurToken;
+    mapping(address => address) private urTokenAddressForToken; // token -> urToken
 
     // Deposit details of specific user.
-    mapping(address => EnumerableSet.AddressSet) private depositedUxTokensOf; // depositorAddress -> All uxTokens addresses deposited in
+    mapping(address => EnumerableSet.AddressSet) private depositedurTokensOf; // depositorAddress -> All urTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private depositedUxTokensOfUserForPeriod; // depositorAddress -> period -> All uTokens addresses
+        private depositedurTokensOfUserForPeriod; // depositorAddress -> period -> All uTokens addresses
     mapping(address => mapping(address => uint256))
-        private depositedAmountOfUserAgainstUxToken; // depositor -> uxTokenAddress -> amount
+        private depositedAmountOfUserAgainsturToken; // depositor -> urTokenAddress -> amount
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private depositedAmountOfUserAgainstUxTokenForPeriod; // depositor -> uxTokenAddress -> period -> totalDeposits
+        private depositedAmountOfUserAgainsturTokenForPeriod; // depositor -> urTokenAddress -> period -> totalDeposits
 
     mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
     mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
@@ -52,9 +52,9 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     AggregatorV3Interface public priceFeed; // Chainlink ETH/USD Price Feed
 
     // tokens addresses.
-    address public uxTokenAddressOfETH;
+    address public urTokenAddressOfETH;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
-    EnumerableSet.AddressSet private uxTokensOfAllowedTokens; // uxTokens addresses of allowed ERC20 Tokens
+    EnumerableSet.AddressSet private urTokensOfAllowedTokens; // urTokens addresses of allowed ERC20 Tokens
     address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
 
     // salt for create2 opcode.
@@ -125,19 +125,19 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         whiteListAddresses = _whiteListAddresses;
 
         // Deploy ETH token and add allowed tokens if any
-        uxTokenAddressOfETH = _deployETH();
+        urTokenAddressOfETH = _deployETH();
         if (_allowedTokens.length > 0) {
             _addAllowedTokens(_allowedTokens);
         }
     }
 
     function _deployETH() internal returns (address deployedEth) {
-        bytes memory bytecode = type(uxTokenContract).creationCode;
+        bytes memory bytecode = type(urTokenContract).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IuxToken(deployedEth).initialize(
+        IurToken(deployedEth).initialize(
             "uxETH",
             "uxETH",
             "ETHER",
@@ -161,7 +161,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         string memory currency = tokenContract.symbol();
         uint8 decimals = tokenContract.decimals();
 
-        bytes memory bytecode = type(uxTokenContract).creationCode;
+        bytes memory bytecode = type(urTokenContract).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(++_salt));
         assembly {
             deployedToken := create2(
@@ -171,7 +171,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
                 salt
             )
         }
-        IuxToken(deployedToken).initialize(
+        IurToken(deployedToken).initialize(
             name,
             symbol,
             currency,
@@ -191,13 +191,13 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             require(!allowedTokens.contains(tokenAddress), "added");
 
             address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
-            tokenAdressForUxToken[deployedAddress] = tokenAddress;
-            uxTokenAddressForToken[tokenAddress] = deployedAddress;
-            currencyOfUxToken[deployedAddress] = IuxToken(deployedAddress)
+            tokenAdressForurToken[deployedAddress] = tokenAddress;
+            urTokenAddressForToken[tokenAddress] = deployedAddress;
+            currencyOfurToken[deployedAddress] = IurToken(deployedAddress)
                 .currency();
 
             allowedTokens.add(tokenAddress);
-            uxTokensOfAllowedTokens.add(deployedAddress);
+            urTokensOfAllowedTokens.add(deployedAddress);
 
             emit TokenAdded(tokenAddress, deployedAddress);
         }
@@ -219,8 +219,8 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             require(allowedTokens.contains(tokenAddress), "Not Added");
 
             allowedTokens.remove(tokenAddress);
-            uxTokensOfAllowedTokens.remove(
-                uxTokenAddressForToken[tokenAddress]
+            urTokensOfAllowedTokens.remove(
+                urTokenAddressForToken[tokenAddress]
             );
 
             emit TokenRemoved(tokenAddress);
@@ -228,7 +228,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     }
 
     function protect(
-        address _uxTokenAddress,
+        address _urTokenAddress,
         uint256 _amount,
         bool _quantumVerified,
         string memory _customMessage,
@@ -254,18 +254,18 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         );
         require(_amount > 0, "invalid amount");
         require(
-            _uxTokenAddress == uxTokenAddressOfETH ||
-                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken"
+            _urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress),
+            "invalid urToken"
         );
 
         // Calculate deposit fee and remaining amount
         uint256 depositFee = (_amount * benefactionFeePercent) / ZOOM;
         uint256 remaining = _amount - depositFee;
 
-        // Call protect method on uxToken contract
+        // Call protect method on urToken contract
         require(
-            IuxToken(_uxTokenAddress).protect(msg.sender, remaining),
+            IurToken(_urTokenAddress).protect(msg.sender, remaining),
             "deposit failed"
         );
 
@@ -274,12 +274,12 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         uint256 thirtyPercentShare = (depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
         // Handle fees and deposits
-        if (_uxTokenAddress == uxTokenAddressOfETH) {
+        if (_urTokenAddress == urTokenAddressOfETH) {
             require(msg.value > 0, "invalid Ether");
 
             ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
         } else {
-            IERC20(tokenAdressForUxToken[_uxTokenAddress]).transferFrom(
+            IERC20(tokenAdressForurToken[_urTokenAddress]).transferFrom(
                 depositor,
                 address(this),
                 _amount
@@ -287,20 +287,20 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
             if (
                 !tokensByPeriod[currentTimePeriodCount].contains(
-                    tokenAdressForUxToken[_uxTokenAddress]
+                    tokenAdressForurToken[_urTokenAddress]
                 )
             ) {
                 tokensByPeriod[currentTimePeriodCount].add(
-                    tokenAdressForUxToken[_uxTokenAddress]
+                    tokenAdressForurToken[_urTokenAddress]
                 );
             }
 
             totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-                tokenAdressForUxToken[_uxTokenAddress]
+                tokenAdressForurToken[_urTokenAddress]
             ] += thirtyPercentShare;
         }
 
-        _handleFee(_uxTokenAddress, depositFee, currentTimePeriodCount);
+        _handleFee(_urTokenAddress, depositFee, currentTimePeriodCount);
 
         // Add depositor to the list if it's the first deposit
         if (!allDepositors.contains(depositor)) {
@@ -308,35 +308,35 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         }
 
         // Update deposit details for 369 days mappings
-        if (_uxTokenAddress == uxTokenAddressOfETH) {
+        if (_urTokenAddress == urTokenAddressOfETH) {
             nativeCurrencyDepositedBy[depositor] += msg.value;
         }
 
-        if (!depositedUxTokensOf[depositor].contains(_uxTokenAddress)) {
-            depositedUxTokensOf[depositor].add(_uxTokenAddress);
+        if (!depositedurTokensOf[depositor].contains(_urTokenAddress)) {
+            depositedurTokensOf[depositor].add(_urTokenAddress);
         }
 
         uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
         if (
-            !depositedUxTokensOfUserForPeriod[depositor][currentPeriod]
-                .contains(_uxTokenAddress)
+            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
+                .contains(_urTokenAddress)
         ) {
-            depositedUxTokensOfUserForPeriod[depositor][currentPeriod].add(
-                _uxTokenAddress
+            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
+                _urTokenAddress
             );
         }
-        depositedAmountOfUserAgainstUxToken[depositor][
-            _uxTokenAddress
+        depositedAmountOfUserAgainsturToken[depositor][
+            _urTokenAddress
         ] += remaining;
-        depositedAmountOfUserAgainstUxTokenForPeriod[depositor][
-            _uxTokenAddress
+        depositedAmountOfUserAgainsturTokenForPeriod[depositor][
+            _urTokenAddress
         ][currentPeriod] += remaining;
 
-        emit Protect(depositor, _uxTokenAddress, currentPeriod, remaining);
+        emit Protect(depositor, _urTokenAddress, currentPeriod, remaining);
     }
 
     function _handleFee(
-        address _uxTokenAddress,
+        address _urTokenAddress,
         uint256 _depositFee,
         uint256 _currentTimePeriodCount
     ) internal {
@@ -346,22 +346,22 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
 
         // Transfer fees and require success
         require(
-            IuxToken(_uxTokenAddress).protect(ux369gift_30, thirtyPercentShare),
+            IurToken(_urTokenAddress).protect(ux369gift_30, thirtyPercentShare),
             "gift failed"
         );
         require(
-            IuxToken(_uxTokenAddress).protect(ux369_30, thirtyPercentShare),
+            IurToken(_urTokenAddress).protect(ux369_30, thirtyPercentShare),
             "369 failed"
         );
         require(
-            IuxToken(_uxTokenAddress).protect(
+            IurToken(_urTokenAddress).protect(
                 ux369impact_30,
                 thirtyPercentShare
             ),
             "369 failed"
         );
         require(
-            IuxToken(_uxTokenAddress).protect(ux369devs_10, tenPercentShare),
+            IurToken(_urTokenAddress).protect(ux369devs_10, tenPercentShare),
             "369Dev failed"
         );
 
@@ -376,7 +376,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     }
 
     function burnAndUnprotect(
-        address _uxTokenAddress,
+        address _urTokenAddress,
         uint256 _amount,
         bool _quantumVerified,
         string memory _customMessage,
@@ -401,58 +401,58 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
             "SignKey incorrect"
         );
         require(
-            _uxTokenAddress == uxTokenAddressOfETH ||
-                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken"
+            _urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress),
+            "invalid urToken"
         );
 
-        uint256 balance = IuxToken(_uxTokenAddress).balanceOf(withdrawer);
+        uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
         require(_amount > 0, "invalid amount");
         require(balance >= _amount, "Not enough");
 
         require(
-            IuxToken(_uxTokenAddress).burnAndUnprotect(withdrawer, _amount),
+            IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount),
             "withdraw failed"
         );
 
         // Transfer the amount based on the token type
-        if (_uxTokenAddress == uxTokenAddressOfETH) {
+        if (_urTokenAddress == urTokenAddressOfETH) {
             payable(withdrawer).transfer(_amount);
         } else {
-            IERC20(tokenAdressForUxToken[_uxTokenAddress]).transfer(
+            IERC20(tokenAdressForurToken[_urTokenAddress]).transfer(
                 withdrawer,
                 _amount
             );
         }
 
         // Update the deposited amounts
-        uint256 previousAmount = depositedAmountOfUserAgainstUxToken[
+        uint256 previousAmount = depositedAmountOfUserAgainsturToken[
             withdrawer
-        ][_uxTokenAddress];
-        depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] =
+        ][_urTokenAddress];
+        depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] =
             previousAmount -
             _amount;
 
         // Update the current period deposits
         uint256 currentPeriod = getCurrentPeriodFor369hours();
         if (
-            depositedAmountOfUserAgainstUxToken[withdrawer][_uxTokenAddress] <
-            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
-                _uxTokenAddress
+            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] <
+            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
+                _urTokenAddress
             ][currentPeriod]
         ) {
-            depositedAmountOfUserAgainstUxTokenForPeriod[withdrawer][
-                _uxTokenAddress
-            ][currentPeriod] = depositedAmountOfUserAgainstUxToken[withdrawer][
-                _uxTokenAddress
+            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
+                _urTokenAddress
+            ][currentPeriod] = depositedAmountOfUserAgainsturToken[withdrawer][
+                _urTokenAddress
             ];
         }
 
-        emit BurnAndUnprotect(withdrawer, _uxTokenAddress, _amount);
+        emit BurnAndUnprotect(withdrawer, _urTokenAddress, _amount);
     }
 
     function transfer(
-        address _uxTokenAddress,
+        address _urTokenAddress,
         address _to,
         uint256 _amount,
         bool _quantumVerified,
@@ -479,13 +479,13 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         );
         require(_amount > 0, "Invalid amount");
         require(
-            _uxTokenAddress == uxTokenAddressOfETH ||
-                uxTokensOfAllowedTokens.contains(_uxTokenAddress),
-            "invalid uxToken"
+            _urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress),
+            "invalid urToken"
         );
 
         // Transfer the tokens
-        IuxToken(_uxTokenAddress).transfer(_to, _amount);
+        IurToken(_urTokenAddress).transfer(_to, _amount);
 
         return true;
     }
@@ -692,59 +692,59 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     }
 
     /**
-     * @dev Returns the addresses of all uxTokens of the allowed tokens.
+     * @dev Returns the addresses of all urTokens of the allowed tokens.
      *
-     * This function returns an array of the addresses of all uxTokens that correspond to currently allowed tokens.
+     * This function returns an array of the addresses of all urTokens that correspond to currently allowed tokens.
      *
      * @return An array of addresses representing uTokens of allowed tokens.
      */
-    function allUxTokensOfAllowedTokens()
+    function allurTokensOfAllowedTokens()
         public
         view
         returns (address[] memory)
     {
-        return uxTokensOfAllowedTokens.values();
+        return urTokensOfAllowedTokens.values();
     }
 
     /**
-     * @dev Returns the count of all uxTokens of the allowed tokens.
+     * @dev Returns the count of all urTokens of the allowed tokens.
      *
-     * This function returns the total count of uxTokens that correspond to currently allowed tokens.
+     * This function returns the total count of urTokens that correspond to currently allowed tokens.
      *
-     * @return A number representing the count of uxTokens of allowed tokens.
+     * @return A number representing the count of urTokens of allowed tokens.
      */
-    function allUxTokensOfAllowedTokensCount() public view returns (uint256) {
-        return uxTokensOfAllowedTokens.length();
+    function allurTokensOfAllowedTokensCount() public view returns (uint256) {
+        return urTokensOfAllowedTokens.length();
     }
 
     /**
-     * @dev Returns the address of the token corresponding to the given uxToken.
+     * @dev Returns the address of the token corresponding to the given urToken.
      *
-     * This function takes the address of a uxToken and returns the address of the corresponding token.
+     * This function takes the address of a urToken and returns the address of the corresponding token.
      *
-     * @param _uxToken The address of the uToken.
+     * @param _urToken The address of the uToken.
      *
-     * @return The address of the token that corresponds to the given uxToken.
+     * @return The address of the token that corresponds to the given urToken.
      */
-    function getTokenAddressForUxToken(
-        address _uxToken
+    function getTokenAddressForurToken(
+        address _urToken
     ) public view returns (address) {
-        return tokenAdressForUxToken[_uxToken];
+        return tokenAdressForurToken[_urToken];
     }
 
     /**
-     * @dev Returns the address of the uxToken corresponding to the given token.
+     * @dev Returns the address of the urToken corresponding to the given token.
      *
-     * This function takes the address of a token and returns the address of the corresponding uxToken.
+     * This function takes the address of a token and returns the address of the corresponding urToken.
      *
      * @param _token The address of the token.
      *
-     * @return The address of the uxToken that corresponds to the given token.
+     * @return The address of the urToken that corresponds to the given token.
      */
-    function getUxTokenAddressForToken(
+    function geturTokenAddressForToken(
         address _token
     ) public view returns (address) {
-        return uxTokenAddressForToken[_token];
+        return urTokenAddressForToken[_token];
     }
 
     //-------------------- Deposit Details for 369 days -------------------------------//
@@ -763,24 +763,24 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     }
 
     struct DepositsOfUser {
-        address uxTokenAddress;
+        address urTokenAddress;
         uint256 amount;
     }
 
     function getDepositDetailsForUser(
         address _depositor
     ) public view returns (DepositsOfUser[] memory depositDetails) {
-        address[] memory totaluxTokens = depositedUxTokensOf[_depositor]
+        address[] memory totalurTokens = depositedurTokensOf[_depositor]
             .values();
-        uint256 tokensCount = totaluxTokens.length;
+        uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
-                    uxTokenAddress: totaluxTokens[i],
-                    amount: depositedAmountOfUserAgainstUxToken[_depositor][
-                        totaluxTokens[i]
+                    urTokenAddress: totalurTokens[i],
+                    amount: depositedAmountOfUserAgainsturToken[_depositor][
+                        totalurTokens[i]
                     ]
                 });
             }
@@ -810,71 +810,71 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
     }
 
     /**
-     * @dev Returns the addresses of all uxTokens deposited by a specific depositor.
+     * @dev Returns the addresses of all urTokens deposited by a specific depositor.
      *
      * This function takes the address of an depositor and returns an array of addresses
-     * representing all uxTokens that the depositor has deposited in.
+     * representing all urTokens that the depositor has deposited in.
      *
      * @param _depositor The address of the depositor.
      *
-     * @return depositeduxTokens An array of uxToken addresses in which the depositor has deposited.
+     * @return depositedurTokens An array of urToken addresses in which the depositor has deposited.
      */
-    function getDepositedUxTokensForUser(
+    function getDepositedurTokensForUser(
         address _depositor
-    ) public view returns (address[] memory depositeduxTokens) {
-        depositeduxTokens = depositedUxTokensOf[_depositor].values();
+    ) public view returns (address[] memory depositedurTokens) {
+        depositedurTokens = depositedurTokensOf[_depositor].values();
     }
 
     /**
-     * @dev Returns the addresses of all uxTokens deposited by a specific depositor during a specific period.
+     * @dev Returns the addresses of all urTokens deposited by a specific depositor during a specific period.
      *
      * This function takes the address of an depositor and a period, and returns an array of addresses
-     * representing all uxTokens that the depositor has deposited in during the specified period.
+     * representing all urTokens that the depositor has deposited in during the specified period.
      *
      * @param _depositor The address of the depositor.
      * @param _period The period of investment.
      *
-     * @return depositeduxTokensForPeriod An array of uxToken addresses in which the depositor has deposited during the specified period.
+     * @return depositedurTokensForPeriod An array of urToken addresses in which the depositor has deposited during the specified period.
      */
-    function getDepositedUxTokensOfUserForPeriodFor369hours(
+    function getDepositedurTokensOfUserForPeriodFor369hours(
         address _depositor,
         uint256 _period
-    ) public view returns (address[] memory depositeduxTokensForPeriod) {
-        depositeduxTokensForPeriod = depositedUxTokensOfUserForPeriod[
+    ) public view returns (address[] memory depositedurTokensForPeriod) {
+        depositedurTokensForPeriod = depositedurTokensOfUserForPeriod[
             _depositor
         ][_period].values();
     }
 
     /**
-     * @dev Returns the amount deposited by a specific depositor in a specific uxToken during a specific period.
+     * @dev Returns the amount deposited by a specific depositor in a specific urToken during a specific period.
      *
-     * This function takes the address of an depositor, a uxToken, and a period, and returns the amount
-     * that the depositor has deposited in the specified uxToken during the specified period.
+     * This function takes the address of an depositor, a urToken, and a period, and returns the amount
+     * that the depositor has deposited in the specified urToken during the specified period.
      *
      * @param _depositor The address of the depositor.
-     * @param _uxToken The address of the uxToken.
+     * @param _urToken The address of the urToken.
      * @param _period The period of deposit.
      *
-     * @return depositedAmount The amount deposited by the depositor in the specified uxToken during the specified period.
+     * @return depositedAmount The amount deposited by the depositor in the specified urToken during the specified period.
      */
-    function getDepositedAmountOfUserAgainstUxTokenForPeriodFor369hours(
+    function getDepositedAmountOfUserAgainsturTokenForPeriodFor369hours(
         address _depositor,
-        address _uxToken,
+        address _urToken,
         uint256 _period
     ) public view returns (uint256 depositedAmount) {
-        depositedAmount = depositedAmountOfUserAgainstUxTokenForPeriod[
+        depositedAmount = depositedAmountOfUserAgainsturTokenForPeriod[
             _depositor
-        ][_uxToken][_period];
+        ][_urToken][_period];
     }
 
     /**
      * @dev A struct that holds details about a user's deposit details for a specific period.
      *
-     * @param uxTokenAddress The address of the uxToken in which the deposit was made.
-     * @param amount The amount deposited in the uxToken.
+     * @param urTokenAddress The address of the urToken in which the deposit was made.
+     * @param amount The amount deposited in the urToken.
      */
     struct DepositsForPeriodOfUser {
-        address uxTokenAddress;
+        address urTokenAddress;
         uint256 amount;
     }
 
@@ -882,7 +882,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
      * @dev Returns the details of deposits made by a specific depositor during a specific period.
      *
      * This function takes the address of an depositor and a period, and returns an array of `DepositsForPeriodOfUser`
-     * structs that includes the uxToken address and the amount deposited for each uxToken during the specified period.
+     * structs that includes the urToken address and the amount deposited for each urToken during the specified period.
      *
      * @param _depositor The address of the depositor.
      * @param _period The period of deposits.
@@ -893,29 +893,29 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         address _depositor,
         uint256 _period
     ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
-        address[] memory totaluxTokens = depositedUxTokensOfUserForPeriod[
+        address[] memory totalurTokens = depositedurTokensOfUserForPeriod[
             _depositor
         ][_period].values();
-        uint256 tokensCount = totaluxTokens.length;
+        uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
         if (tokensCount > 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
-                    uxTokenAddress: totaluxTokens[i],
-                    amount: depositedAmountOfUserAgainstUxTokenForPeriod[
+                    urTokenAddress: totalurTokens[i],
+                    amount: depositedAmountOfUserAgainsturTokenForPeriod[
                         _depositor
-                    ][totaluxTokens[i]][_period]
+                    ][totalurTokens[i]][_period]
                 });
             }
         }
     }
 
-    //  Retrieves the currency type associated with a uxToken.
-    function getCurrencyOfUxToken(
-        address _uxToken
+    //  Retrieves the currency type associated with a urToken.
+    function getCurrencyOfurToken(
+        address _urToken
     ) public view returns (string memory currency) {
-        return currencyOfUxToken[_uxToken];
+        return currencyOfurToken[_urToken];
     }
 
     // Checks whether the entered signKey matches the one associated with the user address.

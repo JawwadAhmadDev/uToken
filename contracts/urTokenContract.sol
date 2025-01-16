@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-interface IuxToken {
+interface IurToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -50,7 +50,7 @@ interface IuxToken {
     function currency() external view returns (string memory);
 }
 
-contract uxTokenContract is IuxToken {
+contract urTokenContract is IurToken {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private whiteList; // set to store whitelist users.
@@ -103,7 +103,7 @@ contract uxTokenContract is IuxToken {
         }
     }
 
-    // function to take ethers and transfer uxTokens
+    // function to take ethers and transfer urTokens
     function protect(
         address _owner,
         uint256 _amount
@@ -112,7 +112,7 @@ contract uxTokenContract is IuxToken {
         return true;
     }
 
-    // function to take uxTokens and send Ethers back
+    // function to take urTokens and send Ethers back
     function burnAndUnprotect(
         address _owner,
         uint256 _amount
