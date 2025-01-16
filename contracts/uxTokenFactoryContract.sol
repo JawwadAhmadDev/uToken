@@ -620,7 +620,7 @@ contract uxTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        require(_isQuantumProtected[caller], "Already Quantum protected");
+        require(!_isQuantumProtected[caller], "Already Quantum protected");
         require(
             ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
             "not reg"
