@@ -13,7 +13,7 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
     "0x182272CF384b4BF46efFfdE61c75101664CdEE8A",
   ]); // Replace with actual token addresses
   const whiteListAddresses = m.getParameter("whiteListAddresses", [
-    "0x506ae3560Fc3797E94b307bb9143D2360Cdf8c81",
+    "0xE8c3300B3b4A62e649a7CC3aC313845E3D25A1Af",
     "0x0ad26d5CC37964E6620E090e3293506cF848F41e",
   ]); // Replace with actual whitelisted addresses
   const priceFeedAddress = m.getParameter(
