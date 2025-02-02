@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract RewardDistributor is Ownable {
+contract ur369Fractal is Ownable {
     address public immutable u369gifthAddress_30 =
         0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1; // 30%
     address public immutable u369impactAddress_30 =

@@ -29,19 +29,19 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     // Deposit details of specific user.
     mapping(address => EnumerableSet.AddressSet) private depositedurTokensOf; // depositorAddress -> All urTokens addresses deposited in
     mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private depositedurTokensOfUserForPeriod; // depositorAddress -> period -> All uTokens addresses
+        private depositedurTokensOfUserForPeriod; // depositorAddress -> period -> All urTokens addresses
     mapping(address => mapping(address => uint256))
         private depositedAmountOfUserAgainsturToken; // depositor -> urTokenAddress -> amount
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         private depositedAmountOfUserAgainsturTokenForPeriod; // depositor -> urTokenAddress -> period -> totalDeposits
 
-    mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count i.e. how much 365 hours passed) => depositors addresses.
-    mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count i.e. how much 365 hours passed) => depositedTokens address
-    mapping(uint256 => uint256) private ETHInPeriod; // (period count i.e. how much 365 hours passed) => deposited Ethers in the this period
+    mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count) => depositors addresses.
+    mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count) => depositedTokens address
+    mapping(uint256 => uint256) private ETHInPeriod; // (period count) => deposited Ethers in the this period
     mapping(uint256 => mapping(address => uint256))
         private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
     mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
-    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some investment is made.
+    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean  (to check that in which period some protection is made).
 
     // mappings to store Sign Key and randomly generated Master key against user.
     mapping(address => bool) private _isQuantumProtected;
@@ -609,7 +609,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         }
     }
 
-    // function to change sign key type from simple to quantum or from quantum to simple
+    // function to change sign key type from simple to quantum
     function changeSignKeyType(
         string memory _masterKey,
         string memory _customMessage,
@@ -722,7 +722,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
      *
      * This function takes the address of a urToken and returns the address of the corresponding token.
      *
-     * @param _urToken The address of the uToken.
+     * @param _urToken The address of the urToken.
      *
      * @return The address of the token that corresponds to the given urToken.
      */
@@ -887,7 +887,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
      * @param _depositor The address of the depositor.
      * @param _period The period of deposits.
      *
-     * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the uToken address and the investment amount for each investment made by the investor during the specified period.
+     * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the urToken address and the investment amount for each investment made by the investor during the specified period.
      */
     function getDepositDetailsOfUserForPeriodFor369hours(
         address _depositor,
