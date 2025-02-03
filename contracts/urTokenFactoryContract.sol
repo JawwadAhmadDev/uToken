@@ -561,7 +561,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         _isSignKeySetOf[caller] = true;
     }
 
-    function changeSignKey(
+    function enableQuantumKey(
         string memory _masterKey,
         string memory _customMessage,
         bytes32 _newSignKeyHash,
