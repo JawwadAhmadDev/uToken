@@ -228,7 +228,7 @@ interface IERC20 {
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract RewardDistributor is Ownable {
+contract ur369Fractal is Ownable {
     address public immutable ur369gifthAddress_30 =
         0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1; // 30%
     address public immutable ur369impactAddress_30 =
