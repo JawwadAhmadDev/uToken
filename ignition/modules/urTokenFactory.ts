@@ -18,7 +18,8 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
   ]); // Replace with actual whitelisted addresses
   const priceFeedAddress = m.getParameter(
     "priceFeedAddress",
-    "0x694AA1769357215DE4FAC081bf1f309aDC325306"
+    "0x694AA1769357215DE4FAC081bf1f309aDC325306" // sepolia
+    // "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" // mainnet
   ); // Replace with actual price feed address
 
   // Deploy the contract with constructor arguments
