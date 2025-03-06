@@ -41,7 +41,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     mapping(uint256 => mapping(address => uint256))
         private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
     mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
-    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean  (to check that in which period some protection is made).
+    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some protection is made).
 
     // mappings to store Sign Key and randomly generated Master key against user.
     mapping(address => bool) private _isQuantumProtected;
@@ -76,10 +76,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public ur369gift_30 = 0xBe9ECB5353A3Db50DE7d50d7B85986D8c3A845A1;
-    address public ur369impact_30 = 0x822dbBB741B82d9f8c6F22Cb414b735817cd42EA;
-    address public ur369_30 = 0xcE14e3556FF59C83F849D0a4082258000FA23D30;
-    address public ur369devs_10 = 0x29817e172E0d798dCc052f87a486fEd529c015C3;
+    address public ur369gift_30 = 0x70C819445c6Bb5a144954818DE138b4A713408dC;
+    address public ur369impact_30 = 0x22357B3034DF4a65a00E5887aFB09e94Df17B7B9;
+    address public ur369_30 = 0x4eb401801b42139737faC676C5da5e43F6A1A828;
+    address public ur369devs_10 = 0xDB0ccF145A929c48277a4431004D633E9D84258a;
 
     event Protect(
         address depositor,
