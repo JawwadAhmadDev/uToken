@@ -107,3 +107,11 @@ u369community-dev.eth
 0x29817e172E0d798dCc052f87a486fEd529c015C3
 u369stateless.eth
 0xfb34831b967FC1d8667bf49A81Fc7509529DE128
+
+
+
+mainnet deployed addresses:
+urTokenFactoryContract: https://etherscan.io/address/0x01cF52811DEB802866F36A70c52A34cE7c51718e#code
+urLegacyContract: https://etherscan.io/address/0xB09c706356c60eBDc3a09d20C74dFa6135e54693#code
+AwardDistributor: https://etherscan.io/address/0x661ae8ab07242bedcd19c8c189287ebeb96093c4#code
+ChainlinkKeeper: https://automation.chain.link/mainnet/24182002308870531356977340761896910514537690560381411573736572362034864018768

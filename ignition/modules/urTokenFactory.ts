@@ -36,11 +36,10 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
   const whiteListAddresses = m.getParameter("whiteListAddresses", [
     // "0xE8c3300B3b4A62e649a7CC3aC313845E3D25A1Af",
     // "0x0ad26d5CC37964E6620E090e3293506cF848F41e",
-
     // mainnet
     "0x66a9893cc07d91d95644aedd05d03f95e1dba8af", // UNIVERSAL ROUTER UNISWAP V4
-    "", // urLegacy
-    "", // urFractal
+    "0xB09c706356c60eBDc3a09d20C74dFa6135e54693", // urLegacy
+    "0x661aE8Ab07242BeDcd19C8c189287EBEb96093C4", // urFractal
   ]); // Replace with actual whitelisted addresses
   const priceFeedAddress = m.getParameter(
     "priceFeedAddress",
@@ -51,10 +50,10 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
   // Deploy the contract with constructor arguments
   const yourContract = m.contract(
     "urTokenFactoryContract",
-    [appName, allowedTokens, whiteListAddresses, priceFeedAddress]
-    // {
-    //   gasLimit: 6000000000, // Adjust based on estimation
-    // }
+    [appName, allowedTokens, whiteListAddresses, priceFeedAddress],
+    {
+      gasLimit: 6000000000, // Adjust based on estimation
+    }
   );
 
   return { yourContract };
