@@ -111,8 +111,8 @@ u369stateless.eth
 
 
 mainnet deployed addresses:
-urTokenFactoryContract: https://etherscan.io/address/0x01cF52811DEB802866F36A70c52A34cE7c51718e#code
-urLegacyContract: https://etherscan.io/address/0xB09c706356c60eBDc3a09d20C74dFa6135e54693#code
+urTokenFactoryContract: https://sepolia.etherscan.io/address/0xa5702306a73CA28eCe41f570F32eBa1230277573#code
+urLegacyContract: https://sepolia.etherscan.io/address/0x34a5788D30B19d28f9D38a66E268ebB4F76De9a2#code
 AwardDistributor: https://etherscan.io/address/0x661ae8ab07242bedcd19c8c189287ebeb96093c4#code
 ChainlinkKeeper: https://automation.chain.link/mainnet/24182002308870531356977340761896910514537690560381411573736572362034864018768
 

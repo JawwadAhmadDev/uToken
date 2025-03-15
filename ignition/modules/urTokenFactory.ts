@@ -34,7 +34,7 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
     // "0xae78736cd615f374d3085123a210448e74fc6393",
   ]); // Replace with actual token addresses
   const whiteListAddresses = m.getParameter("whiteListAddresses", [
-    "0x5AB5d8caC4B5942A82F225C04f96f4CCE53F87d8",
+    "0x34a5788D30B19d28f9D38a66E268ebB4F76De9a2",
     "0x0ad26d5CC37964E6620E090e3293506cF848F41e",
     // mainnet
     // "0x66a9893cc07d91d95644aedd05d03f95e1dba8af", // UNIVERSAL ROUTER UNISWAP V4
