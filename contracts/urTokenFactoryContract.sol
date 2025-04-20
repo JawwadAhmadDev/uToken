@@ -63,6 +63,8 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     // fee detial
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
     uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    uint256 public benefactionFeePercentForHighSupply = 3690; // 0.0369 * 1000 = 3690% of total deposited amount.
+    uint256 public supplyThresholdForFeeReduction = 1_000_000 * 1e18; // 1 million tokens
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
         30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
     uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
@@ -259,8 +261,11 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             "invalid urToken"
         );
 
-        // Calculate deposit fee and remaining amount
-        uint256 depositFee = (_amount * benefactionFeePercent) / ZOOM;
+        // Calculate deposit fee based on the amount being deposited
+        uint256 feePercent = _amount > supplyThresholdForFeeReduction
+            ? benefactionFeePercentForHighSupply
+            : benefactionFeePercent;
+        uint256 depositFee = (_amount * feePercent) / ZOOM;
         uint256 remaining = _amount - depositFee;
 
         // Call protect method on urToken contract
