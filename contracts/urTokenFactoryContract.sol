@@ -10,7 +10,7 @@ import "./urTokenContract.sol";
 import "./PasswordManager.sol";
 
 contract urTokenFactoryContract is Ownable, PasswordManager {
-    // using SafeMath for uint256;b
+    // using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -113,6 +113,21 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         uint256 timestamp,
         bool isQuantumProtected
     );
+    error InvalidAllowedToken();
+    error TokenAlreadyAdded();
+    error TokenNotAdded();
+    error SignKeySet();
+    error SignKeyNotSet();
+    error QuantumNotSet();
+    error SignKeyIncorrect();
+    error MasterKeyIncorrect();
+    error AlreadyQuantomProtected();
+    error InvalidAmount();
+    error InvalidurToken();
+    error DepositFailed();
+    error WithdrawFailed();
+    error Failed();
+    error UserNotRegistered();
 
     constructor(
         string memory _appName,
@@ -189,8 +204,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
-            require(tokenAddress.code.length > 0, "INVALID ALLOWED");
-            require(!allowedTokens.contains(tokenAddress), "added");
+            if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
+            if (allowedTokens.contains(tokenAddress))
+                revert TokenAlreadyAdded();
 
             address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
             tokenAdressForurToken[deployedAddress] = tokenAddress;
@@ -218,7 +234,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
-            require(allowedTokens.contains(tokenAddress), "Not Added");
+            if (!allowedTokens.contains(tokenAddress)) {
+                revert TokenNotAdded();
+            }
 
             allowedTokens.remove(tokenAddress);
             urTokensOfAllowedTokens.remove(
@@ -240,96 +258,20 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external payable {
         address depositor = msg.sender;
 
-        require(_isSignKeySetOf[msg.sender], "SignKey not set");
-        if (_quantumVerified) {
-            require(_isQuantumProtected[msg.sender], "Quantum not set");
-        }
-        require(
-            verifyLogin(
-                msg.sender,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            ),
-            "SignKey incorrect"
+        _verifyUser(
+            depositor,
+            _quantumVerified,
+            _customMessage,
+            _signKeyHash,
+            _deadline,
+            _ethSignature
         );
-        require(_amount > 0, "invalid amount");
-        require(
-            _urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress),
-            "invalid urToken"
-        );
+        _handleDeposit(_urTokenAddress, _amount, depositor);
+        _trackDeposits(_urTokenAddress, _amount, depositor);
 
-        // Calculate deposit fee based on the amount being deposited
-        uint256 feePercent = _amount > supplyThresholdForFeeReduction
-            ? benefactionFeePercentForHighSupply
-            : benefactionFeePercent;
-        uint256 depositFee = (_amount * feePercent) / ZOOM;
-        uint256 remaining = _amount - depositFee;
+        uint256 remaining = _getRemainingAmount(_amount);
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
 
-        // Call protect method on urToken contract
-        require(
-            IurToken(_urTokenAddress).protect(msg.sender, remaining),
-            "deposit failed"
-        );
-
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
-        uint256 thirtyPercentShare = (depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        // Handle fees and deposits
-        if (_urTokenAddress == urTokenAddressOfETH) {
-            require(msg.value > 0, "invalid Ether");
-
-            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
-        } else {
-            IERC20(tokenAdressForurToken[_urTokenAddress]).transferFrom(
-                depositor,
-                address(this),
-                _amount
-            );
-
-            if (
-                !tokensByPeriod[currentTimePeriodCount].contains(
-                    tokenAdressForurToken[_urTokenAddress]
-                )
-            ) {
-                tokensByPeriod[currentTimePeriodCount].add(
-                    tokenAdressForurToken[_urTokenAddress]
-                );
-            }
-
-            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-                tokenAdressForurToken[_urTokenAddress]
-            ] += thirtyPercentShare;
-        }
-
-        _handleFee(_urTokenAddress, depositFee, currentTimePeriodCount);
-
-        // Add depositor to the list if it's the first deposit
-        if (!allDepositors.contains(depositor)) {
-            allDepositors.add(depositor);
-        }
-
-        // Update deposit details for 369 days mappings
-        if (_urTokenAddress == urTokenAddressOfETH) {
-            nativeCurrencyDepositedBy[depositor] += msg.value;
-        }
-
-        if (!depositedurTokensOf[depositor].contains(_urTokenAddress)) {
-            depositedurTokensOf[depositor].add(_urTokenAddress);
-        }
-
-        uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
-        if (
-            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
-                .contains(_urTokenAddress)
-        ) {
-            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
-                _urTokenAddress
-            );
-        }
         depositedAmountOfUserAgainsturToken[depositor][
             _urTokenAddress
         ] += remaining;
@@ -338,6 +280,117 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         ][currentPeriod] += remaining;
 
         emit Protect(depositor, _urTokenAddress, currentPeriod, remaining);
+    }
+
+    function _verifyUser(
+        address user,
+        bool quantumVerified,
+        string memory message,
+        bytes32 signKeyHash,
+        uint256 deadline,
+        bytes memory signature
+    ) internal view {
+        if (!_isSignKeySetOf[user]) {
+            revert SignKeyNotSet();
+        }
+
+        if (quantumVerified) {
+            if (!_isQuantumProtected[user]) {
+                revert QuantumNotSet();
+            }
+        }
+
+        if (!verifyLogin(user, message, signKeyHash, deadline, signature)) {
+            revert SignKeyIncorrect();
+        }
+    }
+
+    function _getRemainingAmount(
+        uint256 amount
+    ) internal view returns (uint256) {
+        if (!(amount > 0)) {
+            revert InvalidAmount();
+        }
+
+        uint256 feePercent = amount > supplyThresholdForFeeReduction
+            ? benefactionFeePercentForHighSupply
+            : benefactionFeePercent;
+
+        return amount - ((amount * feePercent) / ZOOM);
+    }
+
+    function _handleDeposit(
+        address urTokenAddr,
+        uint256 amount,
+        address depositor
+    ) internal {
+        if (
+            !(urTokenAddr == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(urTokenAddr))
+        ) {
+            revert InvalidurToken();
+        }
+        uint256 feePercent = amount > supplyThresholdForFeeReduction
+            ? benefactionFeePercentForHighSupply
+            : benefactionFeePercent;
+        uint256 depositFee = (amount * feePercent) / ZOOM;
+        uint256 remaining = amount - depositFee;
+
+        if (!(IurToken(urTokenAddr).protect(depositor, remaining))) {
+            revert DepositFailed();
+        }
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
+        uint256 thirtyPercent = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+
+        if (urTokenAddr == urTokenAddressOfETH) {
+            if (!(msg.value > 0)) {
+                revert InvalidAmount();
+            }
+            ETHInPeriod[currentPeriod] += thirtyPercent;
+        } else {
+            address token = tokenAdressForurToken[urTokenAddr];
+            IERC20(token).transferFrom(depositor, address(this), amount);
+
+            if (!tokensByPeriod[currentPeriod].contains(token)) {
+                tokensByPeriod[currentPeriod].add(token);
+            }
+
+            totalRewardAmountForTokenInPeriod[currentPeriod][
+                token
+            ] += thirtyPercent;
+        }
+
+        _handleFee(urTokenAddr, depositFee, currentPeriod);
+    }
+
+    function _trackDeposits(
+        address urTokenAddr,
+        uint256 amount,
+        address depositor
+    ) internal {
+        if (!allDepositors.contains(depositor)) {
+            allDepositors.add(depositor);
+        }
+
+        if (urTokenAddr == urTokenAddressOfETH) {
+            nativeCurrencyDepositedBy[depositor] += msg.value;
+        }
+
+        if (!depositedurTokensOf[depositor].contains(urTokenAddr)) {
+            depositedurTokensOf[depositor].add(urTokenAddr);
+        }
+
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
+
+        if (
+            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
+                .contains(urTokenAddr)
+        ) {
+            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
+                urTokenAddr
+            );
+        }
     }
 
     function _handleFee(
@@ -350,25 +403,36 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
 
         // Transfer fees and require success
-        require(
-            IurToken(_urTokenAddress).protect(ur369gift_30, thirtyPercentShare),
-            "gift failed"
-        );
-        require(
-            IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare),
-            "369 failed"
-        );
-        require(
-            IurToken(_urTokenAddress).protect(
-                ur369impact_30,
-                thirtyPercentShare
-            ),
-            "369 failed"
-        );
-        require(
-            IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare),
-            "369Dev failed"
-        );
+        if (
+            !(
+                IurToken(_urTokenAddress).protect(
+                    ur369gift_30,
+                    thirtyPercentShare
+                )
+            )
+        ) {
+            revert Failed();
+        }
+        if (
+            !(IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare))
+        ) {
+            revert Failed();
+        }
+        if (
+            !(
+                IurToken(_urTokenAddress).protect(
+                    ur369impact_30,
+                    thirtyPercentShare
+                )
+            )
+        ) {
+            revert Failed();
+        }
+        if (
+            !(IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare))
+        ) {
+            revert Failed();
+        }
 
         // Update period deposits and depositors
         if (!isDepositedInPeriod[_currentTimePeriodCount]) {
@@ -391,34 +455,47 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external {
         address withdrawer = msg.sender;
 
-        require(_isSignKeySetOf[withdrawer], "SignKey not set");
-        if (_quantumVerified) {
-            require(_isQuantumProtected[withdrawer], "Quantum not set");
+        if (!_isSignKeySetOf[withdrawer]) {
+            revert SignKeyNotSet();
         }
-        require(
-            verifyLogin(
-                withdrawer,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            ),
-            "SignKey incorrect"
-        );
-        require(
-            _urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress),
-            "invalid urToken"
-        );
+        if (_quantumVerified) {
+            if (!_isQuantumProtected[withdrawer]) {
+                revert QuantumNotSet();
+            }
+        }
+        if (
+            !(
+                verifyLogin(
+                    withdrawer,
+                    _customMessage,
+                    _signKeyHash,
+                    _deadline,
+                    _ethSignature
+                )
+            )
+        ) {
+            revert SignKeyIncorrect();
+        }
+        if (
+            !(_urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress))
+        ) {
+            revert InvalidurToken();
+        }
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
-        require(_amount > 0, "invalid amount");
-        require(balance >= _amount, "Not enough");
+        if (!(_amount > 0)) {
+            revert InvalidAmount();
+        }
+        if (!(balance >= _amount)) {
+            revert InvalidAmount();
+        }
 
-        require(
-            IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount),
-            "withdraw failed"
-        );
+        if (
+            !(IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount))
+        ) {
+            revert WithdrawFailed();
+        }
 
         // Transfer the amount based on the token type
         if (_urTokenAddress == urTokenAddressOfETH) {
@@ -468,26 +545,36 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external returns (bool) {
         address caller = msg.sender;
 
-        require(_isSignKeySetOf[caller], "SignKey not set");
-        if (_quantumVerified) {
-            require(_isQuantumProtected[caller], "Quantum not set");
+        if (_isSignKeySetOf[caller]) {
+            revert SignKeyNotSet();
         }
-        require(
-            verifyLogin(
-                caller,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            ),
-            "SignKey incorrect"
-        );
-        require(_amount > 0, "Invalid amount");
-        require(
-            _urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress),
-            "invalid urToken"
-        );
+        if (_quantumVerified) {
+            if (!_isQuantumProtected[caller]) {
+                revert QuantumNotSet();
+            }
+        }
+        if (
+            !(
+                verifyLogin(
+                    caller,
+                    _customMessage,
+                    _signKeyHash,
+                    _deadline,
+                    _ethSignature
+                )
+            )
+        ) {
+            revert SignKeyIncorrect();
+        }
+        if (!(_amount > 0)) {
+            revert InvalidAmount();
+        }
+        if (
+            !(_urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress))
+        ) {
+            revert InvalidurToken();
+        }
 
         // Transfer the tokens
         IurToken(_urTokenAddress).transfer(_to, _amount);
@@ -503,10 +590,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _ethSignature
     ) external {
         address caller = msg.sender;
-        require(
-            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "SignKey set"
-        );
+        if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+            revert SignKeySet();
+        }
+
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
         register(
@@ -536,7 +623,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        require(msg.value >= requiredETHFee);
+        if (!(msg.value >= requiredETHFee)) {
+            revert InvalidAmount();
+        }
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
@@ -545,10 +634,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         payable(ur369impact_30).transfer(thirtyPercentShare);
         payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
 
-        require(
-            (!(_isSignKeySetOf[caller]) && !(_isMasterKeySetOf[caller])),
-            "SignKey set"
-        );
+        if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+            revert SignKeySet();
+        }
         _masterKeyOf[caller] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[caller] = true;
         register(
@@ -576,14 +664,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        require(
-            ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
-            "User not registered"
-        );
-        require(
-            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
-            "incorrect masterkey"
-        );
+        if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+            revert UserNotRegistered();
+        }
+        if (!(_masterKeyOf[caller] == keccak256(bytes(_masterKey)))) {
+            revert MasterKeyIncorrect();
+        }
 
         if (_isQuantumProtected[caller]) {
             register(
@@ -625,19 +711,21 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        require(!_isQuantumProtected[caller], "Already Quantum protected");
-        require(
-            ((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller])),
-            "not reg"
-        );
-        require(
-            _masterKeyOf[caller] == keccak256(bytes(_masterKey)),
-            "wrong masterkey"
-        );
+        if (_isQuantumProtected[caller]) {
+            revert AlreadyQuantomProtected();
+        }
+        if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+            revert UserNotRegistered();
+        }
+        if (!(_masterKeyOf[caller] == keccak256(bytes(_masterKey)))) {
+            revert MasterKeyIncorrect();
+        }
         // change from simple to quantum
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        require(msg.value >= requiredETHFee);
+        if (!(msg.value >= requiredETHFee)) {
+            revert InvalidAmount();
+        }
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
@@ -1214,12 +1302,16 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         }
     }
 
+    error ErrrorFromOracle();
+
     // functions related fetching live prices
     function calculateETHFee(
         uint256 _feeInStableCoin
     ) public view returns (uint256) {
         int256 ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
-        require(ethPriceInUSD > 0, "wrong from oracle");
+        if (!(ethPriceInUSD > 0)) {
+            revert ErrrorFromOracle();
+        }
 
         uint256 ethFee = (_feeInStableCoin * 1e8) / uint256(ethPriceInUSD); // Conversion to ETH amount
         return ethFee;
