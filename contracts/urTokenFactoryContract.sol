@@ -258,20 +258,96 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external payable {
         address depositor = msg.sender;
 
-        _verifyUser(
-            depositor,
-            _quantumVerified,
-            _customMessage,
-            _signKeyHash,
-            _deadline,
-            _ethSignature
+        require(_isSignKeySetOf[msg.sender], "SignKey not set");
+        if (_quantumVerified) {
+            require(_isQuantumProtected[msg.sender], "Quantum not set");
+        }
+        require(
+            verifyLogin(
+                msg.sender,
+                _customMessage,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
+            ),
+            "SignKey incorrect"
         );
-        _handleDeposit(_urTokenAddress, _amount, depositor);
-        _trackDeposits(_urTokenAddress, _amount, depositor);
+        require(_amount > 0, "invalid amount");
+        require(
+            _urTokenAddress == urTokenAddressOfETH ||
+                urTokensOfAllowedTokens.contains(_urTokenAddress),
+            "invalid urToken"
+        );
 
-        uint256 remaining = _getRemainingAmount(_amount);
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
+        // Calculate deposit fee based on the amount being deposited
+        uint256 feePercent = _amount > supplyThresholdForFeeReduction
+            ? benefactionFeePercentForHighSupply
+            : benefactionFeePercent;
+        uint256 depositFee = (_amount * feePercent) / ZOOM;
+        uint256 remaining = _amount - depositFee;
 
+        // Call protect method on urToken contract
+        require(
+            IurToken(_urTokenAddress).protect(msg.sender, remaining),
+            "deposit failed"
+        );
+
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
+
+        uint256 thirtyPercentShare = (depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        // Handle fees and deposits
+        if (_urTokenAddress == urTokenAddressOfETH) {
+            require(msg.value > 0, "invalid Ether");
+
+            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
+        } else {
+            IERC20(tokenAdressForurToken[_urTokenAddress]).transferFrom(
+                depositor,
+                address(this),
+                _amount
+            );
+
+            if (
+                !tokensByPeriod[currentTimePeriodCount].contains(
+                    tokenAdressForurToken[_urTokenAddress]
+                )
+            ) {
+                tokensByPeriod[currentTimePeriodCount].add(
+                    tokenAdressForurToken[_urTokenAddress]
+                );
+            }
+
+            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
+                tokenAdressForurToken[_urTokenAddress]
+            ] += thirtyPercentShare;
+        }
+
+        _handleFee(_urTokenAddress, depositFee, currentTimePeriodCount);
+
+        // Add depositor to the list if it's the first deposit
+        if (!allDepositors.contains(depositor)) {
+            allDepositors.add(depositor);
+        }
+
+        // Update deposit details for 369 days mappings
+        if (_urTokenAddress == urTokenAddressOfETH) {
+            nativeCurrencyDepositedBy[depositor] += msg.value;
+        }
+
+        if (!depositedurTokensOf[depositor].contains(_urTokenAddress)) {
+            depositedurTokensOf[depositor].add(_urTokenAddress);
+        }
+
+        uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
+        if (
+            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
+                .contains(_urTokenAddress)
+        ) {
+            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
+                _urTokenAddress
+            );
+        }
         depositedAmountOfUserAgainsturToken[depositor][
             _urTokenAddress
         ] += remaining;
@@ -280,117 +356,6 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         ][currentPeriod] += remaining;
 
         emit Protect(depositor, _urTokenAddress, currentPeriod, remaining);
-    }
-
-    function _verifyUser(
-        address user,
-        bool quantumVerified,
-        string memory message,
-        bytes32 signKeyHash,
-        uint256 deadline,
-        bytes memory signature
-    ) internal view {
-        if (!_isSignKeySetOf[user]) {
-            revert SignKeyNotSet();
-        }
-
-        if (quantumVerified) {
-            if (!_isQuantumProtected[user]) {
-                revert QuantumNotSet();
-            }
-        }
-
-        if (!verifyLogin(user, message, signKeyHash, deadline, signature)) {
-            revert SignKeyIncorrect();
-        }
-    }
-
-    function _getRemainingAmount(
-        uint256 amount
-    ) internal view returns (uint256) {
-        if (!(amount > 0)) {
-            revert InvalidAmount();
-        }
-
-        uint256 feePercent = amount > supplyThresholdForFeeReduction
-            ? benefactionFeePercentForHighSupply
-            : benefactionFeePercent;
-
-        return amount - ((amount * feePercent) / ZOOM);
-    }
-
-    function _handleDeposit(
-        address urTokenAddr,
-        uint256 amount,
-        address depositor
-    ) internal {
-        if (
-            !(urTokenAddr == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(urTokenAddr))
-        ) {
-            revert InvalidurToken();
-        }
-        uint256 feePercent = amount > supplyThresholdForFeeReduction
-            ? benefactionFeePercentForHighSupply
-            : benefactionFeePercent;
-        uint256 depositFee = (amount * feePercent) / ZOOM;
-        uint256 remaining = amount - depositFee;
-
-        if (!(IurToken(urTokenAddr).protect(depositor, remaining))) {
-            revert DepositFailed();
-        }
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
-        uint256 thirtyPercent = (depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-
-        if (urTokenAddr == urTokenAddressOfETH) {
-            if (!(msg.value > 0)) {
-                revert InvalidAmount();
-            }
-            ETHInPeriod[currentPeriod] += thirtyPercent;
-        } else {
-            address token = tokenAdressForurToken[urTokenAddr];
-            IERC20(token).transferFrom(depositor, address(this), amount);
-
-            if (!tokensByPeriod[currentPeriod].contains(token)) {
-                tokensByPeriod[currentPeriod].add(token);
-            }
-
-            totalRewardAmountForTokenInPeriod[currentPeriod][
-                token
-            ] += thirtyPercent;
-        }
-
-        _handleFee(urTokenAddr, depositFee, currentPeriod);
-    }
-
-    function _trackDeposits(
-        address urTokenAddr,
-        uint256 amount,
-        address depositor
-    ) internal {
-        if (!allDepositors.contains(depositor)) {
-            allDepositors.add(depositor);
-        }
-
-        if (urTokenAddr == urTokenAddressOfETH) {
-            nativeCurrencyDepositedBy[depositor] += msg.value;
-        }
-
-        if (!depositedurTokensOf[depositor].contains(urTokenAddr)) {
-            depositedurTokensOf[depositor].add(urTokenAddr);
-        }
-
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
-
-        if (
-            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
-                .contains(urTokenAddr)
-        ) {
-            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
-                urTokenAddr
-            );
-        }
     }
 
     function _handleFee(
@@ -403,36 +368,25 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
 
         // Transfer fees and require success
-        if (
-            !(
-                IurToken(_urTokenAddress).protect(
-                    ur369gift_30,
-                    thirtyPercentShare
-                )
-            )
-        ) {
-            revert Failed();
-        }
-        if (
-            !(IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare))
-        ) {
-            revert Failed();
-        }
-        if (
-            !(
-                IurToken(_urTokenAddress).protect(
-                    ur369impact_30,
-                    thirtyPercentShare
-                )
-            )
-        ) {
-            revert Failed();
-        }
-        if (
-            !(IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare))
-        ) {
-            revert Failed();
-        }
+        require(
+            IurToken(_urTokenAddress).protect(ur369gift_30, thirtyPercentShare),
+            "gift failed"
+        );
+        require(
+            IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare),
+            "369 failed"
+        );
+        require(
+            IurToken(_urTokenAddress).protect(
+                ur369impact_30,
+                thirtyPercentShare
+            ),
+            "369 failed"
+        );
+        require(
+            IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare),
+            "369Dev failed"
+        );
 
         // Update period deposits and depositors
         if (!isDepositedInPeriod[_currentTimePeriodCount]) {
