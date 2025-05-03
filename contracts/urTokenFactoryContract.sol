@@ -8,6 +8,7 @@ import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.so
 import "./IERC20.sol";
 import "./urTokenContract.sol";
 import "./PasswordManager.sol";
+import "./FeeManager.sol";
 
 contract urTokenFactoryContract is Ownable, PasswordManager {
     // using SafeMath for uint256;
@@ -49,8 +50,6 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     mapping(address => bytes32) private _masterKeyOf;
     mapping(address => bool) private _isMasterKeySetOf;
 
-    AggregatorV3Interface public priceFeed; // Chainlink ETH/USD Price Feed
-
     // tokens addresses.
     address public urTokenAddressOfETH;
     EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
@@ -63,8 +62,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     // fee detial
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
     uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public benefactionFeePercentForHighSupply = 3690; // 0.0369 * 1000 = 3690% of total deposited amount.
-    uint256 public supplyThresholdForFeeReduction = 1_000_000 * 1e18; // 1 million tokens
+    uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
+    // uint256 public benefactionFeePercentForHighSupply = 3690; // 0.0369 * 1000 = 3690% of total deposited amount.
+    // uint256 public supplyThresholdForFeeReduction = 1_000_000 * 1e18; // 1 million tokens
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
         30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
     uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
@@ -254,9 +254,11 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         string memory _customMessage,
         bytes32 _signKeyHash,
         uint256 _deadline,
-        bytes memory _ethSignature
+        bytes memory _ethSignature,
+        address _paymentToken
     ) external payable {
-        address depositor = msg.sender;
+        address depositor = msg.sender; 
+        bool payInETH = _paymentToken == address(0);
 
         require(_isSignKeySetOf[msg.sender], "SignKey not set");
         if (_quantumVerified) {
@@ -279,51 +281,80 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             "invalid urToken"
         );
 
-        // Calculate deposit fee based on the amount being deposited
-        uint256 feePercent = _amount > supplyThresholdForFeeReduction
-            ? benefactionFeePercentForHighSupply
-            : benefactionFeePercent;
-        uint256 depositFee = (_amount * feePercent) / ZOOM;
-        uint256 remaining = _amount - depositFee;
+        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
+        uint requiredETHFee;
+        if (payInETH) {
+            // Payment in ETH
+            requiredETHFee = calculateETHFee(protectionFeeInUSD);
+            uint256 _totalETHAmount;
+            if(_urTokenAddress == urTokenAddressOfETH){
+                _totalETHAmount = requiredETHFee + _amount;
+            }
+            else {
+                _totalETHAmount = requiredETHFee;
+            }
+
+            require(msg.value >= _totalETHAmount, "Invalid ETH amount");
+
+            // Return extra eth back to the user
+            if (msg.value > _totalETHAmount) {
+                payable(msgSender).transfer(msg.value - _totalETHAmount);
+            }
+
+            uint256 thirtyPercentShare = (requiredETHFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+
+            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
+
+            _handleFee(requiredETHFee);
+        } else {
+            // Payment in token (modified logic)
+            require(
+                isAllowedFeeToken(_paymentToken),
+                "Token not allowed for payment"
+            );
+
+            // Calculate required token amount
+            uint256 requiredTokenAmount = calculateTokenFee(
+                protectionFeeInUSD,
+                _paymentToken
+            );
+
+            uint256 thirtyPercentShare = (requiredTokenAmount *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+
+            if (
+                !tokensByPeriod[currentTimePeriodCount].contains(
+                    _paymentToken
+                )
+            ) {
+                tokensByPeriod[currentTimePeriodCount].add(
+                    _paymentToken
+                );
+            }
+
+            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
+                _paymentToken
+            ] += thirtyPercentShare;
+
+            // Transfer tokens to fee receivers
+            _handleFeeToken(_paymentToken, requiredTokenAmount);
+        }
 
         // Call protect method on urToken contract
         require(
-            IurToken(_urTokenAddress).protect(msg.sender, remaining),
+            IurToken(_urTokenAddress).protect(msg.sender, _amount),
             "deposit failed"
         );
 
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-
-        uint256 thirtyPercentShare = (depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        // Handle fees and deposits
-        if (_urTokenAddress == urTokenAddressOfETH) {
-            require(msg.value > 0, "invalid Ether");
-
-            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
-        } else {
+        // take protected tokens from the user
+        if (_urTokenAddress != urTokenAddressOfETH) {
             IERC20(tokenAdressForurToken[_urTokenAddress]).transferFrom(
                 depositor,
                 address(this),
                 _amount
             );
-
-            if (
-                !tokensByPeriod[currentTimePeriodCount].contains(
-                    tokenAdressForurToken[_urTokenAddress]
-                )
-            ) {
-                tokensByPeriod[currentTimePeriodCount].add(
-                    tokenAdressForurToken[_urTokenAddress]
-                );
-            }
-
-            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-                tokenAdressForurToken[_urTokenAddress]
-            ] += thirtyPercentShare;
         }
-
-        _handleFee(_urTokenAddress, depositFee, currentTimePeriodCount);
 
         // Add depositor to the list if it's the first deposit
         if (!allDepositors.contains(depositor)) {
@@ -350,18 +381,44 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         }
         depositedAmountOfUserAgainsturToken[depositor][
             _urTokenAddress
-        ] += remaining;
+        ] += _amount;
         depositedAmountOfUserAgainsturTokenForPeriod[depositor][
             _urTokenAddress
-        ][currentPeriod] += remaining;
+        ][currentPeriod] += _amount;
+
+
+        // Update period deposits and depositors
+        if (!isDepositedInPeriod[currentTimePeriodCount]) {
+            isDepositedInPeriod[currentTimePeriodCount] = true;
+        }
+
+        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
+            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
+        }
 
         emit Protect(depositor, _urTokenAddress, currentPeriod, remaining);
     }
 
-    function _handleFee(
-        address _urTokenAddress,
-        uint256 _depositFee,
-        uint256 _currentTimePeriodCount
+    function _handleFeeETH(
+        uint256 _depositFee
+    ) internal {
+        uint256 thirtyPercentShare = (_depositFee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
+
+        // Transfer fees and require success
+        payable(ur369gift_30).transfer(thirtyPercentShare);
+
+        payable(ur369_30).transfer(thirtyPercentShare);
+
+        payable(ur369impact_30).transfer(thirtyPercentShare);
+
+        payable(ur369devs_10).transfer(tenPercentShare);
+    }
+
+    function _handleFeeToken(
+        address _paymentToken,
+        uint256 _depositFee
     ) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
@@ -369,33 +426,25 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
 
         // Transfer fees and require success
         require(
-            IurToken(_urTokenAddress).protect(ur369gift_30, thirtyPercentShare),
+            IERC20(_paymentToken).transferFrom(msg.sender, ur369gift_30, thirtyPercentShare),
             "gift failed"
         );
         require(
-            IurToken(_urTokenAddress).protect(ur369_30, thirtyPercentShare),
+            IERC20(_paymentToken).transferFrom(msg.sender, ur369_30, thirtyPercentShare),
             "369 failed"
         );
         require(
-            IurToken(_urTokenAddress).protect(
+            IERC20(_paymentToken).transferFrom(
+                msg.sender,
                 ur369impact_30,
                 thirtyPercentShare
             ),
             "369 failed"
         );
         require(
-            IurToken(_urTokenAddress).protect(ur369devs_10, tenPercentShare),
+            IERC20(_paymentToken).transferFrom(msg.sender, ur369devs_10, tenPercentShare),
             "369Dev failed"
         );
-
-        // Update period deposits and depositors
-        if (!isDepositedInPeriod[_currentTimePeriodCount]) {
-            isDepositedInPeriod[_currentTimePeriodCount] = true;
-        }
-
-        if (!depositorsByPeriod[_currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[_currentTimePeriodCount].add(msg.sender);
-        }
     }
 
     function burnAndUnprotect(
@@ -709,10 +758,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         rewardTimeLimitFor369Hours = _time;
     }
 
-    // function to change the time limit for reward of 369 days. only owner is authorized
-    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
-        rewardTimeLimitFor369Days = _time;
+    // function to change the protection fee. only owner is authorized
+    function changeProtectionFee(uint256 _feeInUSD) external onlyOwner {
+        protectionFeeInUSD = _feeInUSD;
     }
+
+
 
     //--------------------Read Functions -------------------------------//
     //--------------------Allowed Tokens -------------------------------//
@@ -1254,26 +1305,5 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         for (uint256 i; i < _length; i++) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
-    }
-
-    error ErrrorFromOracle();
-
-    // functions related fetching live prices
-    function calculateETHFee(
-        uint256 _feeInStableCoin
-    ) public view returns (uint256) {
-        int256 ethPriceInUSD = getLatestPrice(); // Price of 1 ETH in USD (with 8 decimals)
-        if (!(ethPriceInUSD > 0)) {
-            revert ErrrorFromOracle();
-        }
-
-        uint256 ethFee = (_feeInStableCoin * 1e8) / uint256(ethPriceInUSD); // Conversion to ETH amount
-        return ethFee;
-    }
-
-    // Get the latest price of ETH in USD (used to calculate equivalent ETH for stablecoin fee)
-    function getLatestPrice() public view returns (int256) {
-        (, int256 price, , , ) = priceFeed.latestRoundData();
-        return price;
     }
 }
