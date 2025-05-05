@@ -69,10 +69,26 @@ contract urTokenContract is IurToken {
 
     address public immutable factory = msg.sender;
 
+    error Locked();
+    error NotFactory();
+    error InvalidAddress();
+    error ERC20InsufficientBalance(
+        address account,
+        uint256 balance,
+        uint256 amount
+    );
+    error ERC20InsufficientAllowance(
+        address spender,
+        uint256 currentAllowance,
+        uint256 amount
+    );
+
     // Re-entracy attack
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "LOCKED");
+        if (unlocked == 0) {
+            revert Locked();
+        }
         unlocked = 0;
         _;
         unlocked = 1;
@@ -80,7 +96,9 @@ contract urTokenContract is IurToken {
     // modifier: will be applied on the functions which can only be called from factory.
     // such as deposit and withdraw.
     modifier onlyFactory() {
-        require(msg.sender == factory, "NOT AUTHORIZED");
+        if (msg.sender != factory) {
+            revert NotFactory();
+        }
         _;
     }
 
@@ -157,7 +175,9 @@ contract urTokenContract is IurToken {
             owner = msg.sender;
         } else {
             // caller is EOA
-            require(msg.sender == factory, "NOT AUTHORIZED");
+            if (msg.sender != factory) {
+                revert NotFactory();
+            }
             owner = tx.origin;
         }
         _transfer(owner, to, amount);
@@ -191,7 +211,9 @@ contract urTokenContract is IurToken {
             spender = msg.sender;
         } else {
             // caller is EOA
-            require(msg.sender == factory, "NOT AUTHORIZED");
+            if (msg.sender != factory) {
+                revert NotFactory();
+            }
             spender = tx.origin;
         }
         _spendAllowance(from, spender, amount);
@@ -214,7 +236,13 @@ contract urTokenContract is IurToken {
     ) public virtual onlyFactory returns (bool) {
         address owner = tx.origin;
         uint256 currentAllowance = allowance(owner, spender);
-        require(currentAllowance >= subtractedValue, "BELOW ZERO");
+        if (currentAllowance < subtractedValue) {
+            revert ERC20InsufficientAllowance(
+                spender,
+                currentAllowance,
+                subtractedValue
+            );
+        }
         unchecked {
             _approve(owner, spender, currentAllowance - subtractedValue);
         }
@@ -227,13 +255,19 @@ contract urTokenContract is IurToken {
         address to,
         uint256 amount
     ) internal virtual {
-        require(from != address(0), "FROM ZERO");
-        require(to != address(0), "TO ZERO");
+        if (from == address(0)) {
+            revert InvalidAddress();
+        }
+        if (to == address(0)) {
+            revert InvalidAddress();
+        }
 
         _beforeTokenTransfer(from, to, amount);
 
         uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "AMOUNT EXCEEDED");
+        if (fromBalance < amount) {
+            revert ERC20InsufficientBalance(from, fromBalance, amount);
+        }
         unchecked {
             _balances[from] = fromBalance - amount;
             // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
@@ -247,7 +281,9 @@ contract urTokenContract is IurToken {
     }
 
     function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0), "MINT TO ZERO");
+        if (account == address(0)) {
+            revert InvalidAddress();
+        }
 
         _beforeTokenTransfer(address(0), account, amount);
 
@@ -262,12 +298,16 @@ contract urTokenContract is IurToken {
     }
 
     function _burn(address account, uint256 amount) internal virtual {
-        require(account != address(0), "BURN FROM ZERO");
+        if (account == address(0)) {
+            revert InvalidAddress();
+        }
 
         _beforeTokenTransfer(account, address(0), amount);
 
         uint256 accountBalance = _balances[account];
-        require(accountBalance >= amount, "EXCEEDED BALANCE");
+        if ((accountBalance < amount)) {
+            revert ERC20InsufficientBalance(account, accountBalance, amount);
+        }
         unchecked {
             _balances[account] = accountBalance - amount;
             // Overflow not possible: amount <= accountBalance <= totalSupply.
@@ -284,8 +324,12 @@ contract urTokenContract is IurToken {
         address spender,
         uint256 amount
     ) internal virtual {
-        require(owner != address(0), "FROM ZERO");
-        require(spender != address(0), "TO ZERO");
+        if (owner == address(0)) {
+            revert InvalidAddress();
+        }
+        if (spender == address(0)) {
+            revert InvalidAddress();
+        }
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -298,7 +342,13 @@ contract urTokenContract is IurToken {
     ) internal virtual {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
-            require(currentAllowance >= amount, "insufficient");
+            if (currentAllowance < amount) {
+                revert ERC20InsufficientAllowance(
+                    spender,
+                    currentAllowance,
+                    amount
+                );
+            }
             unchecked {
                 _approve(owner, spender, currentAllowance - amount);
             }

@@ -8,9 +8,15 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
   const appName = m.getParameter("appName", "QuantumResistantApp"); // Replace "MyApp" with your default app name
   const allowedTokens = m.getParameter("allowedTokens", [
     "0x80366C8502326eDE6B4DCB46fcE7Cc88378Eda07",
-    "0xc6c3131A37398e1FE41047Adb5fAC4DB35d9862F",
-    "0xa288F22F28100459C2202Ef6d3ddA6233f5A8621",
-    "0x182272CF384b4BF46efFfdE61c75101664CdEE8A",
+    "0x89b4653F6AAADf86498840d11D05908f0c43ea97",
+    "0xE59dc311e56333589137705d91902C336faAe594",
+    "0x0E786082fbE524Eb4C9f18A87638FD53Be278519",
+    "0xfC147C5B308b716861aDf1348b311ea4bE1f920f",
+    "0x1c5f29089E3f6E1f2ab90d710F97E4696a03c0b4",
+    // "0x80366C8502326eDE6B4DCB46fcE7Cc88378Eda07",
+    // "0xc6c3131A37398e1FE41047Adb5fAC4DB35d9862F",
+    // "0xa288F22F28100459C2202Ef6d3ddA6233f5A8621",
+    // "0x182272CF384b4BF46efFfdE61c75101664CdEE8A",
     // mainnnet
     // "0x514910771af9ca656af840dff83e8264ecf986ca",
     // "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",

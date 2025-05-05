@@ -1,87 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-import "./IERC20.sol";
 import "./urTokenContract.sol";
-import "./PasswordManager.sol";
+import "./TokenManager.sol";
 import "./FeeManager.sol";
+import "./PeriodManager.sol";
+import "./UserManager.sol";
 
-contract urTokenFactoryContract is Ownable, PasswordManager {
-    // using SafeMath for uint256;
+contract urTokenFactoryContract is
+    TokenManager,
+    FeeManager,
+    PeriodManager,
+    UserManager
+{
     using Address for address;
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    EnumerableSet.AddressSet private allDepositors; // all investors of the system
-
-    // overall investment of a depostitor
-    // mapping(address => EnumerableSet.AddressSet) private depositedTokensOf; // mapping: depositor => tokens
-    mapping(address => uint256) private nativeCurrencyDepositedBy; // mapping: depositor => amount of deposited native currency
-    // mapping(address => mapping(address => uint256))
-    //     private depositedAmountOfUserForToken; // mapping: depositor => token => amount
-
-    mapping(address => address) private tokenAdressForurToken; // urToken -> Token Address (against which contract is deployed)
-    mapping(address => string) private currencyOfurToken;
-    mapping(address => address) private urTokenAddressForToken; // token -> urToken
-
-    // Deposit details of specific user.
-    mapping(address => EnumerableSet.AddressSet) private depositedurTokensOf; // depositorAddress -> All urTokens addresses deposited in
-    mapping(address => mapping(uint256 => EnumerableSet.AddressSet))
-        private depositedurTokensOfUserForPeriod; // depositorAddress -> period -> All urTokens addresses
-    mapping(address => mapping(address => uint256))
-        private depositedAmountOfUserAgainsturToken; // depositor -> urTokenAddress -> amount
-    mapping(address => mapping(address => mapping(uint256 => uint256)))
-        private depositedAmountOfUserAgainsturTokenForPeriod; // depositor -> urTokenAddress -> period -> totalDeposits
-
-    mapping(uint256 => EnumerableSet.AddressSet) private depositorsByPeriod; // (period count) => depositors addresses.
-    mapping(uint256 => EnumerableSet.AddressSet) private tokensByPeriod; // (period count) => depositedTokens address
-    mapping(uint256 => uint256) private ETHInPeriod; // (period count) => deposited Ethers in the this period
-    mapping(uint256 => mapping(address => uint256))
-        private totalRewardAmountForTokenInPeriod; // (period count) => tokenAddress => totalInvestedAmount
-    mapping(uint256 => bool) private hasRewardBeenCollectedForPeriod; // (period count) => boolean
-    mapping(uint256 => bool) private isDepositedInPeriod; // period count => boolean (to check that in which period some protection is made).
-
-    // mappings to store Sign Key and randomly generated Master key against user.
-    mapping(address => bool) private _isQuantumProtected;
-    mapping(address => bool) private _isSignKeySetOf;
-    mapping(address => bytes32) private _masterKeyOf;
-    mapping(address => bool) private _isMasterKeySetOf;
-
-    // tokens addresses.
-    address public urTokenAddressOfETH;
-    EnumerableSet.AddressSet private allowedTokens; // total allowed ERC20 tokens
-    EnumerableSet.AddressSet private urTokensOfAllowedTokens; // urTokens addresses of allowed ERC20 Tokens
-    address[] private whiteListAddresses; // whitelist addresss set only once and will be send to all the deployed tokens.
-
-    // salt for create2 opcode.
-    uint256 private _salt;
-
-    // fee detial
-    uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
-    uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
-    uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
-    // uint256 public benefactionFeePercentForHighSupply = 3690; // 0.0369 * 1000 = 3690% of total deposited amount.
-    // uint256 public supplyThresholdForFeeReduction = 1_000_000 * 1e18; // 1 million tokens
-    uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
-        30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
-    uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
-
-    // time periods for reward
-    uint256 public rewardTimeLimitFor369Hours = 129600; // 369 hours
-    uint256 public rewardTimeLimitFor369Days = 31881600; // 369 days
-    uint256 public deployTime;
-
-    // zoom to handle percentage in the decimals
-    uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
-
-    // fee receiver addresses.
-    address public ur369gift_30 = 0x70C819445c6Bb5a144954818DE138b4A713408dC;
-    address public ur369impact_30 = 0x22357B3034DF4a65a00E5887aFB09e94Df17B7B9;
-    address public ur369_30 = 0x4eb401801b42139737faC676C5da5e43F6A1A828;
-    address public ur369devs_10 = 0xDB0ccF145A929c48277a4431004D633E9D84258a;
 
     event Protect(
         address depositor,
@@ -102,150 +35,26 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         uint256 tokenAmount
     );
 
-    event TokenDeployed(address indexed tokenAddress, string name);
-    event TokenAdded(
-        address indexed tokenAddress,
-        address indexed deployedAddress
-    );
-    event TokenRemoved(address indexed tokenAddress);
     event SignKeyChanged(
         address indexed userAddress,
         uint256 timestamp,
         bool isQuantumProtected
     );
-    error InvalidAllowedToken();
-    error TokenAlreadyAdded();
-    error TokenNotAdded();
-    error SignKeySet();
-    error SignKeyNotSet();
-    error QuantumNotSet();
-    error SignKeyIncorrect();
-    error MasterKeyIncorrect();
-    error AlreadyQuantomProtected();
-    error InvalidAmount();
     error InvalidurToken();
-    error DepositFailed();
     error WithdrawFailed();
     error Failed();
-    error UserNotRegistered();
 
     constructor(
         string memory _appName,
         address[] memory _allowedTokens,
-        address[] memory _whiteListAddresses, // Fixed typo
+        address[] memory _whiteListAddresses,
         address _priceFeedAddress
-    ) Ownable(msg.sender) PasswordManager(_appName) {
-        priceFeed = AggregatorV3Interface(_priceFeedAddress); // Chainlink ETH/USD price feed
-        deployTime = block.timestamp;
-
-        // Set the whitelist addresses
-        whiteListAddresses = _whiteListAddresses;
-
-        // Deploy ETH token and add allowed tokens if any
-        urTokenAddressOfETH = _deployETH();
-        if (_allowedTokens.length > 0) {
-            _addAllowedTokens(_allowedTokens);
-        }
-    }
-
-    function _deployETH() internal returns (address deployedEth) {
-        bytes memory bytecode = type(urTokenContract).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(++_salt));
-        assembly {
-            deployedEth := create2(0, add(bytecode, 32), mload(bytecode), salt)
-        }
-        IurToken(deployedEth).initialize(
-            "urETH",
-            "urETH",
-            "ETHER",
-            18,
-            whiteListAddresses
-        );
-
-        emit TokenDeployed(deployedEth, "urETH");
-    }
-
-    function _deployToken(
-        address _token
-    ) internal returns (address deployedToken) {
-        IERC20 tokenContract = IERC20(_token);
-        string memory name = string(
-            abi.encodePacked("ur", tokenContract.name())
-        );
-        string memory symbol = string(
-            abi.encodePacked("ur", tokenContract.symbol())
-        );
-        string memory currency = tokenContract.symbol();
-        uint8 decimals = tokenContract.decimals();
-
-        bytes memory bytecode = type(urTokenContract).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(++_salt));
-        assembly {
-            deployedToken := create2(
-                0,
-                add(bytecode, 32),
-                mload(bytecode),
-                salt
-            )
-        }
-        IurToken(deployedToken).initialize(
-            name,
-            symbol,
-            currency,
-            decimals,
-            whiteListAddresses
-        );
-
-        emit TokenDeployed(deployedToken, name);
-    }
-
-    function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        uint256 length = _allowedTokens.length;
-        for (uint256 i = 0; i < length; i++) {
-            address tokenAddress = _allowedTokens[i]; // Store in a local variable
-
-            if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
-            if (allowedTokens.contains(tokenAddress))
-                revert TokenAlreadyAdded();
-
-            address deployedAddress = _deployToken(tokenAddress); // Deploy token directly
-            tokenAdressForurToken[deployedAddress] = tokenAddress;
-            urTokenAddressForToken[tokenAddress] = deployedAddress;
-            currencyOfurToken[deployedAddress] = IurToken(deployedAddress)
-                .currency();
-
-            allowedTokens.add(tokenAddress);
-            urTokensOfAllowedTokens.add(deployedAddress);
-
-            emit TokenAdded(tokenAddress, deployedAddress);
-        }
-    }
-
-    function addAllowedTokens(
-        address[] memory _allowedTokens
-    ) external onlyOwner {
-        _addAllowedTokens(_allowedTokens);
-    }
-
-    function removeAllowedTokens(
-        address[] memory _allowedTokens
-    ) external onlyOwner {
-        uint256 length = _allowedTokens.length;
-        for (uint256 i = 0; i < length; i++) {
-            address tokenAddress = _allowedTokens[i]; // Store in a local variable
-
-            if (!allowedTokens.contains(tokenAddress)) {
-                revert TokenNotAdded();
-            }
-
-            allowedTokens.remove(tokenAddress);
-            urTokensOfAllowedTokens.remove(
-                urTokenAddressForToken[tokenAddress]
-            );
-
-            emit TokenRemoved(tokenAddress);
-        }
-    }
+    )
+        TokenManager(_whiteListAddresses, _allowedTokens)
+        FeeManager(_priceFeedAddress)
+        PeriodManager()
+        UserManager(_appName)
+    {}
 
     function protect(
         address _urTokenAddress,
@@ -257,193 +66,104 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _ethSignature,
         address _paymentToken
     ) external payable {
-        address depositor = msg.sender; 
+        address depositor = msg.sender;
         bool payInETH = _paymentToken == address(0);
 
-        require(_isSignKeySetOf[msg.sender], "SignKey not set");
-        if (_quantumVerified) {
-            require(_isQuantumProtected[msg.sender], "Quantum not set");
-        }
-        require(
-            verifyLogin(
-                msg.sender,
+        if (!isSignKeySet(depositor)) revert SignKeyNotSet();
+        if (_quantumVerified && !isQuantumProtected(depositor))
+            revert QuantumNotSet();
+        if (
+            !verifyLogin(
+                depositor,
                 _customMessage,
                 _signKeyHash,
                 _deadline,
                 _ethSignature
-            ),
-            "SignKey incorrect"
-        );
-        require(_amount > 0, "invalid amount");
-        require(
-            _urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress),
-            "invalid urToken"
-        );
+            )
+        ) revert SignKeyIncorrect();
+        if (!(_amount > 0)) revert InvalidAmount();
+        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
         uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-        uint requiredETHFee;
+        uint256 requiredETHFee;
+
         if (payInETH) {
-            // Payment in ETH
             requiredETHFee = calculateETHFee(protectionFeeInUSD);
             uint256 _totalETHAmount;
-            if(_urTokenAddress == urTokenAddressOfETH){
+            if (_urTokenAddress == urTokenAddressOfETH) {
                 _totalETHAmount = requiredETHFee + _amount;
-            }
-            else {
+            } else {
                 _totalETHAmount = requiredETHFee;
             }
 
-            require(msg.value >= _totalETHAmount, "Invalid ETH amount");
+            if (!(msg.value >= _totalETHAmount)) revert InvalidAmount();
 
-            // Return extra eth back to the user
             if (msg.value > _totalETHAmount) {
-                payable(msgSender).transfer(msg.value - _totalETHAmount);
+                payable(depositor).transfer(msg.value - _totalETHAmount);
             }
 
             uint256 thirtyPercentShare = (requiredETHFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-
-            ETHInPeriod[currentTimePeriodCount] += thirtyPercentShare;
-
-            _handleFee(requiredETHFee);
+                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                100_000;
+            addETHToPeriod(currentTimePeriodCount, thirtyPercentShare);
+            _handleFeeETH(requiredETHFee);
         } else {
-            // Payment in token (modified logic)
-            require(
-                isAllowedFeeToken(_paymentToken),
-                "Token not allowed for payment"
-            );
+            if (!isAllowedToken(_paymentToken)) revert InvalidAllowedToken();
 
-            // Calculate required token amount
             uint256 requiredTokenAmount = calculateTokenFee(
                 protectionFeeInUSD,
                 _paymentToken
             );
-
             uint256 thirtyPercentShare = (requiredTokenAmount *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                100_000;
 
-            if (
-                !tokensByPeriod[currentTimePeriodCount].contains(
-                    _paymentToken
-                )
-            ) {
-                tokensByPeriod[currentTimePeriodCount].add(
-                    _paymentToken
-                );
-            }
-
-            totalRewardAmountForTokenInPeriod[currentTimePeriodCount][
-                _paymentToken
-            ] += thirtyPercentShare;
-
-            // Transfer tokens to fee receivers
+            addTokenToPeriod(currentTimePeriodCount, _paymentToken);
+            addTokenRewardToPeriod(
+                currentTimePeriodCount,
+                _paymentToken,
+                thirtyPercentShare
+            );
             _handleFeeToken(_paymentToken, requiredTokenAmount);
         }
 
-        // Call protect method on urToken contract
-        require(
-            IurToken(_urTokenAddress).protect(msg.sender, _amount),
-            "deposit failed"
-        );
+        IurToken(_urTokenAddress).protect(depositor, _amount);
 
-        // take protected tokens from the user
         if (_urTokenAddress != urTokenAddressOfETH) {
-            IERC20(tokenAdressForurToken[_urTokenAddress]).transferFrom(
+            IERC20(getTokenAddressForurToken(_urTokenAddress)).transferFrom(
                 depositor,
                 address(this),
                 _amount
             );
         }
 
-        // Add depositor to the list if it's the first deposit
-        if (!allDepositors.contains(depositor)) {
-            allDepositors.add(depositor);
-        }
+        addDepositor(depositor);
+        addDepositedurToken(depositor, _urTokenAddress);
+        addDepositedurTokenForPeriod(
+            depositor,
+            currentTimePeriodCount,
+            _urTokenAddress
+        );
+        updateDepositedAmount(depositor, _urTokenAddress, _amount);
+        updateDepositedAmountForPeriod(
+            depositor,
+            _urTokenAddress,
+            currentTimePeriodCount,
+            _amount
+        );
 
-        // Update deposit details for 369 days mappings
         if (_urTokenAddress == urTokenAddressOfETH) {
-            nativeCurrencyDepositedBy[depositor] += msg.value;
+            updateNativeCurrencyDeposited(depositor, _amount);
         }
 
-        if (!depositedurTokensOf[depositor].contains(_urTokenAddress)) {
-            depositedurTokensOf[depositor].add(_urTokenAddress);
-        }
+        markPeriodAsDeposited(currentTimePeriodCount);
+        addDepositorToPeriod(currentTimePeriodCount, depositor);
 
-        uint256 currentPeriod = getCurrentPeriodFor369hours(); // Use memory variable for efficiency
-        if (
-            !depositedurTokensOfUserForPeriod[depositor][currentPeriod]
-                .contains(_urTokenAddress)
-        ) {
-            depositedurTokensOfUserForPeriod[depositor][currentPeriod].add(
-                _urTokenAddress
-            );
-        }
-        depositedAmountOfUserAgainsturToken[depositor][
-            _urTokenAddress
-        ] += _amount;
-        depositedAmountOfUserAgainsturTokenForPeriod[depositor][
-            _urTokenAddress
-        ][currentPeriod] += _amount;
-
-
-        // Update period deposits and depositors
-        if (!isDepositedInPeriod[currentTimePeriodCount]) {
-            isDepositedInPeriod[currentTimePeriodCount] = true;
-        }
-
-        if (!depositorsByPeriod[currentTimePeriodCount].contains(msg.sender)) {
-            depositorsByPeriod[currentTimePeriodCount].add(msg.sender);
-        }
-
-        emit Protect(depositor, _urTokenAddress, currentPeriod, remaining);
-    }
-
-    function _handleFeeETH(
-        uint256 _depositFee
-    ) internal {
-        uint256 thirtyPercentShare = (_depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
-
-        // Transfer fees and require success
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-
-        payable(ur369_30).transfer(thirtyPercentShare);
-
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-
-        payable(ur369devs_10).transfer(tenPercentShare);
-    }
-
-    function _handleFeeToken(
-        address _paymentToken,
-        uint256 _depositFee
-    ) internal {
-        uint256 thirtyPercentShare = (_depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
-
-        // Transfer fees and require success
-        require(
-            IERC20(_paymentToken).transferFrom(msg.sender, ur369gift_30, thirtyPercentShare),
-            "gift failed"
-        );
-        require(
-            IERC20(_paymentToken).transferFrom(msg.sender, ur369_30, thirtyPercentShare),
-            "369 failed"
-        );
-        require(
-            IERC20(_paymentToken).transferFrom(
-                msg.sender,
-                ur369impact_30,
-                thirtyPercentShare
-            ),
-            "369 failed"
-        );
-        require(
-            IERC20(_paymentToken).transferFrom(msg.sender, ur369devs_10, tenPercentShare),
-            "369Dev failed"
+        emit Protect(
+            depositor,
+            _urTokenAddress,
+            currentTimePeriodCount,
+            _amount
         );
     }
 
@@ -458,79 +178,34 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external {
         address withdrawer = msg.sender;
 
-        if (!_isSignKeySetOf[withdrawer]) {
-            revert SignKeyNotSet();
-        }
-        if (_quantumVerified) {
-            if (!_isQuantumProtected[withdrawer]) {
-                revert QuantumNotSet();
-            }
-        }
+        if (!isSignKeySet(withdrawer)) revert SignKeyNotSet();
+        if (_quantumVerified && !isQuantumProtected(withdrawer))
+            revert QuantumNotSet();
         if (
-            !(
-                verifyLogin(
-                    withdrawer,
-                    _customMessage,
-                    _signKeyHash,
-                    _deadline,
-                    _ethSignature
-                )
+            !verifyLogin(
+                withdrawer,
+                _customMessage,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
             )
-        ) {
-            revert SignKeyIncorrect();
-        }
-        if (
-            !(_urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress))
-        ) {
-            revert InvalidurToken();
-        }
+        ) revert SignKeyIncorrect();
+        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
-        if (!(_amount > 0)) {
-            revert InvalidAmount();
-        }
-        if (!(balance >= _amount)) {
-            revert InvalidAmount();
-        }
+        if (!(_amount > 0)) revert InvalidAmount();
+        if (!(balance >= _amount)) revert InvalidAmount();
 
-        if (
-            !(IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount))
-        ) {
+        if (!IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount))
             revert WithdrawFailed();
-        }
 
-        // Transfer the amount based on the token type
         if (_urTokenAddress == urTokenAddressOfETH) {
             payable(withdrawer).transfer(_amount);
         } else {
-            IERC20(tokenAdressForurToken[_urTokenAddress]).transfer(
+            IERC20(getTokenAddressForurToken(_urTokenAddress)).transfer(
                 withdrawer,
                 _amount
             );
-        }
-
-        // Update the deposited amounts
-        uint256 previousAmount = depositedAmountOfUserAgainsturToken[
-            withdrawer
-        ][_urTokenAddress];
-        depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] =
-            previousAmount -
-            _amount;
-
-        // Update the current period deposits
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
-        if (
-            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] <
-            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
-                _urTokenAddress
-            ][currentPeriod]
-        ) {
-            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
-                _urTokenAddress
-            ][currentPeriod] = depositedAmountOfUserAgainsturToken[withdrawer][
-                _urTokenAddress
-            ];
         }
 
         emit BurnAndUnprotect(withdrawer, _urTokenAddress, _amount);
@@ -548,40 +223,22 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     ) external returns (bool) {
         address caller = msg.sender;
 
-        if (_isSignKeySetOf[caller]) {
-            revert SignKeyNotSet();
-        }
-        if (_quantumVerified) {
-            if (!_isQuantumProtected[caller]) {
-                revert QuantumNotSet();
-            }
-        }
+        if (!isSignKeySet(caller)) revert SignKeyNotSet();
+        if (_quantumVerified && !isQuantumProtected(caller))
+            revert QuantumNotSet();
         if (
-            !(
-                verifyLogin(
-                    caller,
-                    _customMessage,
-                    _signKeyHash,
-                    _deadline,
-                    _ethSignature
-                )
+            !verifyLogin(
+                caller,
+                _customMessage,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
             )
-        ) {
-            revert SignKeyIncorrect();
-        }
-        if (!(_amount > 0)) {
-            revert InvalidAmount();
-        }
-        if (
-            !(_urTokenAddress == urTokenAddressOfETH ||
-                urTokensOfAllowedTokens.contains(_urTokenAddress))
-        ) {
-            revert InvalidurToken();
-        }
+        ) revert SignKeyIncorrect();
+        if (!(_amount > 0)) revert InvalidAmount();
+        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
-        // Transfer the tokens
         IurToken(_urTokenAddress).transfer(_to, _amount);
-
         return true;
     }
 
@@ -593,12 +250,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _ethSignature
     ) external {
         address caller = msg.sender;
-        if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
-            revert SignKeySet();
-        }
+        if (isSignKeySet(caller) && isMasterKeySet(caller)) revert SignKeySet();
 
-        _masterKeyOf[caller] = keccak256(bytes(_masterKey));
-        _isMasterKeySetOf[caller] = true;
+        setMasterKey(caller, _masterKey);
         register(
             caller,
             false,
@@ -610,8 +264,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             "",
             ""
         );
-        _isQuantumProtected[caller] = false;
-        _isSignKeySetOf[caller] = true;
+        setSignKey(caller, false);
     }
 
     function setMasterKeyAndQuantumResistantSignKey(
@@ -626,22 +279,19 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         address caller = msg.sender;
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        if (!(msg.value >= requiredETHFee)) {
-            revert InvalidAmount();
-        }
-        // transfer fee to the fee receivers addresses
+        if (!(msg.value >= requiredETHFee)) revert InvalidAmount();
+
         uint256 thirtyPercentShare = (fee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+            100_000;
         payable(ur369gift_30).transfer(thirtyPercentShare);
         payable(ur369_30).transfer(thirtyPercentShare);
         payable(ur369impact_30).transfer(thirtyPercentShare);
         payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
 
-        if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
-            revert SignKeySet();
-        }
-        _masterKeyOf[caller] = keccak256(bytes(_masterKey));
-        _isMasterKeySetOf[caller] = true;
+        if (isSignKeySet(caller) && isMasterKeySet(caller)) revert SignKeySet();
+
+        setMasterKey(caller, _masterKey);
         register(
             caller,
             true,
@@ -653,8 +303,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             _quantumSignature,
             _quamtumPublicKey
         );
-        _isQuantumProtected[caller] = true;
-        _isSignKeySetOf[caller] = true;
+        setSignKey(caller, true);
     }
 
     function enableQuantumKey(
@@ -667,14 +316,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+        if (!(isSignKeySet(caller) && isMasterKeySet(caller)))
             revert UserNotRegistered();
-        }
-        if (!(_masterKeyOf[caller] == keccak256(bytes(_masterKey)))) {
+        if (!isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
-        }
 
-        if (_isQuantumProtected[caller]) {
+        if (isQuantumProtected(caller)) {
             register(
                 caller,
                 true,
@@ -703,7 +350,6 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         }
     }
 
-    // function to change sign key type from simple to quantum
     function changeSignKeyType(
         string memory _masterKey,
         string memory _customMessage,
@@ -714,28 +360,24 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (_isQuantumProtected[caller]) {
-            revert AlreadyQuantomProtected();
-        }
-        if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
+        if (isQuantumProtected(caller)) revert AlreadyQuantomProtected();
+        if (!(isSignKeySet(caller) && isMasterKeySet(caller)))
             revert UserNotRegistered();
-        }
-        if (!(_masterKeyOf[caller] == keccak256(bytes(_masterKey)))) {
+        if (!isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
-        }
-        // change from simple to quantum
+
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        if (!(msg.value >= requiredETHFee)) {
-            revert InvalidAmount();
-        }
-        // transfer fee to the fee receivers addresses
+        if (!(msg.value >= requiredETHFee)) revert InvalidAmount();
+
         uint256 thirtyPercentShare = (fee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+            100_000;
         payable(ur369gift_30).transfer(thirtyPercentShare);
         payable(ur369_30).transfer(thirtyPercentShare);
         payable(ur369impact_30).transfer(thirtyPercentShare);
         payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
+
         register(
             caller,
             true,
@@ -748,117 +390,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             _quamtumPublicKey
         );
         emit SignKeyChanged(caller, block.timestamp, true);
-        _isQuantumProtected[caller] = true;
+        setSignKey(caller, true);
     }
-
-    // function to change time limit for reward of 369 hours. only onwer is authorized.
-    function changeRewardTimeLimitFor369Hours(
-        uint256 _time
-    ) external onlyOwner {
-        rewardTimeLimitFor369Hours = _time;
-    }
-
-    // function to change the protection fee. only owner is authorized
-    function changeProtectionFee(uint256 _feeInUSD) external onlyOwner {
-        protectionFeeInUSD = _feeInUSD;
-    }
-
-
 
     //--------------------Read Functions -------------------------------//
-    //--------------------Allowed Tokens -------------------------------//
-    /**
-     * @dev Returns the addresses of all allowed tokens.
-     *
-     * This function returns an array of the addresses of all tokens that are currently allowed.
-     *
-     * @return An array of addresses representing allowed tokens.
-     */
-    function allAllowedTokens() public view returns (address[] memory) {
-        return allowedTokens.values();
-    }
-
-    /**
-     * @dev Returns the count of all allowed tokens.
-     *
-     * This function returns the total count of tokens that are currently allowed.
-     *
-     * @return A number representing the count of allowed tokens.
-     */
-    function allAllowedTokensCount() public view returns (uint256) {
-        return allowedTokens.length();
-    }
-
-    /**
-     * @dev Returns the addresses of all urTokens of the allowed tokens.
-     *
-     * This function returns an array of the addresses of all urTokens that correspond to currently allowed tokens.
-     *
-     * @return An array of addresses representing uTokens of allowed tokens.
-     */
-    function allurTokensOfAllowedTokens()
-        public
-        view
-        returns (address[] memory)
-    {
-        return urTokensOfAllowedTokens.values();
-    }
-
-    /**
-     * @dev Returns the count of all urTokens of the allowed tokens.
-     *
-     * This function returns the total count of urTokens that correspond to currently allowed tokens.
-     *
-     * @return A number representing the count of urTokens of allowed tokens.
-     */
-    function allurTokensOfAllowedTokensCount() public view returns (uint256) {
-        return urTokensOfAllowedTokens.length();
-    }
-
-    /**
-     * @dev Returns the address of the token corresponding to the given urToken.
-     *
-     * This function takes the address of a urToken and returns the address of the corresponding token.
-     *
-     * @param _urToken The address of the urToken.
-     *
-     * @return The address of the token that corresponds to the given urToken.
-     */
-    function getTokenAddressForurToken(
-        address _urToken
-    ) public view returns (address) {
-        return tokenAdressForurToken[_urToken];
-    }
-
-    /**
-     * @dev Returns the address of the urToken corresponding to the given token.
-     *
-     * This function takes the address of a token and returns the address of the corresponding urToken.
-     *
-     * @param _token The address of the token.
-     *
-     * @return The address of the urToken that corresponds to the given token.
-     */
-    function geturTokenAddressForToken(
-        address _token
-    ) public view returns (address) {
-        return urTokenAddressForToken[_token];
-    }
-
-    //-------------------- Deposit Details for 369 days -------------------------------//
-    function getAllDepositorsInSystem()
-        public
-        view
-        returns (address[] memory _allDepositors)
-    {
-        _allDepositors = allDepositors.values();
-    }
-
-    function getNativeCurrencyDepositedBy(
-        address _depositor
-    ) public view returns (uint256 _depositedNativeCurrency) {
-        _depositedNativeCurrency = nativeCurrencyDepositedBy[_depositor];
-    }
 
     struct DepositsOfUser {
         address urTokenAddress;
@@ -868,8 +403,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     function getDepositDetailsForUser(
         address _depositor
     ) public view returns (DepositsOfUser[] memory depositDetails) {
-        address[] memory totalurTokens = depositedurTokensOf[_depositor]
-            .values();
+        address[] memory totalurTokens = getDepositedurTokensForUser(
+            _depositor
+        );
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsOfUser[](tokensCount);
@@ -877,9 +413,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
                     urTokenAddress: totalurTokens[i],
-                    amount: depositedAmountOfUserAgainsturToken[_depositor][
+                    amount: getDepositedAmountOfUserAgainsturToken(
+                        _depositor,
                         totalurTokens[i]
-                    ]
+                    )
                 });
             }
         }
@@ -908,64 +445,6 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
     }
 
     /**
-     * @dev Returns the addresses of all urTokens deposited by a specific depositor.
-     *
-     * This function takes the address of an depositor and returns an array of addresses
-     * representing all urTokens that the depositor has deposited in.
-     *
-     * @param _depositor The address of the depositor.
-     *
-     * @return depositedurTokens An array of urToken addresses in which the depositor has deposited.
-     */
-    function getDepositedurTokensForUser(
-        address _depositor
-    ) public view returns (address[] memory depositedurTokens) {
-        depositedurTokens = depositedurTokensOf[_depositor].values();
-    }
-
-    /**
-     * @dev Returns the addresses of all urTokens deposited by a specific depositor during a specific period.
-     *
-     * This function takes the address of an depositor and a period, and returns an array of addresses
-     * representing all urTokens that the depositor has deposited in during the specified period.
-     *
-     * @param _depositor The address of the depositor.
-     * @param _period The period of investment.
-     *
-     * @return depositedurTokensForPeriod An array of urToken addresses in which the depositor has deposited during the specified period.
-     */
-    function getDepositedurTokensOfUserForPeriodFor369hours(
-        address _depositor,
-        uint256 _period
-    ) public view returns (address[] memory depositedurTokensForPeriod) {
-        depositedurTokensForPeriod = depositedurTokensOfUserForPeriod[
-            _depositor
-        ][_period].values();
-    }
-
-    /**
-     * @dev Returns the amount deposited by a specific depositor in a specific urToken during a specific period.
-     *
-     * This function takes the address of an depositor, a urToken, and a period, and returns the amount
-     * that the depositor has deposited in the specified urToken during the specified period.
-     *
-     * @param _depositor The address of the depositor.
-     * @param _urToken The address of the urToken.
-     * @param _period The period of deposit.
-     *
-     * @return depositedAmount The amount deposited by the depositor in the specified urToken during the specified period.
-     */
-    function getDepositedAmountOfUserAgainsturTokenForPeriodFor369hours(
-        address _depositor,
-        address _urToken,
-        uint256 _period
-    ) public view returns (uint256 depositedAmount) {
-        depositedAmount = depositedAmountOfUserAgainsturTokenForPeriod[
-            _depositor
-        ][_urToken][_period];
-    }
-
-    /**
      * @dev A struct that holds details about a user's deposit details for a specific period.
      *
      * @param urTokenAddress The address of the urToken in which the deposit was made.
@@ -991,9 +470,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         address _depositor,
         uint256 _period
     ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
-        address[] memory totalurTokens = depositedurTokensOfUserForPeriod[
-            _depositor
-        ][_period].values();
+        address[]
+            memory totalurTokens = getDepositedurTokensOfUserForPeriodFor369hours(
+                _depositor
+            );
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
@@ -1001,19 +481,14 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
                     urTokenAddress: totalurTokens[i],
-                    amount: depositedAmountOfUserAgainsturTokenForPeriod[
-                        _depositor
-                    ][totalurTokens[i]][_period]
+                    amount: getDepositedAmountOfUserAgainsturTokenForPeriodFor369hours(
+                        _depositor,
+                        totalurTokens[i],
+                        _period
+                    )
                 });
             }
         }
-    }
-
-    //  Retrieves the currency type associated with a urToken.
-    function getCurrencyOfurToken(
-        address _urToken
-    ) public view returns (string memory currency) {
-        return currencyOfurToken[_urToken];
     }
 
     // Checks whether the entered signKey matches the one associated with the user address.
@@ -1269,7 +744,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager {
         uint256 period = getPreviousPeriodFor369Hours();
         uint256[] memory _pendingPeriods = new uint256[](period);
         uint256 count;
-        while (!hasRewardBeenCollectedForPeriod[period]) {
+        while (!hasRewardBeenCollectedForPeriodFor369hours(period)) {
             if (!isDepositedInPeriod[period]) {
                 if (period == 0) break;
                 period--;

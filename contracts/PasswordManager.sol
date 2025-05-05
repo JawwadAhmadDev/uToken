@@ -19,6 +19,8 @@ contract PasswordManager is EIP712 {
     event UserRegistered(address indexed user, bool isQuamtumProtected);
 
     error ERC2612ExpiredSignature(uint256 deadline);
+    error NotRegistered();
+    error InvalidSignature();
 
     constructor(string memory appName) EIP712(appName, "1") {}
 
@@ -34,26 +36,31 @@ contract PasswordManager is EIP712 {
         bytes memory quantumPublicKey
     ) internal {
         if (isChangeSignKeyRequest) {
-            require(passwordDataOf[user].keccakHash != 0, "Not registered");
+            if (passwordDataOf[user].keccakHash == 0) {
+                revert NotRegistered();
+            }
         } else {
-            require(
-                passwordDataOf[user].keccakHash == 0 &&
-                    passwordDataOf[user].quantumSignature.length == 0,
-                "registered"
-            );
+            if (
+                passwordDataOf[user].keccakHash != 0 &&
+                passwordDataOf[user].quantumSignature.length != 0
+            ) {
+                revert NotRegistered();
+            }
         }
 
         // Verify that the Ethereum signature is correct
-        require(
-            verifySignature(
+        if (
+            !verifySignature(
                 user,
                 customMessage,
                 keccakHash,
                 deadline,
                 ethSignature
-            ),
-            "Invalid Eth sig"
-        );
+            )
+        ) {
+            revert InvalidSignature();
+        }
+
         if (isQuantumProtected) {
             passwordDataOf[user] = PasswordData(
                 keccakHash,
