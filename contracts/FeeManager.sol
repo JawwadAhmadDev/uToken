@@ -27,7 +27,7 @@ contract FeeManager is Ownable {
     address public ur369_30 = 0x4eb401801b42139737faC676C5da5e43F6A1A828;
     address public ur369devs_10 = 0xDB0ccF145A929c48277a4431004D633E9D84258a;
 
-    error InvalidToken();
+    error InvalidTokenAddress();
     error InvalidPrice();
     error InvalidPriceFeed();
     error InvalidAllowedToken();
@@ -82,7 +82,7 @@ contract FeeManager is Ownable {
         address _priceFeed
     ) public onlyOwner {
         if (_token == address(0)) {
-            revert InvalidToken();
+            revert InvalidTokenAddress();
         }
         if (_priceFeed == address(0)) {
             revert InvalidPriceFeed();
@@ -124,7 +124,7 @@ contract FeeManager is Ownable {
 
         for (uint256 i = 0; i < _tokens.length; i++) {
             if (_tokens[i] == address(0)) {
-                revert InvalidToken();
+                revert InvalidTokenAddress();
             }
             if (_priceFeeds[i] == address(0)) {
                 revert InvalidPriceFeed();

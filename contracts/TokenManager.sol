@@ -28,7 +28,7 @@ contract TokenManager {
 
     error TokenAlreadyAdded();
     error TokenNotAdded();
-    error InvalidAllowedToken();
+    error InvalidToken();
 
     constructor(
         address[] memory _whiteListAddresses,
@@ -98,7 +98,7 @@ contract TokenManager {
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i];
 
-            if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
+            if (!(tokenAddress.code.length > 0)) revert InvalidToken();
             if (allowedTokens.contains(tokenAddress))
                 revert TokenAlreadyAdded();
 
