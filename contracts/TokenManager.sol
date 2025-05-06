@@ -179,4 +179,17 @@ contract TokenManager {
             _urToken == urTokenAddressOfETH ||
             urTokensOfAllowedTokens.contains(_urToken);
     }
+
+    function getAllWhiteListAddresses()
+        public
+        view
+        returns (address[] memory _whiteListAddresses)
+    {
+        uint256 _length = whiteListAddresses.length;
+        _whiteListAddresses = new address[](_length);
+
+        for (uint256 i; i < _length; i++) {
+            _whiteListAddresses[i] = whiteListAddresses[i];
+        }
+    }
 }

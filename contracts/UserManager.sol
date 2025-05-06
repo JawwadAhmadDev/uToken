@@ -163,4 +163,79 @@ contract UserManager is PasswordManager {
     ) public view returns (bool) {
         return passwordDataOf[_user].keccakHash == _signkeyHash;
     }
+
+    struct DepositsOfUser {
+        address urTokenAddress;
+        uint256 amount;
+    }
+
+    function getDepositDetailsForUser(
+        address _depositor
+    ) public view returns (DepositsOfUser[] memory depositDetails) {
+        address[] memory totalurTokens = getDepositedurTokensForUser(
+            _depositor
+        );
+        uint256 tokensCount = totalurTokens.length;
+
+        depositDetails = new DepositsOfUser[](tokensCount);
+        if (tokensCount > 0) {
+            for (uint256 i; i < tokensCount; i++) {
+                depositDetails[i] = DepositsOfUser({
+                    urTokenAddress: totalurTokens[i],
+                    amount: getDepositedAmountOfUserAgainsturToken(
+                        _depositor,
+                        totalurTokens[i]
+                    )
+                });
+            }
+        }
+    }
+
+    /**
+     * @dev A struct that holds details about a user's deposit details for a specific period.
+     *
+     * @param urTokenAddress The address of the urToken in which the deposit was made.
+     * @param amount The amount deposited in the urToken.
+     */
+    struct DepositsForPeriodOfUser {
+        address urTokenAddress;
+        uint256 amount;
+    }
+
+    /**
+     * @dev Returns the details of deposits made by a specific depositor during a specific period.
+     *
+     * This function takes the address of an depositor and a period, and returns an array of `DepositsForPeriodOfUser`
+     * structs that includes the urToken address and the amount deposited for each urToken during the specified period.
+     *
+     * @param _depositor The address of the depositor.
+     * @param _period The period of deposits.
+     *
+     * @return depositDetails An array of `DepositsForPeriodOfUser` structs that contain the urToken address and the investment amount for each investment made by the investor during the specified period.
+     */
+    function getDepositDetailsOfUserForPeriodFor369hours(
+        address _depositor,
+        uint256 _period
+    ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
+        address[]
+            memory totalurTokens = getDepositedurTokensOfUserForPeriodFor369hours(
+                _depositor,
+                _period
+            );
+        uint256 tokensCount = totalurTokens.length;
+
+        depositDetails = new DepositsForPeriodOfUser[](tokensCount);
+        if (tokensCount > 0) {
+            for (uint256 i; i < tokensCount; i++) {
+                depositDetails[i] = DepositsForPeriodOfUser({
+                    urTokenAddress: totalurTokens[i],
+                    amount: getDepositedAmountOfUserAgainsturTokenForPeriodFor369hours(
+                        _depositor,
+                        totalurTokens[i],
+                        _period
+                    )
+                });
+            }
+        }
+    }
 }
