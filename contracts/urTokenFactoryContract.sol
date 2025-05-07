@@ -60,10 +60,6 @@ contract urTokenFactoryContract {
     error AlreadyQuantomProtected();
 
     constructor(
-        string memory _appName,
-        address[] memory _allowedTokens,
-        address[] memory _whiteListAddresses,
-        address _priceFeedAddress,
         address _tokenManager,
         address _feeManager,
         address _periodManager,
