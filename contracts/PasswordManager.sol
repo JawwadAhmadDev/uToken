@@ -12,10 +12,6 @@ contract PasswordManager is IPasswordManager, EIP712 {
 
     mapping(address => PasswordData) public passwordDataOf;
 
-    error ERC2612ExpiredSignature(uint256 deadline);
-    error NotRegistered();
-    error InvalidSignature();
-
     constructor(string memory appName) EIP712(appName, "1") {}
 
     function register(

@@ -1,0 +1,8 @@
+{
+  "urTokenFactoryModule#FeeManager": "0x0E935AFb5fFf1b72687479b72Dc2985252DB0A1B",
+  "urTokenFactoryModule#PasswordManager": "0x29585A95DBecc24FF6b540826544D1CE63b02bfC",
+  "urTokenFactoryModule#PeriodManager": "0x4745aA5Caabcd46473d274a910E66025df962cbF",
+  "urTokenFactoryModule#TokenManager": "0xb2EC0ACDed400BDD8AA9233b46eB1B5320a5a029",
+  "urTokenFactoryModule#UserManager": "0x3B1AA6584455C7A06EC25AdA1d75Fb0DAd253FC2",
+  "urTokenFactoryModule#urTokenFactoryContract": "0xFa5AEda561FD74B1C79C33259364136248AFC771"
+}

@@ -23,14 +23,6 @@ contract UserManager is PasswordManager, IUserManager {
     mapping(address => bytes32) private _masterKeyOf;
     mapping(address => bool) private _isMasterKeySetOf;
 
-    error SignKeySet();
-    error SignKeyNotSet();
-    error QuantumNotSet();
-    error SignKeyIncorrect();
-    error MasterKeyIncorrect();
-    error AlreadyQuantomProtected();
-    error UserNotRegistered();
-
     constructor(string memory _appName) PasswordManager(_appName) {}
 
     function addDepositor(address _depositor) public override {

@@ -20,10 +20,6 @@ contract TokenManager is ITokenManager {
 
     uint256 private _salt;
 
-    error TokenAlreadyAdded();
-    error TokenNotAdded();
-    error InvalidToken();
-
     constructor(
         address[] memory _whiteListAddresses,
         address[] memory _allowedTokens
