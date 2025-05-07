@@ -34,12 +34,12 @@ contract urTokenFactoryContract is
         address token,
         uint256 tokenAmount
     );
-
     event SignKeyChanged(
         address indexed userAddress,
         uint256 timestamp,
         bool isQuantumProtected
     );
+
     error InvalidurToken();
     error WithdrawFailed();
     error Failed();
@@ -56,6 +56,60 @@ contract urTokenFactoryContract is
         UserManager(_appName)
     {}
 
+    function _validateAuth(
+        address _user,
+        bool _quantumVerified,
+        string memory _customMessage,
+        bytes32 _signKeyHash,
+        uint256 _deadline,
+        bytes memory _ethSignature
+    ) internal view {
+        if (!isSignKeySet(_user)) revert SignKeyNotSet();
+        if (_quantumVerified && !isQuantumProtected(_user))
+            revert QuantumNotSet();
+        if (
+            !verifyLogin(
+                _user,
+                _customMessage,
+                _signKeyHash,
+                _deadline,
+                _ethSignature
+            )
+        ) revert SignKeyIncorrect();
+    }
+
+    function _handleFeeDistribution(uint256 fee) internal {
+        uint256 thirtyPercentShare = (fee *
+            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+            100_000;
+        payable(ur369gift_30).transfer(thirtyPercentShare);
+        payable(ur369_30).transfer(thirtyPercentShare);
+        payable(ur369impact_30).transfer(thirtyPercentShare);
+        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
+    }
+
+    function _handleFee(
+        uint256 _period,
+        address _token,
+        uint256 _fee,
+        bool _isETH
+    ) internal {
+        if (_isETH) {
+            uint256 thirtyPercentShare = (_fee *
+                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                100_000;
+            addETHToPeriod(_period, thirtyPercentShare);
+            _handleFeeETH(_fee);
+        } else {
+            uint256 thirtyPercentShare = (_fee *
+                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                100_000;
+            addTokenToPeriod(_period, _token);
+            addTokenRewardToPeriod(_period, _token, thirtyPercentShare);
+            _handleFeeToken(_token, _fee);
+        }
+    }
+
     function protect(
         address _urTokenAddress,
         uint256 _amount,
@@ -69,64 +123,41 @@ contract urTokenFactoryContract is
         address depositor = msg.sender;
         bool payInETH = _paymentToken == address(0);
 
-        if (!isSignKeySet(depositor)) revert SignKeyNotSet();
-        if (_quantumVerified && !isQuantumProtected(depositor))
-            revert QuantumNotSet();
-        if (
-            !verifyLogin(
-                depositor,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            )
-        ) revert SignKeyIncorrect();
-        if (!(_amount > 0)) revert InvalidAmount();
+        _validateAuth(
+            depositor,
+            _quantumVerified,
+            _customMessage,
+            _signKeyHash,
+            _deadline,
+            _ethSignature
+        );
+        if (_amount <= 0) revert InvalidAmount();
         if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
         uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
-        uint256 requiredETHFee;
+        uint256 requiredFee = payInETH
+            ? calculateETHFee(protectionFeeInUSD)
+            : calculateTokenFee(protectionFeeInUSD, _paymentToken);
+        uint256 totalAmount = payInETH
+            ? (
+                _urTokenAddress == urTokenAddressOfETH
+                    ? requiredFee + _amount
+                    : requiredFee
+            )
+            : requiredFee;
 
         if (payInETH) {
-            requiredETHFee = calculateETHFee(protectionFeeInUSD);
-            uint256 _totalETHAmount;
-            if (_urTokenAddress == urTokenAddressOfETH) {
-                _totalETHAmount = requiredETHFee + _amount;
-            } else {
-                _totalETHAmount = requiredETHFee;
-            }
+            if (msg.value < totalAmount) revert InvalidAmount();
+            if (msg.value > totalAmount)
+                payable(depositor).transfer(msg.value - totalAmount);
+        } else if (!isAllowedToken(_paymentToken)) revert InvalidAllowedToken();
 
-            if (!(msg.value >= _totalETHAmount)) revert InvalidAmount();
-
-            if (msg.value > _totalETHAmount) {
-                payable(depositor).transfer(msg.value - _totalETHAmount);
-            }
-
-            uint256 thirtyPercentShare = (requiredETHFee *
-                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-                100_000;
-            addETHToPeriod(currentTimePeriodCount, thirtyPercentShare);
-            _handleFeeETH(requiredETHFee);
-        } else {
-            if (!isAllowedToken(_paymentToken)) revert InvalidAllowedToken();
-
-            uint256 requiredTokenAmount = calculateTokenFee(
-                protectionFeeInUSD,
-                _paymentToken
-            );
-            uint256 thirtyPercentShare = (requiredTokenAmount *
-                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-                100_000;
-
-            addTokenToPeriod(currentTimePeriodCount, _paymentToken);
-            addTokenRewardToPeriod(
-                currentTimePeriodCount,
-                _paymentToken,
-                thirtyPercentShare
-            );
-            _handleFeeToken(_paymentToken, requiredTokenAmount);
-        }
-
+        _handleFee(
+            currentTimePeriodCount,
+            _paymentToken,
+            requiredFee,
+            payInETH
+        );
         IurToken(_urTokenAddress).protect(depositor, _amount);
 
         if (_urTokenAddress != urTokenAddressOfETH) {
@@ -137,34 +168,41 @@ contract urTokenFactoryContract is
             );
         }
 
-        addDepositor(depositor);
-        addDepositedurToken(depositor, _urTokenAddress);
-        addDepositedurTokenForPeriod(
-            depositor,
-            currentTimePeriodCount,
-            _urTokenAddress
-        );
-        updateDepositedAmount(depositor, _urTokenAddress, _amount);
-        updateDepositedAmountForPeriod(
+        _updateDepositState(
             depositor,
             _urTokenAddress,
-            currentTimePeriodCount,
-            _amount
+            _amount,
+            currentTimePeriodCount
         );
-
-        if (_urTokenAddress == urTokenAddressOfETH) {
-            updateNativeCurrencyDeposited(depositor, _amount);
-        }
-
-        markPeriodAsDeposited(currentTimePeriodCount);
-        addDepositorToPeriod(currentTimePeriodCount, depositor);
-
         emit Protect(
             depositor,
             _urTokenAddress,
             currentTimePeriodCount,
             _amount
         );
+    }
+
+    function _updateDepositState(
+        address _depositor,
+        address _urTokenAddress,
+        uint256 _amount,
+        uint256 _period
+    ) internal {
+        addDepositor(_depositor);
+        addDepositedurToken(_depositor, _urTokenAddress);
+        addDepositedurTokenForPeriod(_depositor, _period, _urTokenAddress);
+        updateDepositedAmount(_depositor, _urTokenAddress, _amount);
+        updateDepositedAmountForPeriod(
+            _depositor,
+            _urTokenAddress,
+            _period,
+            _amount
+        );
+        if (_urTokenAddress == urTokenAddressOfETH) {
+            updateNativeCurrencyDeposited(_depositor, _amount);
+        }
+        markPeriodAsDeposited(_period);
+        addDepositorToPeriod(_period, _depositor);
     }
 
     function burnAndUnprotect(
@@ -177,25 +215,18 @@ contract urTokenFactoryContract is
         bytes memory _ethSignature
     ) external {
         address withdrawer = msg.sender;
-
-        if (!isSignKeySet(withdrawer)) revert SignKeyNotSet();
-        if (_quantumVerified && !isQuantumProtected(withdrawer))
-            revert QuantumNotSet();
-        if (
-            !verifyLogin(
-                withdrawer,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            )
-        ) revert SignKeyIncorrect();
+        _validateAuth(
+            withdrawer,
+            _quantumVerified,
+            _customMessage,
+            _signKeyHash,
+            _deadline,
+            _ethSignature
+        );
         if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
-        if (!(_amount > 0)) revert InvalidAmount();
-        if (!(balance >= _amount)) revert InvalidAmount();
-
+        if (_amount <= 0 || balance < _amount) revert InvalidAmount();
         if (!IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount))
             revert WithdrawFailed();
 
@@ -221,21 +252,15 @@ contract urTokenFactoryContract is
         uint256 _deadline,
         bytes memory _ethSignature
     ) external returns (bool) {
-        address caller = msg.sender;
-
-        if (!isSignKeySet(caller)) revert SignKeyNotSet();
-        if (_quantumVerified && !isQuantumProtected(caller))
-            revert QuantumNotSet();
-        if (
-            !verifyLogin(
-                caller,
-                _customMessage,
-                _signKeyHash,
-                _deadline,
-                _ethSignature
-            )
-        ) revert SignKeyIncorrect();
-        if (!(_amount > 0)) revert InvalidAmount();
+        _validateAuth(
+            msg.sender,
+            _quantumVerified,
+            _customMessage,
+            _signKeyHash,
+            _deadline,
+            _ethSignature
+        );
+        if (_amount <= 0) revert InvalidAmount();
         if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
 
         IurToken(_urTokenAddress).transfer(_to, _amount);
@@ -261,8 +286,8 @@ contract urTokenFactoryContract is
             _signKeyHash,
             _deadline,
             _ethSignature,
-            "",
-            ""
+            bytes(""),
+            bytes("")
         );
         setSignKey(caller, false);
     }
@@ -277,18 +302,10 @@ contract urTokenFactoryContract is
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        if (!(msg.value >= requiredETHFee)) revert InvalidAmount();
+        if (msg.value < requiredETHFee) revert InvalidAmount();
 
-        uint256 thirtyPercentShare = (fee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-            100_000;
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-        payable(ur369_30).transfer(thirtyPercentShare);
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
-
+        _handleFeeDistribution(msg.value);
         if (isSignKeySet(caller) && isMasterKeySet(caller)) revert SignKeySet();
 
         setMasterKey(caller, _masterKey);
@@ -321,33 +338,19 @@ contract urTokenFactoryContract is
         if (!isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
 
-        if (isQuantumProtected(caller)) {
-            register(
-                caller,
-                true,
-                false,
-                _customMessage,
-                _newSignKeyHash,
-                _deadline,
-                _ethSignature,
-                _quantumSignature,
-                _quamtumPublicKey
-            );
-            emit SignKeyChanged(caller, block.timestamp, true);
-        } else {
-            register(
-                caller,
-                false,
-                false,
-                _customMessage,
-                _newSignKeyHash,
-                _deadline,
-                _ethSignature,
-                "",
-                ""
-            );
-            emit SignKeyChanged(caller, block.timestamp, false);
-        }
+        bool isQuantum = isQuantumProtected(caller);
+        register(
+            caller,
+            true,
+            false,
+            _customMessage,
+            _newSignKeyHash,
+            _deadline,
+            _ethSignature,
+            isQuantum ? _quantumSignature : bytes(""),
+            isQuantum ? _quamtumPublicKey : bytes("")
+        );
+        emit SignKeyChanged(caller, block.timestamp, isQuantum);
     }
 
     function changeSignKeyType(
@@ -366,18 +369,10 @@ contract urTokenFactoryContract is
         if (!isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
 
-        uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
-        if (!(msg.value >= requiredETHFee)) revert InvalidAmount();
+        if (msg.value < requiredETHFee) revert InvalidAmount();
 
-        uint256 thirtyPercentShare = (fee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-            100_000;
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-        payable(ur369_30).transfer(thirtyPercentShare);
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
-
+        _handleFeeDistribution(msg.value);
         register(
             caller,
             true,
@@ -410,10 +405,11 @@ contract urTokenFactoryContract is
 
         if (depositorsLength == 0) return address(0);
 
-        uint256 randomNumber = uint256(
-            keccak256(abi.encodePacked(previousTimePeriod, deployTime))
-        ) % depositorsLength;
-
-        return depositors[randomNumber];
+        return
+            depositors[
+                uint256(
+                    keccak256(abi.encodePacked(previousTimePeriod, deployTime))
+                ) % depositorsLength
+            ];
     }
 }
