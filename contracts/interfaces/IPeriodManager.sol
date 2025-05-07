@@ -8,6 +8,9 @@ interface IPeriodManager {
     }
 
     // View functions
+
+    function deployTime() external view returns (uint256);
+
     function getCurrentPeriodFor369hours() external view returns (uint256);
 
     function getCurrentPeriodFor369days() external view returns (uint256);

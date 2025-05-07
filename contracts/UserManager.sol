@@ -33,7 +33,7 @@ contract UserManager is PasswordManager, IUserManager {
 
     constructor(string memory _appName) PasswordManager(_appName) {}
 
-    function addDepositor(address _depositor) internal {
+    function addDepositor(address _depositor) public override {
         if (!allDepositors.contains(_depositor)) {
             allDepositors.add(_depositor);
         }
@@ -42,7 +42,7 @@ contract UserManager is PasswordManager, IUserManager {
     function addDepositedurToken(
         address _depositor,
         address _urToken
-    ) internal {
+    ) public override {
         if (!depositedurTokensOf[_depositor].contains(_urToken)) {
             depositedurTokensOf[_depositor].add(_urToken);
         }
@@ -52,7 +52,7 @@ contract UserManager is PasswordManager, IUserManager {
         address _depositor,
         uint256 _period,
         address _urToken
-    ) internal {
+    ) public override {
         if (
             !depositedurTokensOfUserForPeriod[_depositor][_period].contains(
                 _urToken
@@ -66,8 +66,16 @@ contract UserManager is PasswordManager, IUserManager {
         address _depositor,
         address _urToken,
         uint256 _amount
-    ) internal {
+    ) public override {
         depositedAmountOfUserAgainsturToken[_depositor][_urToken] += _amount;
+    }
+
+    function setDepositedAmount(
+        address _depositor,
+        address _urToken,
+        uint256 _amount
+    ) public override {
+        depositedAmountOfUserAgainsturToken[_depositor][_urToken] = _amount;
     }
 
     function updateDepositedAmountForPeriod(
@@ -75,25 +83,39 @@ contract UserManager is PasswordManager, IUserManager {
         address _urToken,
         uint256 _period,
         uint256 _amount
-    ) internal {
+    ) public override {
         depositedAmountOfUserAgainsturTokenForPeriod[_depositor][_urToken][
             _period
         ] += _amount;
     }
 
+    function setDepositedAmountForPeriod(
+        address _depositor,
+        address _urToken,
+        uint256 _period,
+        uint256 _amount
+    ) public override {
+        depositedAmountOfUserAgainsturTokenForPeriod[_depositor][_urToken][
+            _period
+        ] = _amount;
+    }
+
     function updateNativeCurrencyDeposited(
         address _depositor,
         uint256 _amount
-    ) internal {
+    ) public override {
         nativeCurrencyDepositedBy[_depositor] += _amount;
     }
 
-    function setMasterKey(address _user, string memory _masterKey) internal {
+    function setMasterKey(
+        address _user,
+        string memory _masterKey
+    ) public override {
         _masterKeyOf[_user] = keccak256(bytes(_masterKey));
         _isMasterKeySetOf[_user] = true;
     }
 
-    function setSignKey(address _user, bool _isQuantum) internal {
+    function setSignKey(address _user, bool _isQuantum) public override {
         _isSignKeySetOf[_user] = true;
         _isQuantumProtected[_user] = _isQuantum;
     }

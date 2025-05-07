@@ -14,6 +14,52 @@ interface IUserManager {
     }
 
     // View functions
+
+    function addDepositor(address _depositor) external;
+
+    function addDepositedurToken(address _depositor, address _urToken) external;
+
+    function addDepositedurTokenForPeriod(
+        address _depositor,
+        uint256 _period,
+        address _urToken
+    ) external;
+
+    function updateDepositedAmount(
+        address _depositor,
+        address _urToken,
+        uint256 _amount
+    ) external;
+
+    function setDepositedAmount(
+        address _depositor,
+        address _urToken,
+        uint256 _amount
+    ) external;
+
+    function setDepositedAmountForPeriod(
+        address _depositor,
+        address _urToken,
+        uint256 _period,
+        uint256 _amount
+    ) external;
+
+    function setMasterKey(address _user, string memory _masterKey) external;
+
+    function setSignKey(address _user, bool _isQuantum) external;
+
+    function updateDepositedAmountForPeriod(
+        address _depositor,
+        address _urToken,
+        uint256 _period,
+        uint256 _amount
+    ) external;
+
+    function updateNativeCurrencyDeposited(
+        address _depositor,
+        uint256 _amount
+    ) external;
+
     function getAllDepositorsInSystem()
         external
         view

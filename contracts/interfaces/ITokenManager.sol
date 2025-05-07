@@ -3,6 +3,9 @@ pragma solidity ^0.8.20;
 
 interface ITokenManager {
     // View functions
+
+    function urTokenAddressOfETH() external view returns (address);
+
     function allAllowedTokens() external view returns (address[] memory);
 
     function allAllowedTokensCount() external view returns (uint256);

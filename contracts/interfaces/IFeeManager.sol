@@ -5,6 +5,15 @@ interface IFeeManager {
     // View functions
     function getLatestPrice() external view returns (int256);
 
+    function quantumActivationFee() external view returns (uint256);
+
+    function percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()
+        external
+        view
+        returns (uint256);
+
+    function protectionFeeInUSD() external view returns (uint256);
+
     function calculateETHFee(
         uint256 _feeInStableCoin
     ) external view returns (uint256);
@@ -25,6 +34,13 @@ interface IFeeManager {
     ) external view returns (uint256);
 
     // State changing functions
+    function handleFeeETH(uint256 _depositFee) external;
+
+    function handleFeeToken(
+        address _paymentToken,
+        uint256 _depositFee
+    ) external;
+
     function addAllowedFeeToken(address _token, address _priceFeed) external;
 
     function removeAllowedFeeToken(address _token) external;

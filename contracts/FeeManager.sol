@@ -219,6 +219,10 @@ contract FeeManager is IFeeManager, Ownable {
         return tokenAmount;
     }
 
+    function handleFeeETH(uint256 _depositFee) external override {
+        _handleFeeETH(_depositFee);
+    }
+
     function _handleFeeETH(uint256 _depositFee) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
@@ -230,6 +234,13 @@ contract FeeManager is IFeeManager, Ownable {
         payable(ur369_30).transfer(thirtyPercentShare);
         payable(ur369impact_30).transfer(thirtyPercentShare);
         payable(ur369devs_10).transfer(tenPercentShare);
+    }
+
+    function handleFeeToken(
+        address _paymentToken,
+        uint256 _depositFee
+    ) public override {
+        _handleFeeToken(_paymentToken, _depositFee);
     }
 
     function _handleFeeToken(

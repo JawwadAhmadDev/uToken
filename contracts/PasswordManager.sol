@@ -28,7 +28,7 @@ contract PasswordManager is IPasswordManager, EIP712 {
         bytes memory ethSignature,
         bytes memory quantumSignature,
         bytes memory quantumPublicKey
-    ) internal {
+    ) public override {
         if (isChangeSignKeyRequest) {
             if (passwordDataOf[user].keccakHash == 0) {
                 revert NotRegistered();

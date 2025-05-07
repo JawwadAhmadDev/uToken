@@ -36,6 +36,19 @@ interface IPasswordManager {
             bytes memory quantumPublicKey
         );
 
+    // write functions
+    function register(
+        address user,
+        bool isQuantumProtected,
+        bool isChangeSignKeyRequest,
+        string memory customMessage,
+        bytes32 keccakHash,
+        uint256 deadline,
+        bytes memory ethSignature,
+        bytes memory quantumSignature,
+        bytes memory quantumPublicKey
+    ) external;
+
     // Events
     event UserRegistered(address indexed user, bool isQuamtumProtected);
 

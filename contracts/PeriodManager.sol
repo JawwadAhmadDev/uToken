@@ -26,25 +26,19 @@ contract PeriodManager is IPeriodManager {
     function addDepositorToPeriod(
         uint256 _period,
         address _depositor
-    ) external override {
+    ) public override {
         if (!depositorsByPeriod[_period].contains(_depositor)) {
             depositorsByPeriod[_period].add(_depositor);
         }
     }
 
-    function addTokenToPeriod(
-        uint256 _period,
-        address _token
-    ) external override {
+    function addTokenToPeriod(uint256 _period, address _token) public override {
         if (!tokensByPeriod[_period].contains(_token)) {
             tokensByPeriod[_period].add(_token);
         }
     }
 
-    function addETHToPeriod(
-        uint256 _period,
-        uint256 _amount
-    ) external override {
+    function addETHToPeriod(uint256 _period, uint256 _amount) public override {
         ETHInPeriod[_period] += _amount;
     }
 
@@ -52,15 +46,17 @@ contract PeriodManager is IPeriodManager {
         uint256 _period,
         address _token,
         uint256 _amount
-    ) external override {
+    ) public override {
         totalRewardAmountForTokenInPeriod[_period][_token] += _amount;
     }
 
-    function markPeriodAsDeposited(uint256 _period) external override {
-        isDepositedInPeriod[_period] = true;
+    function markPeriodAsDeposited(uint256 _period) public override {
+        if (!isDepositedInPeriod[_period]) {
+            isDepositedInPeriod[_period] = true;
+        }
     }
 
-    function markPeriodAsCollected(uint256 _period) external override {
+    function markPeriodAsCollected(uint256 _period) public override {
         hasRewardBeenCollectedForPeriod[_period] = true;
     }
 

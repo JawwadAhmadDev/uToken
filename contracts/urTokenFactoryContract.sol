@@ -2,20 +2,25 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./urTokenContract.sol";
-import "./TokenManager.sol";
-import "./FeeManager.sol";
-import "./PeriodManager.sol";
-import "./UserManager.sol";
+import "./interfaces/ITokenManager.sol";
+import "./interfaces/IFeeManager.sol";
+import "./interfaces/IPeriodManager.sol";
+import "./interfaces/IUserManager.sol";
+import "./interfaces/IPasswordManager.sol";
 
-contract urTokenFactoryContract is
-    TokenManager,
-    FeeManager,
-    PeriodManager,
-    UserManager
-{
+contract urTokenFactoryContract {
     using Address for address;
 
+    // Contract instances
+    ITokenManager public immutable tokenManager;
+    IFeeManager public immutable feeManager;
+    IPeriodManager public immutable periodManager;
+    IUserManager public immutable userManager;
+    IPasswordManager public immutable passwordManager;
+
+    // Events
     event Protect(
         address depositor,
         address token,
@@ -40,21 +45,37 @@ contract urTokenFactoryContract is
         bool isQuantumProtected
     );
 
+    // Errors
     error InvalidurToken();
     error WithdrawFailed();
     error Failed();
+    error InvalidAmount();
+    error InvalidAllowedToken();
+    error SignKeyNotSet();
+    error QuantumNotSet();
+    error SignKeyIncorrect();
+    error SignKeyAlreadySet();
+    error UserNotRegistered();
+    error MasterKeyIncorrect();
+    error AlreadyQuantomProtected();
 
     constructor(
         string memory _appName,
         address[] memory _allowedTokens,
         address[] memory _whiteListAddresses,
-        address _priceFeedAddress
-    )
-        TokenManager(_whiteListAddresses, _allowedTokens)
-        FeeManager(_priceFeedAddress)
-        PeriodManager()
-        UserManager(_appName)
-    {}
+        address _priceFeedAddress,
+        address _tokenManager,
+        address _feeManager,
+        address _periodManager,
+        address _userManager,
+        address _passwordManager
+    ) {
+        tokenManager = ITokenManager(_tokenManager);
+        feeManager = IFeeManager(_feeManager);
+        periodManager = IPeriodManager(_periodManager);
+        userManager = IUserManager(_userManager);
+        passwordManager = IPasswordManager(_passwordManager);
+    }
 
     function _validateAuth(
         address _user,
@@ -64,11 +85,11 @@ contract urTokenFactoryContract is
         uint256 _deadline,
         bytes memory _ethSignature
     ) internal view {
-        if (!isSignKeySet(_user)) revert SignKeyNotSet();
-        if (_quantumVerified && !isQuantumProtected(_user))
+        if (!userManager.isSignKeySet(_user)) revert SignKeyNotSet();
+        if (_quantumVerified && !userManager.isQuantumProtected(_user))
             revert QuantumNotSet();
         if (
-            !verifyLogin(
+            !passwordManager.verifyLogin(
                 _user,
                 _customMessage,
                 _signKeyHash,
@@ -76,16 +97,6 @@ contract urTokenFactoryContract is
                 _ethSignature
             )
         ) revert SignKeyIncorrect();
-    }
-
-    function _handleFeeDistribution(uint256 fee) internal {
-        uint256 thirtyPercentShare = (fee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-            100_000;
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-        payable(ur369_30).transfer(thirtyPercentShare);
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
     }
 
     function _handleFee(
@@ -96,17 +107,23 @@ contract urTokenFactoryContract is
     ) internal {
         if (_isETH) {
             uint256 thirtyPercentShare = (_fee *
-                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                feeManager
+                    .percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()) /
                 100_000;
-            addETHToPeriod(_period, thirtyPercentShare);
-            _handleFeeETH(_fee);
+            periodManager.addETHToPeriod(_period, thirtyPercentShare);
+            feeManager.handleFeeETH(_fee);
         } else {
             uint256 thirtyPercentShare = (_fee *
-                percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
+                feeManager
+                    .percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()) /
                 100_000;
-            addTokenToPeriod(_period, _token);
-            addTokenRewardToPeriod(_period, _token, thirtyPercentShare);
-            _handleFeeToken(_token, _fee);
+            periodManager.addTokenToPeriod(_period, _token);
+            periodManager.addTokenRewardToPeriod(
+                _period,
+                _token,
+                thirtyPercentShare
+            );
+            feeManager.handleFeeToken(_token, _fee);
         }
     }
 
@@ -132,15 +149,20 @@ contract urTokenFactoryContract is
             _ethSignature
         );
         if (_amount <= 0) revert InvalidAmount();
-        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
+        if (!tokenManager.isAllowedurToken(_urTokenAddress))
+            revert InvalidurToken();
 
-        uint256 currentTimePeriodCount = getCurrentPeriodFor369hours();
+        uint256 currentTimePeriodCount = periodManager
+            .getCurrentPeriodFor369hours();
         uint256 requiredFee = payInETH
-            ? calculateETHFee(protectionFeeInUSD)
-            : calculateTokenFee(protectionFeeInUSD, _paymentToken);
+            ? feeManager.calculateETHFee(feeManager.protectionFeeInUSD())
+            : feeManager.calculateTokenFee(
+                feeManager.protectionFeeInUSD(),
+                _paymentToken
+            );
         uint256 totalAmount = payInETH
             ? (
-                _urTokenAddress == urTokenAddressOfETH
+                _urTokenAddress == tokenManager.urTokenAddressOfETH()
                     ? requiredFee + _amount
                     : requiredFee
             )
@@ -150,7 +172,8 @@ contract urTokenFactoryContract is
             if (msg.value < totalAmount) revert InvalidAmount();
             if (msg.value > totalAmount)
                 payable(depositor).transfer(msg.value - totalAmount);
-        } else if (!isAllowedToken(_paymentToken)) revert InvalidAllowedToken();
+        } else if (!tokenManager.isAllowedToken(_paymentToken))
+            revert InvalidAllowedToken();
 
         _handleFee(
             currentTimePeriodCount,
@@ -160,12 +183,9 @@ contract urTokenFactoryContract is
         );
         IurToken(_urTokenAddress).protect(depositor, _amount);
 
-        if (_urTokenAddress != urTokenAddressOfETH) {
-            IERC20(getTokenAddressForurToken(_urTokenAddress)).transferFrom(
-                depositor,
-                address(this),
-                _amount
-            );
+        if (_urTokenAddress != tokenManager.urTokenAddressOfETH()) {
+            IERC20(tokenManager.getTokenAddressForurToken(_urTokenAddress))
+                .transferFrom(depositor, address(this), _amount);
         }
 
         _updateDepositState(
@@ -188,21 +208,30 @@ contract urTokenFactoryContract is
         uint256 _amount,
         uint256 _period
     ) internal {
-        addDepositor(_depositor);
-        addDepositedurToken(_depositor, _urTokenAddress);
-        addDepositedurTokenForPeriod(_depositor, _period, _urTokenAddress);
-        updateDepositedAmount(_depositor, _urTokenAddress, _amount);
-        updateDepositedAmountForPeriod(
+        userManager.addDepositor(_depositor);
+        userManager.addDepositedurToken(_depositor, _urTokenAddress);
+        if (_urTokenAddress == tokenManager.urTokenAddressOfETH())
+            userManager.updateNativeCurrencyDeposited(_depositor, _amount);
+        userManager.addDepositedurToken(_depositor, _urTokenAddress);
+        userManager.addDepositedurTokenForPeriod(
+            _depositor,
+            _period,
+            _urTokenAddress
+        );
+
+        userManager.updateDepositedAmount(_depositor, _urTokenAddress, _amount);
+        userManager.updateDepositedAmountForPeriod(
             _depositor,
             _urTokenAddress,
             _period,
             _amount
         );
-        if (_urTokenAddress == urTokenAddressOfETH) {
-            updateNativeCurrencyDeposited(_depositor, _amount);
+        if (_urTokenAddress == tokenManager.urTokenAddressOfETH()) {
+            userManager.updateNativeCurrencyDeposited(_depositor, _amount);
         }
-        markPeriodAsDeposited(_period);
-        addDepositorToPeriod(_period, _depositor);
+
+        periodManager.markPeriodAsDeposited(_period);
+        periodManager.addDepositorToPeriod(_period, _depositor);
     }
 
     function burnAndUnprotect(
@@ -223,19 +252,56 @@ contract urTokenFactoryContract is
             _deadline,
             _ethSignature
         );
-        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
+        if (!tokenManager.isAllowedurToken(_urTokenAddress))
+            revert InvalidurToken();
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
         if (_amount <= 0 || balance < _amount) revert InvalidAmount();
         if (!IurToken(_urTokenAddress).burnAndUnprotect(withdrawer, _amount))
             revert WithdrawFailed();
 
-        if (_urTokenAddress == urTokenAddressOfETH) {
+        if (_urTokenAddress == tokenManager.urTokenAddressOfETH()) {
             payable(withdrawer).transfer(_amount);
         } else {
-            IERC20(getTokenAddressForurToken(_urTokenAddress)).transfer(
+            IERC20(tokenManager.getTokenAddressForurToken(_urTokenAddress))
+                .transfer(withdrawer, _amount);
+        }
+
+        // Update the deposited amounts
+        uint256 previousAmount = userManager
+            .getDepositedAmountOfUserAgainsturToken(
                 withdrawer,
-                _amount
+                _urTokenAddress
+            );
+        userManager.setDepositedAmount(
+            withdrawer,
+            _urTokenAddress,
+            previousAmount - _amount
+        );
+
+        uint256 currentTimePeriodCount = periodManager
+            .getCurrentPeriodFor369hours();
+
+        if (
+            userManager.getDepositedAmountOfUserAgainsturToken(
+                withdrawer,
+                _urTokenAddress
+            ) <
+            userManager
+                .getDepositedAmountOfUserAgainsturTokenForPeriodFor369hours(
+                    withdrawer,
+                    _urTokenAddress,
+                    currentTimePeriodCount
+                )
+        ) {
+            userManager.setDepositedAmountForPeriod(
+                withdrawer,
+                _urTokenAddress,
+                currentTimePeriodCount,
+                userManager.getDepositedAmountOfUserAgainsturToken(
+                    withdrawer,
+                    _urTokenAddress
+                )
             );
         }
 
@@ -251,20 +317,23 @@ contract urTokenFactoryContract is
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external returns (bool) {
+    ) external {
+        address sender = msg.sender;
         _validateAuth(
-            msg.sender,
+            sender,
             _quantumVerified,
             _customMessage,
             _signKeyHash,
             _deadline,
             _ethSignature
         );
-        if (_amount <= 0) revert InvalidAmount();
-        if (!isAllowedurToken(_urTokenAddress)) revert InvalidurToken();
+        if (!tokenManager.isAllowedurToken(_urTokenAddress))
+            revert InvalidurToken();
 
-        IurToken(_urTokenAddress).transfer(_to, _amount);
-        return true;
+        uint256 balance = IurToken(_urTokenAddress).balanceOf(sender);
+        if (_amount <= 0 || balance < _amount) revert InvalidAmount();
+        if (!IurToken(_urTokenAddress).transferFrom(sender, _to, _amount))
+            revert Failed();
     }
 
     function setMasterKeyAndSignKey(
@@ -275,10 +344,13 @@ contract urTokenFactoryContract is
         bytes memory _ethSignature
     ) external {
         address caller = msg.sender;
-        if (isSignKeySet(caller) && isMasterKeySet(caller)) revert SignKeySet();
+        if (
+            userManager.isSignKeySet(caller) &&
+            userManager.isMasterKeySet(caller)
+        ) revert SignKeyAlreadySet();
 
-        setMasterKey(caller, _masterKey);
-        register(
+        userManager.setMasterKey(caller, _masterKey);
+        passwordManager.register(
             caller,
             false,
             false,
@@ -289,7 +361,7 @@ contract urTokenFactoryContract is
             bytes(""),
             bytes("")
         );
-        setSignKey(caller, false);
+        userManager.setSignKey(caller, false);
     }
 
     function setMasterKeyAndQuantumResistantSignKey(
@@ -302,14 +374,19 @@ contract urTokenFactoryContract is
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
+        uint256 requiredETHFee = feeManager.calculateETHFee(
+            feeManager.quantumActivationFee()
+        );
         if (msg.value < requiredETHFee) revert InvalidAmount();
 
-        _handleFeeDistribution(msg.value);
-        if (isSignKeySet(caller) && isMasterKeySet(caller)) revert SignKeySet();
+        feeManager.handleFeeETH(msg.value);
+        if (
+            userManager.isSignKeySet(caller) &&
+            userManager.isMasterKeySet(caller)
+        ) revert SignKeyAlreadySet();
 
-        setMasterKey(caller, _masterKey);
-        register(
+        userManager.setMasterKey(caller, _masterKey);
+        passwordManager.register(
             caller,
             true,
             false,
@@ -320,7 +397,7 @@ contract urTokenFactoryContract is
             _quantumSignature,
             _quamtumPublicKey
         );
-        setSignKey(caller, true);
+        userManager.setSignKey(caller, true);
     }
 
     function enableQuantumKey(
@@ -333,15 +410,17 @@ contract urTokenFactoryContract is
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (!(isSignKeySet(caller) && isMasterKeySet(caller)))
-            revert UserNotRegistered();
-        if (!isMasterKeyCorrect(caller, _masterKey))
+        if (
+            !(userManager.isSignKeySet(caller) &&
+                userManager.isMasterKeySet(caller))
+        ) revert UserNotRegistered();
+        if (!userManager.isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
 
-        bool isQuantum = isQuantumProtected(caller);
-        register(
+        bool isQuantum = userManager.isQuantumProtected(caller);
+        passwordManager.register(
             caller,
-            true,
+            isQuantum,
             false,
             _customMessage,
             _newSignKeyHash,
@@ -363,17 +442,22 @@ contract urTokenFactoryContract is
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (isQuantumProtected(caller)) revert AlreadyQuantomProtected();
-        if (!(isSignKeySet(caller) && isMasterKeySet(caller)))
-            revert UserNotRegistered();
-        if (!isMasterKeyCorrect(caller, _masterKey))
+        if (userManager.isQuantumProtected(caller))
+            revert AlreadyQuantomProtected();
+        if (
+            !(userManager.isSignKeySet(caller) &&
+                userManager.isMasterKeySet(caller))
+        ) revert UserNotRegistered();
+        if (!userManager.isMasterKeyCorrect(caller, _masterKey))
             revert MasterKeyIncorrect();
 
-        uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
+        uint256 requiredETHFee = feeManager.calculateETHFee(
+            feeManager.quantumActivationFee()
+        );
         if (msg.value < requiredETHFee) revert InvalidAmount();
 
-        _handleFeeDistribution(msg.value);
-        register(
+        feeManager.handleFeeETH(msg.value);
+        passwordManager.register(
             caller,
             true,
             true,
@@ -385,7 +469,7 @@ contract urTokenFactoryContract is
             _quamtumPublicKey
         );
         emit SignKeyChanged(caller, block.timestamp, true);
-        setSignKey(caller, true);
+        userManager.setSignKey(caller, true);
     }
 
     //--------------------Read Functions -------------------------------//
@@ -395,12 +479,12 @@ contract urTokenFactoryContract is
         view
         returns (address)
     {
-        uint256 previousTimePeriod = ((block.timestamp - deployTime) /
-            rewardTimeLimitFor369Days);
+        uint256 previousTimePeriod = periodManager
+            .getPreviousPeriodFor369days();
 
         if (previousTimePeriod == 0) return address(0);
 
-        address[] memory depositors = getAllDepositorsInSystem();
+        address[] memory depositors = userManager.getAllDepositorsInSystem();
         uint256 depositorsLength = depositors.length;
 
         if (depositorsLength == 0) return address(0);
@@ -408,7 +492,12 @@ contract urTokenFactoryContract is
         return
             depositors[
                 uint256(
-                    keccak256(abi.encodePacked(previousTimePeriod, deployTime))
+                    keccak256(
+                        abi.encodePacked(
+                            previousTimePeriod,
+                            periodManager.deployTime()
+                        )
+                    )
                 ) % depositorsLength
             ];
     }
