@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./interfaces/IPeriodManager.sol";
 
-contract PeriodManager {
+contract PeriodManager is IPeriodManager {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 public rewardTimeLimitFor369Hours = 129600; // 369 hours
@@ -25,19 +26,25 @@ contract PeriodManager {
     function addDepositorToPeriod(
         uint256 _period,
         address _depositor
-    ) internal {
+    ) external override {
         if (!depositorsByPeriod[_period].contains(_depositor)) {
             depositorsByPeriod[_period].add(_depositor);
         }
     }
 
-    function addTokenToPeriod(uint256 _period, address _token) internal {
+    function addTokenToPeriod(
+        uint256 _period,
+        address _token
+    ) external override {
         if (!tokensByPeriod[_period].contains(_token)) {
             tokensByPeriod[_period].add(_token);
         }
     }
 
-    function addETHToPeriod(uint256 _period, uint256 _amount) internal {
+    function addETHToPeriod(
+        uint256 _period,
+        uint256 _amount
+    ) external override {
         ETHInPeriod[_period] += _amount;
     }
 
@@ -45,38 +52,59 @@ contract PeriodManager {
         uint256 _period,
         address _token,
         uint256 _amount
-    ) internal {
+    ) external override {
         totalRewardAmountForTokenInPeriod[_period][_token] += _amount;
     }
 
-    function markPeriodAsDeposited(uint256 _period) internal {
+    function markPeriodAsDeposited(uint256 _period) external override {
         isDepositedInPeriod[_period] = true;
     }
 
-    function markPeriodAsCollected(uint256 _period) internal {
+    function markPeriodAsCollected(uint256 _period) external override {
         hasRewardBeenCollectedForPeriod[_period] = true;
     }
 
-    function getCurrentPeriodFor369hours() public view returns (uint256) {
+    function getCurrentPeriodFor369hours()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return
             ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours) + 1;
     }
 
-    function getCurrentPeriodFor369days() public view returns (uint256) {
+    function getCurrentPeriodFor369days()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days) + 1;
     }
 
-    function getPreviousPeriodFor369Hours() public view returns (uint256) {
+    function getPreviousPeriodFor369Hours()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Hours);
     }
 
-    function getPreviousPeriodFor369days() public view returns (uint256) {
+    function getPreviousPeriodFor369days()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return ((block.timestamp - deployTime) / rewardTimeLimitFor369Days);
     }
 
     function getCurrentPeriodStartAndEndTimeFor369hours()
         public
         view
+        override
         returns (uint256 startTime, uint256 endTime)
     {
         uint256 currentTimePeriod_for369hours = getCurrentPeriodFor369hours();
@@ -96,6 +124,7 @@ contract PeriodManager {
     function getCurrentPeriodStartAndEndTimeFor369days()
         public
         view
+        override
         returns (uint256 startTime, uint256 endTime)
     {
         uint256 currentTimePeriod_for369days = getCurrentPeriodFor369days();
@@ -122,6 +151,7 @@ contract PeriodManager {
     function getCurrentRecipientCandidateFor369Hours()
         public
         view
+        override
         returns (address)
     {
         uint256 previousTimePeriod = ((block.timestamp - deployTime) /
@@ -144,48 +174,50 @@ contract PeriodManager {
 
     function getDepositorsByPeriodFor369hours(
         uint256 _period
-    ) public view returns (address[] memory) {
+    ) public view override returns (address[] memory) {
         return depositorsByPeriod[_period].values();
     }
 
     function getDepositorsByPeriodCountFor369hours(
         uint256 _period
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return depositorsByPeriod[_period].length();
     }
 
     function getTokensDepositedByPeriod(
         uint256 _period
-    ) public view returns (address[] memory) {
+    ) public view override returns (address[] memory) {
         return tokensByPeriod[_period].values();
     }
 
     function getTokensDepositedByPeriodCount(
         uint256 _period
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return tokensByPeriod[_period].length();
     }
 
-    function getETHInPeriod(uint256 _period) public view returns (uint256) {
+    function getETHInPeriod(
+        uint256 _period
+    ) public view override returns (uint256) {
         return ETHInPeriod[_period];
     }
 
     function getRewardAmountOfTokenInPeriod(
         uint256 _period,
         address _token
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return totalRewardAmountForTokenInPeriod[_period][_token];
     }
 
     function hasRewardBeenCollectedForPeriodFor369hours(
         uint256 _period
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         return hasRewardBeenCollectedForPeriod[_period];
     }
 
     function isDepositedInPeriodFor369hours(
         uint256 _period
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         return isDepositedInPeriod[_period];
     }
 
@@ -198,6 +230,7 @@ contract PeriodManager {
     function rewardHistoryForETHFor369Hours()
         public
         view
+        override
         returns (uint256 ethHistory)
     {
         uint256 period = getPreviousPeriodFor369Hours();
@@ -208,12 +241,6 @@ contract PeriodManager {
         }
     }
 
-    // Struct to represent reward against a specific token
-    struct RewardAgainstToken {
-        address token;
-        uint256 amount;
-    }
-
     /**
      * @notice Returns the reward history for tokens for a specific period.
      * @param _period The period for which to fetch the reward history.
@@ -221,7 +248,7 @@ contract PeriodManager {
      */
     function rewardHistoryForTokensForPeriod(
         uint256 _period
-    ) public view returns (RewardAgainstToken[] memory record) {
+    ) public view override returns (RewardAgainstToken[] memory record) {
         address[] memory _tokens = getTokensDepositedByPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
@@ -242,28 +269,21 @@ contract PeriodManager {
     function pendingPeriodsForReward()
         public
         view
+        override
         returns (uint256[] memory pendingPeriods)
     {
         uint256 period = getPreviousPeriodFor369Hours();
         uint256[] memory _pendingPeriods = new uint256[](period);
         uint256 count;
         while (!hasRewardBeenCollectedForPeriodFor369hours(period)) {
-            if (!isDepositedInPeriod[period]) {
-                if (period == 0) break;
-                period--;
-                continue;
-            }
-            _pendingPeriods[count++] = period;
+            _pendingPeriods[count] = period;
+            count++;
             if (period == 0) break;
             period--;
         }
-
         pendingPeriods = new uint256[](count);
-        uint256 _count;
-        for (uint256 i; i < _pendingPeriods.length; i++) {
-            if (_pendingPeriods[i] > 0) {
-                pendingPeriods[_count++] = _pendingPeriods[i];
-            }
+        for (uint256 i; i < count; i++) {
+            pendingPeriods[i] = _pendingPeriods[i];
         }
     }
 }

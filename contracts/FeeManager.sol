@@ -5,8 +5,9 @@ import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.so
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/IFeeManager.sol";
 
-contract FeeManager is Ownable {
+contract FeeManager is IFeeManager, Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     AggregatorV3Interface public priceFeed; // Chainlink ETH/USD Price Feed
 
@@ -80,7 +81,7 @@ contract FeeManager is Ownable {
     function addAllowedFeeToken(
         address _token,
         address _priceFeed
-    ) public onlyOwner {
+    ) public override onlyOwner {
         if (_token == address(0)) {
             revert InvalidTokenAddress();
         }
@@ -98,10 +99,11 @@ contract FeeManager is Ownable {
 
         // Set price feed for the token
         tokenPriceFeeds[_token] = _priceFeed;
+        emit FeeTokenAdded(_token, _priceFeed);
     }
 
     // Remove allowed token
-    function removeAllowedFeeToken(address _token) public onlyOwner {
+    function removeAllowedFeeToken(address _token) public override onlyOwner {
         if (!isAllowedFeeToken(_token)) {
             revert InvalidAllowedToken();
         }
@@ -111,6 +113,7 @@ contract FeeManager is Ownable {
 
         // Remove price feed mapping
         delete tokenPriceFeeds[_token];
+        emit FeeTokenRemoved(_token);
     }
 
     // Add multiple allowed tokens with their price feeds
@@ -261,11 +264,17 @@ contract FeeManager is Ownable {
         );
     }
 
-    function changeProtectionFee(uint256 _feeInUSD) external onlyOwner {
+    function changeProtectionFee(
+        uint256 _feeInUSD
+    ) external override onlyOwner {
         protectionFeeInUSD = _feeInUSD;
+        emit ProtectionFeeChanged(_feeInUSD);
     }
 
-    function changeQuantumActivationFee(uint256 _feeInUSD) external onlyOwner {
+    function changeQuantumActivationFee(
+        uint256 _feeInUSD
+    ) external override onlyOwner {
         quantumActivationFee = _feeInUSD;
+        emit QuantumActivationFeeChanged(_feeInUSD);
     }
 }

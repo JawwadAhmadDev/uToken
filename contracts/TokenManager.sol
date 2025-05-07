@@ -4,8 +4,9 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./urTokenContract.sol";
+import "./interfaces/ITokenManager.sol";
 
-contract TokenManager {
+contract TokenManager is ITokenManager {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private allowedTokens;
@@ -18,13 +19,6 @@ contract TokenManager {
     mapping(address => address) private urTokenAddressForToken;
 
     uint256 private _salt;
-
-    event TokenDeployed(address indexed tokenAddress, string name);
-    event TokenAdded(
-        address indexed tokenAddress,
-        address indexed deployedAddress
-    );
-    event TokenRemoved(address indexed tokenAddress);
 
     error TokenAlreadyAdded();
     error TokenNotAdded();
@@ -93,7 +87,7 @@ contract TokenManager {
         emit TokenDeployed(deployedToken, name);
     }
 
-    function addAllowedTokens(address[] memory _allowedTokens) public {
+    function addAllowedTokens(address[] memory _allowedTokens) public override {
         uint256 length = _allowedTokens.length;
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i];
@@ -115,7 +109,9 @@ contract TokenManager {
         }
     }
 
-    function removeAllowedTokens(address[] memory _allowedTokens) external {
+    function removeAllowedTokens(
+        address[] memory _allowedTokens
+    ) external override {
         uint256 length = _allowedTokens.length;
         for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i];
@@ -131,50 +127,64 @@ contract TokenManager {
         }
     }
 
-    // View functions
-    function allAllowedTokens() public view returns (address[] memory) {
+    function allAllowedTokens()
+        public
+        view
+        override
+        returns (address[] memory)
+    {
         return allowedTokens.values();
     }
 
-    function allAllowedTokensCount() public view returns (uint256) {
+    function allAllowedTokensCount() public view override returns (uint256) {
         return allowedTokens.length();
     }
 
     function allurTokensOfAllowedTokens()
         public
         view
+        override
         returns (address[] memory)
     {
         return urTokensOfAllowedTokens.values();
     }
 
-    function allurTokensOfAllowedTokensCount() public view returns (uint256) {
+    function allurTokensOfAllowedTokensCount()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return urTokensOfAllowedTokens.length();
     }
 
     function getTokenAddressForurToken(
         address _urToken
-    ) public view returns (address) {
+    ) public view override returns (address) {
         return tokenAdressForurToken[_urToken];
     }
 
     function geturTokenAddressForToken(
         address _token
-    ) public view returns (address) {
+    ) public view override returns (address) {
         return urTokenAddressForToken[_token];
     }
 
     function getCurrencyOfurToken(
         address _urToken
-    ) public view returns (string memory) {
+    ) public view override returns (string memory) {
         return currencyOfurToken[_urToken];
     }
 
-    function isAllowedToken(address _token) public view returns (bool) {
+    function isAllowedToken(
+        address _token
+    ) public view override returns (bool) {
         return allowedTokens.contains(_token);
     }
 
-    function isAllowedurToken(address _urToken) public view returns (bool) {
+    function isAllowedurToken(
+        address _urToken
+    ) public view override returns (bool) {
         return
             _urToken == urTokenAddressOfETH ||
             urTokensOfAllowedTokens.contains(_urToken);
@@ -183,6 +193,7 @@ contract TokenManager {
     function getAllWhiteListAddresses()
         public
         view
+        override
         returns (address[] memory _whiteListAddresses)
     {
         uint256 _length = whiteListAddresses.length;

@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./PasswordManager.sol";
+import "./interfaces/IUserManager.sol";
 
-contract UserManager is PasswordManager {
+contract UserManager is PasswordManager, IUserManager {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet private allDepositors;
@@ -97,33 +98,38 @@ contract UserManager is PasswordManager {
         _isQuantumProtected[_user] = _isQuantum;
     }
 
-    function getAllDepositorsInSystem() public view returns (address[] memory) {
+    function getAllDepositorsInSystem()
+        public
+        view
+        override
+        returns (address[] memory)
+    {
         return allDepositors.values();
     }
 
     function getNativeCurrencyDepositedBy(
         address _depositor
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return nativeCurrencyDepositedBy[_depositor];
     }
 
     function getDepositedurTokensForUser(
         address _depositor
-    ) public view returns (address[] memory) {
+    ) public view override returns (address[] memory) {
         return depositedurTokensOf[_depositor].values();
     }
 
     function getDepositedurTokensOfUserForPeriodFor369hours(
         address _depositor,
         uint256 _period
-    ) public view returns (address[] memory) {
+    ) public view override returns (address[] memory) {
         return depositedurTokensOfUserForPeriod[_depositor][_period].values();
     }
 
     function getDepositedAmountOfUserAgainsturToken(
         address _depositor,
         address _urToken
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return depositedAmountOfUserAgainsturToken[_depositor][_urToken];
     }
 
@@ -131,47 +137,44 @@ contract UserManager is PasswordManager {
         address _depositor,
         address _urToken,
         uint256 _period
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return
             depositedAmountOfUserAgainsturTokenForPeriod[_depositor][_urToken][
                 _period
             ];
     }
 
-    function isSignKeySet(address _user) public view returns (bool) {
+    function isSignKeySet(address _user) public view override returns (bool) {
         return _isSignKeySetOf[_user];
     }
 
-    function isQuantumProtected(address _user) public view returns (bool) {
+    function isQuantumProtected(
+        address _user
+    ) public view override returns (bool) {
         return _isQuantumProtected[_user];
     }
 
-    function isMasterKeySet(address _user) public view returns (bool) {
+    function isMasterKeySet(address _user) public view override returns (bool) {
         return _isMasterKeySetOf[_user];
     }
 
     function isMasterKeyCorrect(
         address _user,
         string memory _masterKey
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         return _masterKeyOf[_user] == keccak256(bytes(_masterKey));
     }
 
     function isSignKeyCorrect(
         address _user,
         bytes32 _signkeyHash
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         return passwordDataOf[_user].keccakHash == _signkeyHash;
-    }
-
-    struct DepositsOfUser {
-        address urTokenAddress;
-        uint256 amount;
     }
 
     function getDepositDetailsForUser(
         address _depositor
-    ) public view returns (DepositsOfUser[] memory depositDetails) {
+    ) public view override returns (DepositsOfUser[] memory depositDetails) {
         address[] memory totalurTokens = getDepositedurTokensForUser(
             _depositor
         );
@@ -192,17 +195,6 @@ contract UserManager is PasswordManager {
     }
 
     /**
-     * @dev A struct that holds details about a user's deposit details for a specific period.
-     *
-     * @param urTokenAddress The address of the urToken in which the deposit was made.
-     * @param amount The amount deposited in the urToken.
-     */
-    struct DepositsForPeriodOfUser {
-        address urTokenAddress;
-        uint256 amount;
-    }
-
-    /**
      * @dev Returns the details of deposits made by a specific depositor during a specific period.
      *
      * This function takes the address of an depositor and a period, and returns an array of `DepositsForPeriodOfUser`
@@ -216,7 +208,12 @@ contract UserManager is PasswordManager {
     function getDepositDetailsOfUserForPeriodFor369hours(
         address _depositor,
         uint256 _period
-    ) public view returns (DepositsForPeriodOfUser[] memory depositDetails) {
+    )
+        public
+        view
+        override
+        returns (DepositsForPeriodOfUser[] memory depositDetails)
+    {
         address[]
             memory totalurTokens = getDepositedurTokensOfUserForPeriodFor369hours(
                 _depositor,
