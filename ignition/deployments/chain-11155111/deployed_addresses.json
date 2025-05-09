@@ -1,8 +1,8 @@
 {
-  "urTokenFactoryModule#FeeManager": "0x0E935AFb5fFf1b72687479b72Dc2985252DB0A1B",
-  "urTokenFactoryModule#PasswordManager": "0x29585A95DBecc24FF6b540826544D1CE63b02bfC",
-  "urTokenFactoryModule#PeriodManager": "0x4745aA5Caabcd46473d274a910E66025df962cbF",
-  "urTokenFactoryModule#TokenManager": "0xb2EC0ACDed400BDD8AA9233b46eB1B5320a5a029",
-  "urTokenFactoryModule#UserManager": "0x3B1AA6584455C7A06EC25AdA1d75Fb0DAd253FC2",
-  "urTokenFactoryModule#urTokenFactoryContract": "0xFa5AEda561FD74B1C79C33259364136248AFC771"
+  "urTokenFactoryModule#FeeManager": "0x0439004E40bc4a67DFC72Bda4404d3BB3ab944e5",
+  "urTokenFactoryModule#PasswordManager": "0xF2677EBF50530Eded5Ee6A9aFD7b97e5151e7703",
+  "urTokenFactoryModule#PeriodManager": "0xD7C365746703D1799abE20876Dc197e26368c6c2",
+  "urTokenFactoryModule#TokenManager": "0xc38FC49a4f2A721f26A102D0Bc57D3Cfad621857",
+  "urTokenFactoryModule#UserManager": "0xAc8b3E999641904fbc1Ab7e308d702C991E7c4D6",
+  "urTokenFactoryModule#urTokenFactoryContract": "0x1e24E6A6E97dA3716640bEb2B419edE776185084"
 }

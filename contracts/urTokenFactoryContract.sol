@@ -354,8 +354,8 @@ contract urTokenFactoryContract {
             _signKeyHash,
             _deadline,
             _ethSignature,
-            bytes(""),
-            bytes("")
+            "",
+            ""
         );
         userManager.setSignKey(caller, false);
     }
