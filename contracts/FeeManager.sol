@@ -11,12 +11,6 @@ contract FeeManager is IFeeManager, Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     AggregatorV3Interface public priceFeed; // Chainlink ETH/USD Price Feed
 
-    // Mapping to store price feed addresses for different tokens
-    mapping(address => address) public tokenPriceFeeds;
-
-    // Set to store allowed tokens (both stablecoins and other tokens)
-    EnumerableSet.AddressSet private allowedFeeTokens;
-
     uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
@@ -77,148 +71,6 @@ contract FeeManager is IFeeManager, Ownable {
         return (usdtAmountInDecimals / 1e8) * 1e18;
     }
 
-    // Add allowed token with its price feed
-    function addAllowedFeeToken(
-        address _token,
-        address _priceFeed
-    ) public override onlyOwner {
-        if (_token == address(0)) {
-            revert InvalidTokenAddress();
-        }
-        if (_priceFeed == address(0)) {
-            revert InvalidPriceFeed();
-        }
-
-        // Check if token is already allowed
-        if (isAllowedFeeToken(_token)) {
-            revert InvalidAllowedToken();
-        }
-
-        // Add token to allowed tokens set
-        allowedFeeTokens.add(_token);
-
-        // Set price feed for the token
-        tokenPriceFeeds[_token] = _priceFeed;
-        emit FeeTokenAdded(_token, _priceFeed);
-    }
-
-    // Remove allowed token
-    function removeAllowedFeeToken(address _token) public override onlyOwner {
-        if (!isAllowedFeeToken(_token)) {
-            revert InvalidAllowedToken();
-        }
-
-        // Remove token from allowed tokens set
-        allowedFeeTokens.remove(_token);
-
-        // Remove price feed mapping
-        delete tokenPriceFeeds[_token];
-        emit FeeTokenRemoved(_token);
-    }
-
-    // Add multiple allowed tokens with their price feeds
-    function addAllowedFeeTokens(
-        address[] calldata _tokens,
-        address[] calldata _priceFeeds
-    ) public onlyOwner {
-        if (_tokens.length != _priceFeeds.length) {
-            revert LengthMismatch();
-        }
-
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            if (_tokens[i] == address(0)) {
-                revert InvalidTokenAddress();
-            }
-            if (_priceFeeds[i] == address(0)) {
-                revert InvalidPriceFeed();
-            }
-            if (isAllowedFeeToken(_tokens[i])) {
-                revert AlreadyAdded();
-            }
-
-            // Add token to allowed tokens set
-            allowedFeeTokens.add(_tokens[i]);
-
-            // Set price feed for the token
-            tokenPriceFeeds[_tokens[i]] = _priceFeeds[i];
-        }
-    }
-
-    // Remove multiple allowed tokens
-    function removeAllowedFeeTokens(
-        address[] calldata _tokens
-    ) public onlyOwner {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            if (!isAllowedFeeToken(_tokens[i])) {
-                revert InvalidAllowedToken();
-            }
-
-            // Remove token from allowed tokens set
-            allowedFeeTokens.remove(_tokens[i]);
-
-            // Remove price feed mapping
-            delete tokenPriceFeeds[_tokens[i]];
-        }
-    }
-
-    // Check if a token is allowed
-    function isAllowedFeeToken(address _token) public view returns (bool) {
-        return allowedFeeTokens.contains(_token);
-    }
-
-    // Get the price feed address for a token
-    function getTokenPriceFeed(address _token) public view returns (address) {
-        return tokenPriceFeeds[_token];
-    }
-
-    // Get all allowed tokens
-    function getAllowedFeeTokens() public view returns (address[] memory) {
-        return allowedFeeTokens.values();
-    }
-
-    // Calculate fee in a specific token
-    function calculateTokenFee(
-        uint256 _feeInUSD,
-        address _token
-    ) public view returns (uint256) {
-        if (!isAllowedFeeToken(_token)) {
-            revert InvalidAllowedToken();
-        }
-
-        // Get price feed for the token
-        address priceFeedAddress = tokenPriceFeeds[_token];
-        if (priceFeedAddress == address(0)) {
-            revert InvalidPriceFeed();
-        }
-
-        // Get token price in USD
-        AggregatorV3Interface _priceFeed = AggregatorV3Interface(
-            priceFeedAddress
-        );
-        (, int price, , , ) = _priceFeed.latestRoundData();
-        if (!(price > 0)) {
-            revert InvalidPrice();
-        }
-
-        // Get token decimals
-        uint8 decimals = IERC20Metadata(_token).decimals();
-
-        // Calculate token amount needed
-        // _feeInUSD is in 1e18 (USD with 18 decimals)
-        // price is in 1e8 (USD with 8 decimals)
-        // We need to adjust for both the price feed decimals and token decimals
-        uint256 tokenAmount = (_feeInUSD * 1e8) / uint256(price);
-
-        // Adjust for token decimals
-        if (decimals < 18) {
-            tokenAmount = tokenAmount / (10 ** (18 - decimals));
-        } else if (decimals > 18) {
-            tokenAmount = tokenAmount * (10 ** (decimals - 18));
-        }
-
-        return tokenAmount;
-    }
-
     function handleFeeETH(uint256 _depositFee) external override {
         _handleFeeETH(_depositFee);
     }
@@ -234,45 +86,6 @@ contract FeeManager is IFeeManager, Ownable {
         payable(ur369_30).transfer(thirtyPercentShare);
         payable(ur369impact_30).transfer(thirtyPercentShare);
         payable(ur369devs_10).transfer(tenPercentShare);
-    }
-
-    function handleFeeToken(
-        address _paymentToken,
-        uint256 _depositFee
-    ) public override {
-        _handleFeeToken(_paymentToken, _depositFee);
-    }
-
-    function _handleFeeToken(
-        address _paymentToken,
-        uint256 _depositFee
-    ) internal {
-        uint256 thirtyPercentShare = (_depositFee *
-            percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) /
-            100_000;
-        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) /
-            100_000;
-
-        IERC20(_paymentToken).transferFrom(
-            msg.sender,
-            ur369gift_30,
-            thirtyPercentShare
-        );
-        IERC20(_paymentToken).transferFrom(
-            msg.sender,
-            ur369_30,
-            thirtyPercentShare
-        );
-        IERC20(_paymentToken).transferFrom(
-            msg.sender,
-            ur369impact_30,
-            thirtyPercentShare
-        );
-        IERC20(_paymentToken).transferFrom(
-            msg.sender,
-            ur369devs_10,
-            tenPercentShare
-        );
     }
 
     function changeProtectionFee(

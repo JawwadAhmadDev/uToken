@@ -95,32 +95,13 @@ contract urTokenFactoryContract {
         ) revert SignKeyIncorrect();
     }
 
-    function _handleFee(
-        uint256 _period,
-        address _token,
-        uint256 _fee,
-        bool _isETH
-    ) internal {
-        if (_isETH) {
-            uint256 thirtyPercentShare = (_fee *
-                feeManager
-                    .percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()) /
-                100_000;
-            periodManager.addETHToPeriod(_period, thirtyPercentShare);
-            feeManager.handleFeeETH(_fee);
-        } else {
-            uint256 thirtyPercentShare = (_fee *
-                feeManager
-                    .percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()) /
-                100_000;
-            periodManager.addTokenToPeriod(_period, _token);
-            periodManager.addTokenRewardToPeriod(
-                _period,
-                _token,
-                thirtyPercentShare
-            );
-            feeManager.handleFeeToken(_token, _fee);
-        }
+    function _handleFee(uint256 _period, uint256 _fee) internal {
+        uint256 thirtyPercentShare = (_fee *
+            feeManager
+                .percentOfPublicGoodRecipientCandidateAndSocialGoodAddress()) /
+            100_000;
+        periodManager.addETHToPeriod(_period, thirtyPercentShare);
+        feeManager.handleFeeETH(_fee);
     }
 
     function protect(
@@ -130,11 +111,9 @@ contract urTokenFactoryContract {
         string memory _customMessage,
         bytes32 _signKeyHash,
         uint256 _deadline,
-        bytes memory _ethSignature,
-        address _paymentToken
+        bytes memory _ethSignature // address _paymentToken
     ) external payable {
         address depositor = msg.sender;
-        bool payInETH = _paymentToken == address(0);
 
         _validateAuth(
             depositor,
@@ -150,33 +129,22 @@ contract urTokenFactoryContract {
 
         uint256 currentTimePeriodCount = periodManager
             .getCurrentPeriodFor369hours();
-        uint256 requiredFee = payInETH
-            ? feeManager.calculateETHFee(feeManager.protectionFeeInUSD())
-            : feeManager.calculateTokenFee(
-                feeManager.protectionFeeInUSD(),
-                _paymentToken
-            );
-        uint256 totalAmount = payInETH
-            ? (
-                _urTokenAddress == tokenManager.urTokenAddressOfETH()
-                    ? requiredFee + _amount
-                    : requiredFee
-            )
+
+        uint256 requiredFee = feeManager.calculateETHFee(
+            feeManager.protectionFeeInUSD()
+        );
+
+        uint256 totalAmount = (_urTokenAddress ==
+            tokenManager.urTokenAddressOfETH())
+            ? requiredFee + _amount
             : requiredFee;
 
-        if (payInETH) {
-            if (msg.value < totalAmount) revert InvalidAmount();
-            if (msg.value > totalAmount)
-                payable(depositor).transfer(msg.value - totalAmount);
-        } else if (!tokenManager.isAllowedToken(_paymentToken))
-            revert InvalidAllowedToken();
+        if (msg.value < totalAmount) revert InvalidAmount();
+        if (msg.value > totalAmount)
+            payable(depositor).transfer(msg.value - totalAmount);
 
-        _handleFee(
-            currentTimePeriodCount,
-            _paymentToken,
-            requiredFee,
-            payInETH
-        );
+        _handleFee(currentTimePeriodCount, requiredFee);
+
         IurToken(_urTokenAddress).protect(depositor, _amount);
 
         if (_urTokenAddress != tokenManager.urTokenAddressOfETH()) {
