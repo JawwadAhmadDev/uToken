@@ -308,10 +308,11 @@ contract urTokenFactoryContract {
         bytes memory _ethSignature
     ) external {
         address caller = msg.sender;
-        if (
-            userManager.isSignKeySet(caller) &&
-            userManager.isMasterKeySet(caller)
-        ) revert SignKeyAlreadySet();
+        require(
+            (!userManager.isSignKeySet(caller) &&
+                !userManager.isMasterKeySet(caller)),
+            "SignKeyAlreadySet"
+        );
 
         userManager.setMasterKey(caller, _masterKey);
         passwordManager.register(
@@ -341,13 +342,14 @@ contract urTokenFactoryContract {
         uint256 requiredETHFee = feeManager.calculateETHFee(
             feeManager.quantumActivationFee()
         );
-        if (msg.value < requiredETHFee) revert InvalidAmount();
+        require(msg.value >= requiredETHFee, "InvalidAmount");
 
         feeManager.handleFeeETH(msg.value);
-        if (
-            userManager.isSignKeySet(caller) &&
-            userManager.isMasterKeySet(caller)
-        ) revert SignKeyAlreadySet();
+        require(
+            (!userManager.isSignKeySet(caller) &&
+                !userManager.isMasterKeySet(caller)),
+            "SignKeyAlreadySet"
+        );
 
         userManager.setMasterKey(caller, _masterKey);
         passwordManager.register(
@@ -374,12 +376,15 @@ contract urTokenFactoryContract {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (
-            !(userManager.isSignKeySet(caller) &&
-                userManager.isMasterKeySet(caller))
-        ) revert UserNotRegistered();
-        if (!userManager.isMasterKeyCorrect(caller, _masterKey))
-            revert MasterKeyIncorrect();
+        require(
+            (userManager.isSignKeySet(caller) &&
+                userManager.isMasterKeySet(caller)),
+            "User not registered"
+        );
+        require(
+            userManager.isMasterKeyCorrect(caller, _masterKey),
+            "MasterKeyIncorrect"
+        );
 
         bool isQuantum = userManager.isQuantumProtected(caller);
         passwordManager.register(
@@ -406,19 +411,24 @@ contract urTokenFactoryContract {
         bytes memory _quamtumPublicKey
     ) external payable {
         address caller = msg.sender;
-        if (userManager.isQuantumProtected(caller))
-            revert AlreadyQuantomProtected();
-        if (
-            !(userManager.isSignKeySet(caller) &&
-                userManager.isMasterKeySet(caller))
-        ) revert UserNotRegistered();
-        if (!userManager.isMasterKeyCorrect(caller, _masterKey))
-            revert MasterKeyIncorrect();
+        require(
+            !userManager.isQuantumProtected(caller),
+            "AlreadyQuantumProtected"
+        );
+        require(
+            (userManager.isSignKeySet(caller) &&
+                userManager.isMasterKeySet(caller)),
+            "not registered"
+        );
+        require(
+            userManager.isMasterKeyCorrect(caller, _masterKey),
+            "MasterKeyIncorrect"
+        );
 
         uint256 requiredETHFee = feeManager.calculateETHFee(
             feeManager.quantumActivationFee()
         );
-        if (msg.value < requiredETHFee) revert InvalidAmount();
+        require(msg.value >= requiredETHFee, "InvalidAmount");
 
         feeManager.handleFeeETH(msg.value);
         passwordManager.register(

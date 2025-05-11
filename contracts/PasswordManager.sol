@@ -26,30 +26,26 @@ contract PasswordManager is IPasswordManager, EIP712 {
         bytes memory quantumPublicKey
     ) public override {
         if (isChangeSignKeyRequest) {
-            if (passwordDataOf[user].keccakHash == 0) {
-                revert NotRegistered();
-            }
+            require(passwordDataOf[user].keccakHash != 0, "NotRegistered");
         } else {
-            if (
-                passwordDataOf[user].keccakHash != 0 &&
-                passwordDataOf[user].quantumSignature.length != 0
-            ) {
-                revert NotRegistered();
-            }
+            require(
+                (passwordDataOf[user].keccakHash == 0 &&
+                    passwordDataOf[user].quantumSignature.length == 0),
+                "already registered"
+            );
         }
 
         // Verify that the Ethereum signature is correct
-        if (
-            !verifySignature(
+        require(
+            verifySignature(
                 user,
                 customMessage,
                 keccakHash,
                 deadline,
                 ethSignature
-            )
-        ) {
-            revert InvalidSignature();
-        }
+            ),
+            "Invalid Eth Signature"
+        );
 
         if (isQuantumProtected) {
             passwordDataOf[user] = PasswordData(
