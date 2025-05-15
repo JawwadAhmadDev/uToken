@@ -90,6 +90,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         uint256 period,
         uint256 ethAmount
     );
+    event FeeReceived(
+        address feeReceiver,
+        uint256 period,
+        uint256 feeAmount
+    );
+    event TotalFee(uint256 period, uint256 feeAmount);
     event RewardOfToken(
         address rewardCollector,
         uint256 period,
@@ -360,16 +366,36 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     function _handleFeeETH(uint256 _depositFee) internal {
         uint256 thirtyPercentShare = (_depositFee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        uint256 tenPercentShare = (_depositFee * percentofDevsAddress) / ZOOM;
+        uint256 tenPercentShare = _depositFee - thirtyPercentShare * 3;
 
         // Transfer fees and require success
-        payable(ur369gift_30).transfer(thirtyPercentShare);
+        (bool ur369GiftSuccess, ) = payable(ur369gift_30).call{value: thirtyPercentShare}("");
+        require(ur369GiftSuccess, "Transfer failed");
+        emit FeeReceived(
+            ur369gift_30,
+            getCurrentPeriodFor369hours(),
+            thirtyPercentShare
+        );
 
-        payable(ur369_30).transfer(thirtyPercentShare);
+        (bool ur369Success, ) = payable(ur369_30).call{value: thirtyPercentShare}("");
+        require(ur369Success, "Transfer failed");
+        emit FeeReceived(ur369_30, getCurrentPeriodFor369hours(), thirtyPercentShare);
 
-        payable(ur369impact_30).transfer(thirtyPercentShare);
+        (bool ur369ImpactSuccess, ) = payable(ur369impact_30).call{value: thirtyPercentShare}("");
+        require(ur369ImpactSuccess, "Transfer failed");
+        emit FeeReceived(
+            ur369impact_30,
+            getCurrentPeriodFor369hours(),
+            thirtyPercentShare
+        );
 
-        payable(ur369devs_10).transfer(tenPercentShare);
+        (bool ur369DevsSuccess, ) = payable(ur369devs_10).call{value: tenPercentShare}("");
+        require(ur369DevsSuccess, "Transfer failed");
+        emit FeeReceived(ur369devs_10, getCurrentPeriodFor369hours(), tenPercentShare);
+
+        emit TotalFee(
+            getCurrentPeriodFor369hours(),
+            _depositFee);
     }
 
     function burnAndUnprotect(
@@ -473,7 +499,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     ) external returns (bool) {
         address caller = msg.sender;
 
-        if (_isSignKeySetOf[caller]) {
+        if (!_isSignKeySetOf[caller]) {
             revert SignKeyNotSet();
         }
         if (_quantumVerified) {
@@ -681,6 +707,11 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         uint256 _time
     ) external onlyOwner {
         rewardTimeLimitFor369Hours = _time;
+    }
+
+     // function to change the time limit for reward of 369 days. only owner is authorized
+    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
+        rewardTimeLimitFor369Days = _time;
     }
 
     // function to change the protection fee. only owner is authorized
