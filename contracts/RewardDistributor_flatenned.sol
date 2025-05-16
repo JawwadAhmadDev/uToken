@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2025-01-16
+ */
+
 // File: @openzeppelin/contracts/utils/Context.sol
 
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)
@@ -228,15 +232,15 @@ interface IERC20 {
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract AwardDistributor is Ownable {
+contract RewardDistributor is Ownable {
     address public immutable ur369gifthAddress_30 =
-        0x70C819445c6Bb5a144954818DE138b4A713408dC; // 30%
+        0x16D378Cfd47971076eBcD9f1F63973861b546d35; // 30%
     address public immutable ur369impactAddress_30 =
-        0x22357B3034DF4a65a00E5887aFB09e94Df17B7B9; // 30%
+        0xaC31ba8D22764E8E1a40aa0195f8Ce08bEc29d62; // 30%
     address public immutable ur369Address_30 =
-        0x4eb401801b42139737faC676C5da5e43F6A1A828; // 30%
+        0xacCC2fD7c095D89Ed474550C29BFC2eE02F1A3eB; // 30%
     address public immutable ur369devsncomAddress_10 =
-        0xDB0ccF145A929c48277a4431004D633E9D84258a; // 10%
+        0x526a00CC465973F5D631dA492EEFEde70B0b6572; // 10%
 
     constructor() Ownable(msg.sender) {}
 
