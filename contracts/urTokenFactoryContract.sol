@@ -73,10 +73,10 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public ur369gift_30 = 0x70C819445c6Bb5a144954818DE138b4A713408dC;
-    address public ur369impact_30 = 0x22357B3034DF4a65a00E5887aFB09e94Df17B7B9;
-    address public ur369_30 = 0x4eb401801b42139737faC676C5da5e43F6A1A828;
-    address public ur369devs_10 = 0xDB0ccF145A929c48277a4431004D633E9D84258a;
+    address public ur369gift_30 = 0x16D378Cfd47971076eBcD9f1F63973861b546d35;
+    address public ur369impact_30 = 0xaC31ba8D22764E8E1a40aa0195f8Ce08bEc29d62;
+    address public ur369_30 = 0xacCC2fD7c095D89Ed474550C29BFC2eE02F1A3eB;
+    address public ur369devs_10 = 0x526a00CC465973F5D631dA492EEFEde70B0b6572;
 
     event Protect(
         address depositor,
@@ -90,11 +90,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         uint256 period,
         uint256 ethAmount
     );
-    event FeeReceived(
-        address feeReceiver,
-        uint256 period,
-        uint256 feeAmount
-    );
+    event FeeReceived(address feeReceiver, uint256 period, uint256 feeAmount);
     event TotalFee(uint256 period, uint256 feeAmount);
     event RewardOfToken(
         address rewardCollector,
@@ -369,7 +365,9 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         uint256 tenPercentShare = _depositFee - thirtyPercentShare * 3;
 
         // Transfer fees and require success
-        (bool ur369GiftSuccess, ) = payable(ur369gift_30).call{value: thirtyPercentShare}("");
+        (bool ur369GiftSuccess, ) = payable(ur369gift_30).call{
+            value: thirtyPercentShare
+        }("");
         require(ur369GiftSuccess, "Transfer failed");
         emit FeeReceived(
             ur369gift_30,
@@ -377,11 +375,19 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
             thirtyPercentShare
         );
 
-        (bool ur369Success, ) = payable(ur369_30).call{value: thirtyPercentShare}("");
+        (bool ur369Success, ) = payable(ur369_30).call{
+            value: thirtyPercentShare
+        }("");
         require(ur369Success, "Transfer failed");
-        emit FeeReceived(ur369_30, getCurrentPeriodFor369hours(), thirtyPercentShare);
+        emit FeeReceived(
+            ur369_30,
+            getCurrentPeriodFor369hours(),
+            thirtyPercentShare
+        );
 
-        (bool ur369ImpactSuccess, ) = payable(ur369impact_30).call{value: thirtyPercentShare}("");
+        (bool ur369ImpactSuccess, ) = payable(ur369impact_30).call{
+            value: thirtyPercentShare
+        }("");
         require(ur369ImpactSuccess, "Transfer failed");
         emit FeeReceived(
             ur369impact_30,
@@ -389,13 +395,17 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
             thirtyPercentShare
         );
 
-        (bool ur369DevsSuccess, ) = payable(ur369devs_10).call{value: tenPercentShare}("");
+        (bool ur369DevsSuccess, ) = payable(ur369devs_10).call{
+            value: tenPercentShare
+        }("");
         require(ur369DevsSuccess, "Transfer failed");
-        emit FeeReceived(ur369devs_10, getCurrentPeriodFor369hours(), tenPercentShare);
-
-        emit TotalFee(
+        emit FeeReceived(
+            ur369devs_10,
             getCurrentPeriodFor369hours(),
-            _depositFee);
+            tenPercentShare
+        );
+
+        emit TotalFee(getCurrentPeriodFor369hours(), _depositFee);
     }
 
     function burnAndUnprotect(
@@ -529,6 +539,21 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         ) {
             revert InvalidurToken();
         }
+
+        // Update deposit records
+        uint256 currentPeriod = getCurrentPeriodFor369hours();
+
+        // Decrease sender's deposit amount
+        depositedAmountOfUserAgainsturToken[caller][_urTokenAddress] -= _amount;
+        depositedAmountOfUserAgainsturTokenForPeriod[caller][_urTokenAddress][
+            currentPeriod
+        ] -= _amount;
+
+        // Increase receiver's deposit amount
+        depositedAmountOfUserAgainsturToken[_to][_urTokenAddress] += _amount;
+        depositedAmountOfUserAgainsturTokenForPeriod[_to][_urTokenAddress][
+            currentPeriod
+        ] += _amount;
 
         // Transfer the tokens
         IurToken(_urTokenAddress).transfer(_to, _amount);
@@ -709,7 +734,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         rewardTimeLimitFor369Hours = _time;
     }
 
-     // function to change the time limit for reward of 369 days. only owner is authorized
+    // function to change the time limit for reward of 369 days. only owner is authorized
     function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
         rewardTimeLimitFor369Days = _time;
     }
