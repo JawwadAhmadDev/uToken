@@ -73,10 +73,14 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
-    address public ur369gift_30 = 0x16D378Cfd47971076eBcD9f1F63973861b546d35;
-    address public ur369impact_30 = 0xaC31ba8D22764E8E1a40aa0195f8Ce08bEc29d62;
-    address public ur369_30 = 0xacCC2fD7c095D89Ed474550C29BFC2eE02F1A3eB;
-    address public ur369devs_10 = 0x526a00CC465973F5D631dA492EEFEde70B0b6572;
+    address public urGiftETHAddress =
+        0x70C819445c6Bb5a144954818DE138b4A713408dC;
+    address public urImpactETHAddress =
+        0x22357B3034DF4a65a00E5887aFB09e94Df17B7B9;
+    address public ur369SelfSustainETHAddress =
+        0xC1A9F71A47448010c9ac58bDEb7b5e154dDD848d;
+    address public ur369CommunityDevETHAddress =
+        0xDB0ccF145A929c48277a4431004D633E9D84258a;
 
     event Protect(
         address depositor,
@@ -365,42 +369,42 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         uint256 tenPercentShare = _depositFee - thirtyPercentShare * 3;
 
         // Transfer fees and require success
-        (bool ur369GiftSuccess, ) = payable(ur369gift_30).call{
+        (bool ur369GiftSuccess, ) = payable(urGiftETHAddress).call{
             value: thirtyPercentShare
         }("");
         require(ur369GiftSuccess, "Transfer failed");
         emit FeeReceived(
-            ur369gift_30,
+            urGiftETHAddress,
             getCurrentPeriodFor369hours(),
             thirtyPercentShare
         );
 
-        (bool ur369Success, ) = payable(ur369_30).call{
+        (bool ur369Success, ) = payable(ur369SelfSustainETHAddress).call{
             value: thirtyPercentShare
         }("");
         require(ur369Success, "Transfer failed");
         emit FeeReceived(
-            ur369_30,
+            ur369SelfSustainETHAddress,
             getCurrentPeriodFor369hours(),
             thirtyPercentShare
         );
 
-        (bool ur369ImpactSuccess, ) = payable(ur369impact_30).call{
+        (bool ur369ImpactSuccess, ) = payable(urImpactETHAddress).call{
             value: thirtyPercentShare
         }("");
         require(ur369ImpactSuccess, "Transfer failed");
         emit FeeReceived(
-            ur369impact_30,
+            urImpactETHAddress,
             getCurrentPeriodFor369hours(),
             thirtyPercentShare
         );
 
-        (bool ur369DevsSuccess, ) = payable(ur369devs_10).call{
+        (bool ur369DevsSuccess, ) = payable(ur369CommunityDevETHAddress).call{
             value: tenPercentShare
         }("");
         require(ur369DevsSuccess, "Transfer failed");
         emit FeeReceived(
-            ur369devs_10,
+            ur369CommunityDevETHAddress,
             getCurrentPeriodFor369hours(),
             tenPercentShare
         );
@@ -471,29 +475,34 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
             );
         }
 
-        // Update the deposited amounts
-        uint256 previousAmount = depositedAmountOfUserAgainsturToken[
-            withdrawer
-        ][_urTokenAddress];
-        depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] =
-            previousAmount -
-            _amount;
-
-        // Update the current period deposits
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
         if (
-            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] <
-            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
-                _urTokenAddress
-            ][currentPeriod]
+            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] > 0
         ) {
-            depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
-                _urTokenAddress
-            ][currentPeriod] = depositedAmountOfUserAgainsturToken[withdrawer][
-                _urTokenAddress
-            ];
-        }
+            // Update the deposited amounts
+            uint256 previousAmount = depositedAmountOfUserAgainsturToken[
+                withdrawer
+            ][_urTokenAddress];
+            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] =
+                previousAmount -
+                _amount;
 
+            // Update the current period deposits
+            uint256 currentPeriod = getCurrentPeriodFor369hours();
+            if (
+                depositedAmountOfUserAgainsturToken[withdrawer][
+                    _urTokenAddress
+                ] <
+                depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
+                    _urTokenAddress
+                ][currentPeriod]
+            ) {
+                depositedAmountOfUserAgainsturTokenForPeriod[withdrawer][
+                    _urTokenAddress
+                ][currentPeriod] = depositedAmountOfUserAgainsturToken[
+                    withdrawer
+                ][_urTokenAddress];
+            }
+        }
         emit BurnAndUnprotect(withdrawer, _urTokenAddress, _amount);
     }
 
@@ -539,21 +548,6 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         ) {
             revert InvalidurToken();
         }
-
-        // Update deposit records
-        uint256 currentPeriod = getCurrentPeriodFor369hours();
-
-        // Decrease sender's deposit amount
-        depositedAmountOfUserAgainsturToken[caller][_urTokenAddress] -= _amount;
-        depositedAmountOfUserAgainsturTokenForPeriod[caller][_urTokenAddress][
-            currentPeriod
-        ] -= _amount;
-
-        // Increase receiver's deposit amount
-        depositedAmountOfUserAgainsturToken[_to][_urTokenAddress] += _amount;
-        depositedAmountOfUserAgainsturTokenForPeriod[_to][_urTokenAddress][
-            currentPeriod
-        ] += _amount;
 
         // Transfer the tokens
         IurToken(_urTokenAddress).transfer(_to, _amount);
@@ -608,10 +602,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-        payable(ur369_30).transfer(thirtyPercentShare);
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(urGiftETHAddress).transfer(thirtyPercentShare);
+        payable(ur369SelfSustainETHAddress).transfer(thirtyPercentShare);
+        payable(urImpactETHAddress).transfer(thirtyPercentShare);
+        payable(ur369CommunityDevETHAddress).transfer(
+            fee - (thirtyPercentShare * 3)
+        );
 
         if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
             revert SignKeySet();
@@ -708,10 +704,12 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         // transfer fee to the fee receivers addresses
         uint256 thirtyPercentShare = (fee *
             percentOfPublicGoodRecipientCandidateAndSocialGoodAddress) / ZOOM;
-        payable(ur369gift_30).transfer(thirtyPercentShare);
-        payable(ur369_30).transfer(thirtyPercentShare);
-        payable(ur369impact_30).transfer(thirtyPercentShare);
-        payable(ur369devs_10).transfer(fee - (thirtyPercentShare * 3));
+        payable(urGiftETHAddress).transfer(thirtyPercentShare);
+        payable(ur369SelfSustainETHAddress).transfer(thirtyPercentShare);
+        payable(urImpactETHAddress).transfer(thirtyPercentShare);
+        payable(ur369CommunityDevETHAddress).transfer(
+            fee - (thirtyPercentShare * 3)
+        );
         register(
             caller,
             true,

@@ -47,10 +47,10 @@ BUSD: 0xC693C960C2D49bCbe33f7927c17cDFabc20521F8
 USDT: https://sepolia.etherscan.io/address/0x80366c8502326ede6b4dcb46fce7cc88378eda07#code
 
 Parameters: ["0xC693C960C2D49bCbe33f7927c17cDFabc20521F8", "0xB9d2AB66564D74D5e7B4df7c879f9d2Cb38c30EA"]
-urTokenFactory: https://sepolia.etherscan.io/address/0x9280ddf3b8D3407CeA1c5Af7B1BA5F8E23765A44#code
-urLegacy: https://sepolia.etherscan.io/address/0x8aEB630F27f9c58B369818f615fB08B175FeB8fa#code 
-ur369NFT: https://sepolia.etherscan.io/address/0xDaaF776BDd966872B181453F72E75EfE3b0fc155#code
-Reward Distributor: https://sepolia.etherscan.io/address/0x90ee146fd288be079aae4c8db5b70209f28213da#code
+urTokenFactory: https://sepolia.etherscan.io/address/0xDf58002eeA7A952fed843414cf5ABcF05f7fdCCa#code
+urLegacy: https://sepolia.etherscan.io/address/0xe26841f7A8B476A9B3e45bCA7cB40Bb90c2919DE#code
+ur369NFT: https://sepolia.etherscan.io/address/0xb5d668FF3B9bc480FF3dB6300b5F4D6e515Dd3E0#code
+Reward Distributor: https://sepolia.etherscan.io/address/0x05b7496528b94eee0dace329d5b7f67ee81bf23b#code
 
 DAI: 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357
 AAVE: 0x88541670E55cC00bEEFD87eB59EDd1b7C511AC9a
