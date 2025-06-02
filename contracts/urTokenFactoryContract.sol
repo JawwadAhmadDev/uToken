@@ -65,7 +65,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
 
     // time periods for reward
-    uint256 public rewardTimeLimitFor369Hours = 129600; // 369 hours
+    uint256 public rewardTimeLimitFor369Hours = 1328400; // 369 hours
     uint256 public rewardTimeLimitFor369Days = 31881600; // 369 days
     uint256 public deployTime;
 
