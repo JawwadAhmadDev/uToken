@@ -650,7 +650,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
             register(
                 caller,
                 true,
-                false,
+                true,
                 _customMessage,
                 _newSignKeyHash,
                 _deadline,
@@ -663,7 +663,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
             register(
                 caller,
                 false,
-                false,
+                true,
                 _customMessage,
                 _newSignKeyHash,
                 _deadline,
