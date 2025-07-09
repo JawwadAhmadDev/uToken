@@ -63,11 +63,10 @@ contract urTokenFactoryContract is
 
     // fee detial
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
-    // uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
     uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
-        30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
-    uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369% of deposited amount
+        30_000; // 30 * 1000 = 30000% of 0.369$ of deposited amount
+    uint256 public percentofDevsAddress = 10_000; // 40 * 1000 = 40000% of 0.369$ of deposited amount
 
     // time periods for reward
     uint256 public rewardTimeLimitFor369Hours = 1328400; // 369 hours
