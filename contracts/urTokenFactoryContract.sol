@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import "./IERC20.sol";
 import "./urTokenContract.sol";
 import "./PasswordManager.sol";
 import "./FeeManager.sol";
 
 contract urTokenFactoryContract is
-    Ownable,
+    Ownable2Step,
     PasswordManager,
     FeeManager,
     ReentrancyGuard
@@ -64,7 +63,7 @@ contract urTokenFactoryContract is
 
     // fee detial
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
-    uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
+    // uint256 public benefactionFeePercent = 369; // 0.369 * 1000 = 369% of total deposited amount.
     uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
         30_000; // 30 * 1000 = 30000% of 0.369% of deposited amount
@@ -208,8 +207,7 @@ contract urTokenFactoryContract is
     }
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        uint256 length = _allowedTokens.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < _allowedTokens.length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
@@ -238,8 +236,7 @@ contract urTokenFactoryContract is
     function removeAllowedTokens(
         address[] memory _allowedTokens
     ) external onlyOwner {
-        uint256 length = _allowedTokens.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < _allowedTokens.length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!allowedTokens.contains(tokenAddress)) {
