@@ -201,7 +201,7 @@ contract urTokenFactoryContract is
     }
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        for (uint256 i = 0; i < _allowedTokens.length; i++) {
+        for (uint256 i = 0; i < _allowedTokens.length; ++i) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
@@ -228,7 +228,7 @@ contract urTokenFactoryContract is
     function removeAllowedTokens(
         address[] memory _allowedTokens
     ) external payable onlyOwner {
-        for (uint256 i = 0; i < _allowedTokens.length; i++) {
+        for (uint256 i = 0; i < _allowedTokens.length; ++i) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!allowedTokens.contains(tokenAddress)) {
@@ -1255,7 +1255,7 @@ contract urTokenFactoryContract is
 
         pendingPeriods = new uint256[](count);
         uint256 _count;
-        for (uint256 i; i < _pendingPeriods.length; i++) {
+        for (uint256 i; i < _pendingPeriods.length; ++i) {
             if (_pendingPeriods[i] > 0) {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
@@ -1275,7 +1275,7 @@ contract urTokenFactoryContract is
         uint256 _length = whiteListAddresses.length;
         _whiteListAddresses = new address[](_length);
 
-        for (uint256 i; i < _length; i++) {
+        for (uint256 i; i < _length; ++i) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
     }
