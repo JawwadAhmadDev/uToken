@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./IERC20.sol";
 import "./urTokenContract.sol";
 import "./PasswordManager.sol";
 import "./FeeManager.sol";
 
-contract urTokenFactoryContract is
-    Ownable2Step,
-    PasswordManager,
-    FeeManager,
-    ReentrancyGuard
-{
+contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     // using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -107,7 +101,16 @@ contract urTokenFactoryContract is
     );
 
     event TokenDeployed(address indexed tokenAddress, string name);
-    event SignKeyChanged(address indexed userAddress, bool isQuantumProtected);
+    event TokenAdded(
+        address indexed tokenAddress,
+        address indexed deployedAddress
+    );
+    event TokenRemoved(address indexed tokenAddress);
+    event SignKeyChanged(
+        address indexed userAddress,
+        uint256 timestamp,
+        bool isQuantumProtected
+    );
     error InvalidAllowedToken();
     error TokenAlreadyAdded();
     error TokenNotAdded();
@@ -139,7 +142,7 @@ contract urTokenFactoryContract is
 
         // Deploy ETH token and add allowed tokens if any
         urTokenAddressOfETH = _deployETH();
-        if (_allowedTokens.length != 0) {
+        if (_allowedTokens.length > 0) {
             _addAllowedTokens(_allowedTokens);
         }
     }
@@ -196,7 +199,8 @@ contract urTokenFactoryContract is
     }
 
     function _addAllowedTokens(address[] memory _allowedTokens) internal {
-        for (uint256 i = 0; i < _allowedTokens.length; ++i) {
+        uint256 length = _allowedTokens.length;
+        for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!(tokenAddress.code.length > 0)) revert InvalidAllowedToken();
@@ -211,19 +215,22 @@ contract urTokenFactoryContract is
 
             allowedTokens.add(tokenAddress);
             urTokensOfAllowedTokens.add(deployedAddress);
+
+            emit TokenAdded(tokenAddress, deployedAddress);
         }
     }
 
     function addAllowedTokens(
         address[] memory _allowedTokens
-    ) external payable onlyOwner {
+    ) external onlyOwner {
         _addAllowedTokens(_allowedTokens);
     }
 
     function removeAllowedTokens(
         address[] memory _allowedTokens
-    ) external payable onlyOwner {
-        for (uint256 i = 0; i < _allowedTokens.length; ++i) {
+    ) external onlyOwner {
+        uint256 length = _allowedTokens.length;
+        for (uint256 i = 0; i < length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
             if (!allowedTokens.contains(tokenAddress)) {
@@ -234,6 +241,8 @@ contract urTokenFactoryContract is
             urTokensOfAllowedTokens.remove(
                 urTokenAddressForToken[tokenAddress]
             );
+
+            emit TokenRemoved(tokenAddress);
         }
     }
 
@@ -245,7 +254,7 @@ contract urTokenFactoryContract is
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature // address _paymentToken
-    ) external payable nonReentrant {
+    ) external payable {
         address depositor = msg.sender;
 
         require(_isSignKeySetOf[msg.sender], "SignKey not set");
@@ -408,7 +417,7 @@ contract urTokenFactoryContract is
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external nonReentrant {
+    ) external {
         address withdrawer = msg.sender;
 
         if (!_isSignKeySetOf[withdrawer]) {
@@ -440,10 +449,10 @@ contract urTokenFactoryContract is
         }
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
-        if (_amount == 0) {
+        if (!(_amount > 0)) {
             revert InvalidAmount();
         }
-        if ((balance < _amount)) {
+        if (!(balance >= _amount)) {
             revert InvalidAmount();
         }
 
@@ -464,8 +473,7 @@ contract urTokenFactoryContract is
         }
 
         if (
-            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] !=
-            0
+            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] > 0
         ) {
             // Update the deposited amounts
             uint256 previousAmount = depositedAmountOfUserAgainsturToken[
@@ -504,7 +512,7 @@ contract urTokenFactoryContract is
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external nonReentrant returns (bool) {
+    ) external returns (bool) {
         address caller = msg.sender;
 
         if (!_isSignKeySetOf[caller]) {
@@ -528,7 +536,7 @@ contract urTokenFactoryContract is
         ) {
             revert SignKeyIncorrect();
         }
-        if (_amount == 0) {
+        if (!(_amount > 0)) {
             revert InvalidAmount();
         }
         if (
@@ -550,7 +558,7 @@ contract urTokenFactoryContract is
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external nonReentrant {
+    ) external {
         address caller = msg.sender;
         if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
             revert SignKeySet();
@@ -581,7 +589,7 @@ contract urTokenFactoryContract is
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable nonReentrant {
+    ) external payable {
         address caller = msg.sender;
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
@@ -626,7 +634,7 @@ contract urTokenFactoryContract is
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable nonReentrant {
+    ) external payable {
         address caller = msg.sender;
         if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
             revert UserNotRegistered();
@@ -647,7 +655,7 @@ contract urTokenFactoryContract is
                 _quantumSignature,
                 _quamtumPublicKey
             );
-            emit SignKeyChanged(caller, true);
+            emit SignKeyChanged(caller, block.timestamp, true);
         } else {
             register(
                 caller,
@@ -660,7 +668,7 @@ contract urTokenFactoryContract is
                 "",
                 ""
             );
-            emit SignKeyChanged(caller, false);
+            emit SignKeyChanged(caller, block.timestamp, false);
         }
     }
 
@@ -673,7 +681,7 @@ contract urTokenFactoryContract is
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable nonReentrant {
+    ) external payable {
         address caller = msg.sender;
         if (_isQuantumProtected[caller]) {
             revert AlreadyQuantomProtected();
@@ -710,26 +718,24 @@ contract urTokenFactoryContract is
             _quantumSignature,
             _quamtumPublicKey
         );
-        emit SignKeyChanged(caller, true);
+        emit SignKeyChanged(caller, block.timestamp, true);
         _isQuantumProtected[caller] = true;
     }
 
     // function to change time limit for reward of 369 hours. only onwer is authorized.
     function changeRewardTimeLimitFor369Hours(
         uint256 _time
-    ) external payable onlyOwner {
+    ) external onlyOwner {
         rewardTimeLimitFor369Hours = _time;
     }
 
     // function to change the time limit for reward of 369 days. only owner is authorized
-    function changeRewardTimeLimitFor369Days(
-        uint256 _time
-    ) external payable onlyOwner {
+    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
         rewardTimeLimitFor369Days = _time;
     }
 
     // function to change the protection fee. only owner is authorized
-    function changeProtectionFee(uint256 _feeInUSD) external payable onlyOwner {
+    function changeProtectionFee(uint256 _feeInUSD) external onlyOwner {
         protectionFeeInUSD = _feeInUSD;
     }
 
@@ -841,7 +847,7 @@ contract urTokenFactoryContract is
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsOfUser[](tokensCount);
-        if (tokensCount != 0) {
+        if (tokensCount > 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
                     urTokenAddress: totalurTokens[i],
@@ -965,7 +971,7 @@ contract urTokenFactoryContract is
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
-        if (tokensCount != 0) {
+        if (tokensCount > 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
                     urTokenAddress: totalurTokens[i],
@@ -1215,7 +1221,7 @@ contract urTokenFactoryContract is
         address[] memory _tokens = getTokensDepositedByPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
-        if (_tokensCount != 0) {
+        if (_tokensCount > 0) {
             for (uint256 i; i < _tokensCount; i++) {
                 record[i] = RewardAgainstToken({
                     token: _tokens[i],
@@ -1250,7 +1256,7 @@ contract urTokenFactoryContract is
 
         pendingPeriods = new uint256[](count);
         uint256 _count;
-        for (uint256 i; i < _pendingPeriods.length; ++i) {
+        for (uint256 i; i < _pendingPeriods.length; i++) {
             if (_pendingPeriods[i] > 0) {
                 pendingPeriods[_count++] = _pendingPeriods[i];
             }
@@ -1270,7 +1276,7 @@ contract urTokenFactoryContract is
         uint256 _length = whiteListAddresses.length;
         _whiteListAddresses = new address[](_length);
 
-        for (uint256 i; i < _length; ++i) {
+        for (uint256 i; i < _length; i++) {
             _whiteListAddresses[i] = whiteListAddresses[i];
         }
     }
