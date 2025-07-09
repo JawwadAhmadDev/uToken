@@ -73,7 +73,7 @@ contract urTokenFactoryContract is
     uint256 public deployTime;
 
     // zoom to handle percentage in the decimals
-    uint256 public constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
+    uint256 private constant ZOOM = 1_000_00; // actually 100. this is divider to calculate percentage
 
     // fee receiver addresses.
     address public urGiftETHAddress =
