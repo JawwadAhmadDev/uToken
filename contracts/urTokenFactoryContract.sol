@@ -108,11 +108,6 @@ contract urTokenFactoryContract is
     );
 
     event TokenDeployed(address indexed tokenAddress, string name);
-    event TokenAdded(
-        address indexed tokenAddress,
-        address indexed deployedAddress
-    );
-    event TokenRemoved(address indexed tokenAddress);
     event SignKeyChanged(
         address indexed userAddress,
         uint256 timestamp,
@@ -221,8 +216,6 @@ contract urTokenFactoryContract is
 
             allowedTokens.add(tokenAddress);
             urTokensOfAllowedTokens.add(deployedAddress);
-
-            emit TokenAdded(tokenAddress, deployedAddress);
         }
     }
 
@@ -246,8 +239,6 @@ contract urTokenFactoryContract is
             urTokensOfAllowedTokens.remove(
                 urTokenAddressForToken[tokenAddress]
             );
-
-            emit TokenRemoved(tokenAddress);
         }
     }
 
