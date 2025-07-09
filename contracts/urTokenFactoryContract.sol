@@ -144,7 +144,7 @@ contract urTokenFactoryContract is
 
         // Deploy ETH token and add allowed tokens if any
         urTokenAddressOfETH = _deployETH();
-        if (_allowedTokens.length > 0) {
+        if (_allowedTokens.length != 0) {
             _addAllowedTokens(_allowedTokens);
         }
     }
@@ -445,10 +445,10 @@ contract urTokenFactoryContract is
         }
 
         uint256 balance = IurToken(_urTokenAddress).balanceOf(withdrawer);
-        if (!(_amount > 0)) {
+        if (_amount == 0) {
             revert InvalidAmount();
         }
-        if (!(balance >= _amount)) {
+        if ((balance < _amount)) {
             revert InvalidAmount();
         }
 
@@ -469,7 +469,8 @@ contract urTokenFactoryContract is
         }
 
         if (
-            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] > 0
+            depositedAmountOfUserAgainsturToken[withdrawer][_urTokenAddress] !=
+            0
         ) {
             // Update the deposited amounts
             uint256 previousAmount = depositedAmountOfUserAgainsturToken[
@@ -532,7 +533,7 @@ contract urTokenFactoryContract is
         ) {
             revert SignKeyIncorrect();
         }
-        if (!(_amount > 0)) {
+        if (_amount == 0) {
             revert InvalidAmount();
         }
         if (
@@ -845,7 +846,7 @@ contract urTokenFactoryContract is
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsOfUser[](tokensCount);
-        if (tokensCount > 0) {
+        if (tokensCount != 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsOfUser({
                     urTokenAddress: totalurTokens[i],
@@ -969,7 +970,7 @@ contract urTokenFactoryContract is
         uint256 tokensCount = totalurTokens.length;
 
         depositDetails = new DepositsForPeriodOfUser[](tokensCount);
-        if (tokensCount > 0) {
+        if (tokensCount != 0) {
             for (uint256 i; i < tokensCount; i++) {
                 depositDetails[i] = DepositsForPeriodOfUser({
                     urTokenAddress: totalurTokens[i],
@@ -1219,7 +1220,7 @@ contract urTokenFactoryContract is
         address[] memory _tokens = getTokensDepositedByPeriod(_period);
         uint256 _tokensCount = _tokens.length;
         record = new RewardAgainstToken[](_tokensCount);
-        if (_tokensCount > 0) {
+        if (_tokensCount != 0) {
             for (uint256 i; i < _tokensCount; i++) {
                 record[i] = RewardAgainstToken({
                     token: _tokens[i],
