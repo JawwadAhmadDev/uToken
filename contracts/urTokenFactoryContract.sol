@@ -4,13 +4,19 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import "./IERC20.sol";
 import "./urTokenContract.sol";
 import "./PasswordManager.sol";
 import "./FeeManager.sol";
 
-contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
+contract urTokenFactoryContract is
+    Ownable,
+    PasswordManager,
+    FeeManager,
+    ReentrancyGuard
+{
     // using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -257,7 +263,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature // address _paymentToken
-    ) external payable {
+    ) external payable nonReentrant {
         address depositor = msg.sender;
 
         require(_isSignKeySetOf[msg.sender], "SignKey not set");
@@ -420,7 +426,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external {
+    ) external nonReentrant {
         address withdrawer = msg.sender;
 
         if (!_isSignKeySetOf[withdrawer]) {
@@ -515,7 +521,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external returns (bool) {
+    ) external nonReentrant returns (bool) {
         address caller = msg.sender;
 
         if (!_isSignKeySetOf[caller]) {
@@ -561,7 +567,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external {
+    ) external nonReentrant {
         address caller = msg.sender;
         if (((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
             revert SignKeySet();
@@ -592,7 +598,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable {
+    ) external payable nonReentrant {
         address caller = msg.sender;
         uint256 fee = msg.value;
         uint256 requiredETHFee = calculateETHFee(quantumActivationFee);
@@ -637,7 +643,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable {
+    ) external payable nonReentrant {
         address caller = msg.sender;
         if (!((_isSignKeySetOf[caller]) && (_isMasterKeySetOf[caller]))) {
             revert UserNotRegistered();
@@ -684,7 +690,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes memory _ethSignature,
         bytes memory _quantumSignature,
         bytes memory _quamtumPublicKey
-    ) external payable {
+    ) external payable nonReentrant {
         address caller = msg.sender;
         if (_isQuantumProtected[caller]) {
             revert AlreadyQuantomProtected();
