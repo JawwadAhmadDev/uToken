@@ -221,13 +221,13 @@ contract urTokenFactoryContract is
 
     function addAllowedTokens(
         address[] memory _allowedTokens
-    ) external onlyOwner {
+    ) external payable onlyOwner {
         _addAllowedTokens(_allowedTokens);
     }
 
     function removeAllowedTokens(
         address[] memory _allowedTokens
-    ) external onlyOwner {
+    ) external payable onlyOwner {
         for (uint256 i = 0; i < _allowedTokens.length; i++) {
             address tokenAddress = _allowedTokens[i]; // Store in a local variable
 
@@ -721,17 +721,19 @@ contract urTokenFactoryContract is
     // function to change time limit for reward of 369 hours. only onwer is authorized.
     function changeRewardTimeLimitFor369Hours(
         uint256 _time
-    ) external onlyOwner {
+    ) external payable onlyOwner {
         rewardTimeLimitFor369Hours = _time;
     }
 
     // function to change the time limit for reward of 369 days. only owner is authorized
-    function changeRewardTimeLimitFor369Days(uint256 _time) external onlyOwner {
+    function changeRewardTimeLimitFor369Days(
+        uint256 _time
+    ) external payable onlyOwner {
         rewardTimeLimitFor369Days = _time;
     }
 
     // function to change the protection fee. only owner is authorized
-    function changeProtectionFee(uint256 _feeInUSD) external onlyOwner {
+    function changeProtectionFee(uint256 _feeInUSD) external payable onlyOwner {
         protectionFeeInUSD = _feeInUSD;
     }
 
