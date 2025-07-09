@@ -107,11 +107,7 @@ contract urTokenFactoryContract is
     );
 
     event TokenDeployed(address indexed tokenAddress, string name);
-    event SignKeyChanged(
-        address indexed userAddress,
-        uint256 timestamp,
-        bool isQuantumProtected
-    );
+    event SignKeyChanged(address indexed userAddress, bool isQuantumProtected);
     error InvalidAllowedToken();
     error TokenAlreadyAdded();
     error TokenNotAdded();
@@ -651,7 +647,7 @@ contract urTokenFactoryContract is
                 _quantumSignature,
                 _quamtumPublicKey
             );
-            emit SignKeyChanged(caller, block.timestamp, true);
+            emit SignKeyChanged(caller, true);
         } else {
             register(
                 caller,
@@ -664,7 +660,7 @@ contract urTokenFactoryContract is
                 "",
                 ""
             );
-            emit SignKeyChanged(caller, block.timestamp, false);
+            emit SignKeyChanged(caller, false);
         }
     }
 
@@ -714,7 +710,7 @@ contract urTokenFactoryContract is
             _quantumSignature,
             _quamtumPublicKey
         );
-        emit SignKeyChanged(caller, block.timestamp, true);
+        emit SignKeyChanged(caller, true);
         _isQuantumProtected[caller] = true;
     }
 
