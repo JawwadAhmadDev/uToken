@@ -125,6 +125,21 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     error UserNotRegistered();
     error InvalidurToken();
 
+    // Add reentrancy guard variables and modifier after state variables
+    uint256 private _reentrancyStatus;
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    modifier nonReentrant() {
+        require(
+            _reentrancyStatus != _ENTERED,
+            "ReentrancyGuard: reentrant call"
+        );
+        _reentrancyStatus = _ENTERED;
+        _;
+        _reentrancyStatus = _NOT_ENTERED;
+    }
+
     constructor(
         string memory _appName,
         address[] memory _allowedTokens,
@@ -135,6 +150,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         PasswordManager(_appName)
         FeeManager(_priceFeedAddress)
     {
+        _reentrancyStatus = _NOT_ENTERED;
         deployTime = block.timestamp;
 
         // Set the whitelist addresses
@@ -254,7 +270,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature // address _paymentToken
-    ) external payable {
+    ) external payable nonReentrant {
         address depositor = msg.sender;
 
         require(_isSignKeySetOf[msg.sender], "SignKey not set");
@@ -417,7 +433,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external {
+    ) external nonReentrant {
         address withdrawer = msg.sender;
 
         if (!_isSignKeySetOf[withdrawer]) {
@@ -512,7 +528,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
         bytes32 _signKeyHash,
         uint256 _deadline,
         bytes memory _ethSignature
-    ) external returns (bool) {
+    ) external nonReentrant returns (bool) {
         address caller = msg.sender;
 
         if (!_isSignKeySetOf[caller]) {
