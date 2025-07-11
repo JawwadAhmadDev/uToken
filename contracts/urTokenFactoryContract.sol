@@ -59,7 +59,7 @@ contract urTokenFactoryContract is Ownable, PasswordManager, FeeManager {
     uint256 public quantumActivationFee = 3.69 * 1e18; // 3.69 $
     uint256 public protectionFeeInUSD = 3.69 * 1e18; // 3.69 $
     uint256 public percentOfPublicGoodRecipientCandidateAndSocialGoodAddress =
-        30_000; // 30 * 1000 = 30000% of 0.369$ of deposited amount
+        30_000; // 30 * 1000 = 30000% of 3.69$ of deposited amount
 
     // time periods for reward
     uint256 public rewardTimeLimitFor369Hours = 1328400; // 369 hours

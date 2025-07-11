@@ -23,6 +23,20 @@ task("verify:subcontracts", "Verifies all subcontracts deployed by the factory")
       const urTokens = await factoryContract.allurTokensOfAllowedTokens();
       console.log(`Found ${urTokens.length} urTokens to verify\n`);
 
+      const urTokenOfETH = await factoryContract.urTokenAddressOfETH();
+      if (urTokenOfETH) {
+        console.log(`Found urToken for ETH: ${urTokenOfETH}`);
+        // Verify the urTokenAddress for ETH
+        console.log(`Verifying urToken for ETH at ${urTokenOfETH}...`);
+        await hre.run("verify:verify", {
+          address: urTokenOfETH,
+          contract: "contracts/urTokenContract.sol:urTokenContract",
+          constructorArguments: [], // No constructor arguments as we use initialize
+        });
+      } else {
+        console.log(`No urToken found for ETH`);
+      }
+
       // Get the flattened source code
       const flattenedSource = await getFlattenedSource();
 
@@ -105,3 +119,7 @@ async function getFlattenedSource(): Promise<string> {
 
   return flattenedSource;
 }
+
+
+// command to verify all subcontracts
+// npx hardhat verify:subcontracts --factory <FACTORY_ADDRESS> --network <network>

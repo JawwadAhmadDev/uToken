@@ -7,9 +7,9 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
   // Define constructor parameters with default values
   const appName = m.getParameter("appName", "QuantumResistantApp"); // Replace "MyApp" with your default app name
   const allowedTokens = m.getParameter("allowedTokens", [
-    "0xc6c3131A37398e1FE41047Adb5fAC4DB35d9862F", // GHO
-    "0xa288F22F28100459C2202Ef6d3ddA6233f5A8621", // AAVE
-    "0x63B19E4180c3c3ae38c8e7112e47C5b690a92f11", // link
+    // "0xc6c3131A37398e1FE41047Adb5fAC4DB35d9862F", // GHO
+    // "0xa288F22F28100459C2202Ef6d3ddA6233f5A8621", // AAVE
+    // "0x63B19E4180c3c3ae38c8e7112e47C5b690a92f11", // link
     // "0x80366C8502326eDE6B4DCB46fcE7Cc88378Eda07",
     // "0x182272CF384b4BF46efFfdE61c75101664CdEE8A",
     // mainnnet
@@ -40,17 +40,17 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
     // "0x6982508145454ce325ddbe47a25d4ec3d2311933", // PEPE
   ]); // Replace with actual token addresses
   const whiteListAddresses = m.getParameter("whiteListAddresses", [
-    "0xe26841f7A8B476A9B3e45bCA7cB40Bb90c2919DE", // URLEGACY
-    "0x05b7496528b94eee0dace329d5b7f67ee81bf23b", // URFRACTAL
+    // "0xe26841f7A8B476A9B3e45bCA7cB40Bb90c2919DE", // URLEGACY
+    // "0x05b7496528b94eee0dace329d5b7f67ee81bf23b", // URFRACTAL
     // mainnet
-    // "0x66a9893cc07d91d95644aedd05d03f95e1dba8af", // UNIVERSAL ROUTER UNISWAP V4
-    // "0x222b2a6AC9E10D0090DF08505cDD9ff75c0E4dfA", // urLegacy
-    // "0xB928BF5a1D76dCee6994E4f7feb851426A1527C5", // urFractal
+    "0x66a9893cc07d91d95644aedd05d03f95e1dba8af", // UNIVERSAL ROUTER UNISWAP V4
+    "0x222b2a6AC9E10D0090DF08505cDD9ff75c0E4dfA", // urLegacy
+    "0xB928BF5a1D76dCee6994E4f7feb851426A1527C5", // urFractal
   ]); // Replace with actual whitelisted addresses
   const priceFeedAddress = m.getParameter(
     "priceFeedAddress",
-    "0x694AA1769357215DE4FAC081bf1f309aDC325306" // sepolia
-    // "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" // mainnet
+    // "0x694AA1769357215DE4FAC081bf1f309aDC325306" // sepolia
+    "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" // mainnet
   ); // Replace with actual price feed address
 
   // Deploy the contract with constructor arguments
@@ -60,10 +60,10 @@ const urTokenFactoryModule = buildModule("urTokenFactoryModule", (m) => {
       appName,
       allowedTokens,
       whiteListAddresses,
-      "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+      "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
     ]
     // {
-    //   gasLimit: 6000000000, // Adjust based on estimation
+    //   gasLimit: 60000000000, // Adjust based on estimation
     // }
   );
 
